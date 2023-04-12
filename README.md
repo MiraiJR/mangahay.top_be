@@ -1,6 +1,8 @@
 <h1> Dự án đọc truyện </h1>
 <h2> Mô tả </h2>
 <li> Dự án là back-end cho một website đọc truyện. Cung cấp API cho FE sử dụng. Mã nguồn vẫn còn đang trong quá trình hoàn thiện.</li>
+<h2> Số lượng thành viên: 1 </h2>
+<li> Trương Văn Hào</li>
 <h2> Ngôn ngữ sử dụng trong dự án </h2>
 <li> Môi trường thực thi NodeJS </li>
 <li> Framework: NestJS </li>
@@ -21,9 +23,9 @@
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
 
-<h3> Thực thi code </h3>
+<h2> Thực thi code </h2>
 <li>Môi trường dev: npm run start:dev </li>
 <li>Môi trường product: npm run start </li>
 
-<h3> Yêu cầu khác </h3>
+<h2> Yêu cầu khác </h2>
 <li> Phải khởi chạy redis ở port: 6739 </li>
