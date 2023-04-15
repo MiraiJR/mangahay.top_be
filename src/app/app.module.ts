@@ -9,6 +9,8 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { UserModule } from 'src/modules/user/user.module';
 import { CommentModule } from 'src/modules/comment/comment.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SocketModule } from 'src/modules/socket/socket.module';
+import { NotificationModule } from 'src/modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     ChapterModule,
     ComicModule,
     CommentModule,
+    SocketModule,
+    NotificationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,

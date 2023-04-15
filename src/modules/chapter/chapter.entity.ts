@@ -19,7 +19,7 @@ export class Chapter {
   @Column({ nullable: false })
   name: string;
 
-  @Column('text', { array: true })
+  @Column('text', { array: true, nullable: true })
   images: string[];
 
   @ManyToOne(() => Comic, (comic) => comic.id)

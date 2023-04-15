@@ -6,6 +6,7 @@ import slugify from 'slugify';
 import { Genres } from './genre/genre.entity';
 import { Interval } from '@nestjs/schedule';
 import { spawn } from 'child_process';
+import { IComic } from './comic.interface';
 
 @Injectable()
 export class ComicService {
@@ -15,6 +16,11 @@ export class ComicService {
     @InjectRepository(Genres)
     private genresRepository: Repository<Genres>,
   ) {}
+
+  async create(comic: IComic) {
+    const new_comic = this.comicRepository.create(comic);
+    return await this.comicRepository.save(new_comic);
+  }
 
   async getAll(query: any) {
     let page = 1;
@@ -40,6 +46,14 @@ export class ComicService {
       .createQueryBuilder('comic')
       .where('comic.slug = :slug', { slug: name_comic })
       .getOne();
+  }
+
+  async getById(id_comic: number) {
+    return this.comicRepository.findOne({
+      where: {
+        id: id_comic,
+      },
+    });
   }
 
   // tăng các field như view, follow, like
@@ -120,10 +134,32 @@ export class ComicService {
     return await this.genresRepository.find();
   }
 
+  async updateThumb(id_comic: number, thumb: string) {
+    return await this.comicRepository.save({
+      id: id_comic,
+      thumb: thumb,
+    });
+  }
+
   @Interval(1000 * 60 * 60)
   automaticUpdate() {
     const link_file_python: string =
       process.cwd() + '/src/common/pythons/update_chapter_auto.py';
+    const pyProg = spawn('python', [link_file_python]);
+
+    pyProg.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+
+    pyProg.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+  }
+
+  @Interval(1000 * 60 * 60)
+  automaticUpdateComic() {
+    const link_file_python: string =
+      process.cwd() + '/src/common/pythons/update_new_comic.py';
     const pyProg = spawn('python', [link_file_python]);
 
     pyProg.stdout.on('data', (data) => {

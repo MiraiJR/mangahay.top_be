@@ -19,12 +19,14 @@ import { IdUser } from './decorators/id-user';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Controller('api/user')
 export class UserController {
   constructor(
     private userService: UserService,
     private cloudinaryService: CloudinaryService,
+    private notifyService: NotificationService,
   ) {}
 
   @UseGuards(JwtAuthorizationd)
@@ -122,7 +124,6 @@ export class UserController {
     @Res() response: Response,
   ) {
     try {
-      console.log(id_user, id_comic);
       const result = {
         isFollow: false,
         isLike: false,
@@ -187,6 +188,31 @@ export class UserController {
         statusCode: error.status,
         success: false,
         message: 'Cập nhật avatar thấy bại!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/notifies')
+  async getNotifies(
+    // @Query() query: any,
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
+    try {
+      const notifies = await this.notifyService.getNotifiesOfUser(id_user);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: notifies,
+      });
+    } catch (error) {
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
       });
     }
   }

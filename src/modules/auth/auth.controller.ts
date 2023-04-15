@@ -109,6 +109,7 @@ export class AuthController {
     try {
       await this.authService.blockToken(id, 'ACCESSTOKEN');
       await this.authService.blockToken(id, 'REFRESHTOKEN');
+      await this.authService.removeSocket(id);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -135,7 +136,7 @@ export class AuthController {
         },
       );
       await this.authService.register(payload);
-      return response.redirect('http://localhost:3001/login');
+      return response.redirect('http://localhost:3001/auth/login');
     } catch (error) {
       return response.status(error.status).json({
         statusCode: error.status,
@@ -151,7 +152,6 @@ export class AuthController {
     @Res() response: Response,
   ) {
     try {
-      console.log(email);
       const check_user = await this.userService.getUserByEmail(email);
 
       // email đã tồn tại
@@ -194,8 +194,6 @@ export class AuthController {
       const payload = await this.jwtService.verify(data.token, {
         secret: process.env.FORGETPASSWORD_KEY,
       });
-
-      console.log(payload);
 
       await this.userService.updatePassword(payload.email, new_pwd);
       return response.redirect('http://localhost:3001/auth/login');

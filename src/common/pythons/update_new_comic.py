@@ -13,7 +13,7 @@ def getListLinkComic():
     origin_url = 'https://truyentranhlh.net/danh-sach?sort=update&page='
     array_page = []
     link_comics = []
-    for i in range(5, 100):
+    for i in range(6, 0, -1):
         array_page.append(origin_url + str(i))
 
     for page in array_page:
@@ -30,37 +30,49 @@ def layThongComic(link):
     comic = BeautifulSoup(response.content, "html.parser")
     try:
         slug = link.split('/')[-1]
-        link_image = comic.find(
-            'div', class_='content img-in-ratio').attrs['style']
-        link_image = link_image.split('\'')[1]
-        name = comic.find('span', class_='series-name').findChildren('a',
-                                                                     recursive=False)[0].text.strip()
-        # print(name)
-        another_name = comic.find('span', class_='info-value').text.strip()
-        genres = []
-        for genre in comic.findAll('span', class_='badge badge-info bg-lhmanga mx-1'):
-            genres.append(genre.text.strip())
-        authors = []
-        state = comic.findAll('span', class_='info-value')[-1].text.strip()
-        brief_desc = comic.find(
-            'div', class_='summary-content')
-        for ele in comic.findAll('div', class_='info-item'):
-            if (ele.findChildren('span', class_='info-name')[0].text == 'Tác giả:'):
-                for child in ele.findChildren('span', class_='info-value'):
-                    authors.append(child.findChildren('a')[0].text.strip())
-        record_to_insert = (str(name), str(another_name), genres, authors, str(
-            state), str(link_image), str(brief_desc), str(slug))
-        id = insert(cursor, record_to_insert)
-        conn.commit()
-        link_chapters = []
-        if (comic.find('ul', class_='list-chapters at-series')) is not None:
-            for ele in comic.find('ul', class_='list-chapters at-series'):
-                link_chapters.append(ele.attrs['href'])
-            for chapter in link_chapters:
-                layThongTinChapter(chapter, id)
+        print(slug)
+        if kiemTraComicDaTonTaiChua(cursor, slug):
+            link_image = comic.find(
+                'div', class_='content img-in-ratio').attrs['style']
+            link_image = link_image.split('\'')[1]
+            name = comic.find('span', class_='series-name').findChildren('a',
+                                                                        recursive=False)[0].text.strip()
+            print("Tên: ", name, "\n Slug: ", slug)
+            another_name = comic.find('span', class_='info-value').text.strip()
+            genres = []
+            for genre in comic.findAll('span', class_='badge badge-info bg-lhmanga mx-1'):
+                genres.append(genre.text.strip())
+            authors = []
+            state = comic.findAll('span', class_='info-value')[-1].text.strip()
+            brief_desc = comic.find(
+                'div', class_='summary-content')
+            for ele in comic.findAll('div', class_='info-item'):
+                if (ele.findChildren('span', class_='info-name')[0].text == 'Tác giả:'):
+                    for child in ele.findChildren('span', class_='info-value'):
+                        authors.append(child.findChildren('a')[0].text.strip())
+            record_to_insert = (str(name), str(another_name), genres, authors, str(
+                state), str(link_image), str(brief_desc), str(slug))
+            id = insert(cursor, record_to_insert)
+            conn.commit()
+            link_chapters = []
+            if (comic.find('ul', class_='list-chapters at-series')) is not None:
+                for ele in comic.find('ul', class_='list-chapters at-series'):
+                    link_chapters.append(ele.attrs['href'])
+                for chapter in link_chapters:
+                    layThongTinChapter(chapter, id)
+        else:
+            id_comic = layIdComic(cursor, slug)
+            capNhatChapter("https://truyentranhlh.net/truyen-tranh/" + slug, id_comic)
     except:
         pass
 
+
+def layIdComic(cursor, slug):
+    query = """ SELECT id FROM public."comic" WHERE slug = '{slug_comic}' """.format(slug_comic = slug)
+    cursor.execute(query)
+
+    result = cursor.fetchone()
+    return result[0]
 
 def layThongTinChapter(link, idComic):
     response = requests.get(link)
@@ -91,6 +103,15 @@ def layThongTin():
 def kiemTraChapterDaTonTaiChua(cursor, id_comic, name_chapter):
     query = """ SELECT * FROM public."chapter" where id_comic = %s and name = %s """
     record = (int(id_comic), str(name_chapter))
+    cursor.execute(query, record)
+
+    result = cursor.fetchall()
+
+    return False if len(result) == 0 else True
+
+def kiemTraComicDaTonTaiChua(cursor, slug):
+    query = """ SELCT * FROM public."comic" WHERE slug = %s """
+    record = (str(slug))
     cursor.execute(query, record)
 
     result = cursor.fetchall()
@@ -128,7 +149,6 @@ def insertGere(cursor, value_genre, value_slug):
     cursor.execute(postgres_insert_query)
     conn.commit()
 
-# layThongTin()
 def layThongTinGenre():
     response = requests.get('https://truyentranhlh.net/')
     genres = BeautifulSoup(response.content, "html.parser")
@@ -150,7 +170,7 @@ def capNhatChapterChoTruyen(cursor):
 
         capNhatChapter(link, x[0])
 
-capNhatChapterChoTruyen(cursor)
-# layThongTinGenre()
+layThongTin()
+
 conn.commit()
 conn.close()

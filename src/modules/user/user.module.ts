@@ -7,11 +7,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { User_Follow_Comic } from './user_follow/user_follow.entity';
 import { User_Like_Comic } from './user_like/user-like.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     CloudinaryModule,
     JwtModule,
+    NotificationModule,
     TypeOrmModule.forFeature([User, User_Follow_Comic, User_Like_Comic]),
   ],
   controllers: [UserController],

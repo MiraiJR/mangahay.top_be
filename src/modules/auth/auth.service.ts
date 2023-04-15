@@ -141,4 +141,8 @@ export class AuthService {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  async removeSocket(id: number) {
+    await this.redisCache.del(`USER:${id}:SOCKET`);
+  }
 }

@@ -15,7 +15,7 @@ export class ChapterService {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'ASC')
+      .orderBy('chapter.id', 'DESC')
       .getMany();
   }
 
@@ -23,14 +23,13 @@ export class ChapterService {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'ASC')
+      .orderBy('chapter.id', 'DESC')
       .getOne();
   }
 
   async create(chapter: IChapter) {
-    return await this.chapterRepository.save({
-      ...chapter,
-    });
+    const new_chapter = this.chapterRepository.create(chapter);
+    return await this.chapterRepository.save(new_chapter);
   }
 
   async update(chapter: IChapter) {
@@ -51,6 +50,13 @@ export class ChapterService {
       where: {
         id: id_chapter,
       },
+    });
+  }
+
+  async updateImages(id_chapter: number, images: string[]) {
+    return await this.chapterRepository.save({
+      id: id_chapter,
+      images: images,
     });
   }
 }

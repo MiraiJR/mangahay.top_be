@@ -111,4 +111,13 @@ export class UserService {
       ...data_update,
     });
   }
+
+  async checkFollowing(id_user: number, id_comic: number) {
+    return await this.userFollowComicRepository.findOne({
+      where: {
+        id_user: id_user,
+        id_comic: id_comic,
+      },
+    });
+  }
 }
