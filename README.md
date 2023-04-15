@@ -19,11 +19,14 @@
 <h3> Tự động cập nhật chapter, comic mỗi 1 giờ </h3> 
 <li> Dùng python cho việc crawl data từ một website khác </li>
 <li> Dùng child_process để kết nối + cron, schedule để tạo lệnh automatic mỗi 1 giờ </li>
+
+<h3> Thông báo </h3>
+<li> Sử dụng socket.io làm thông báo realtime đến user nếu user đang truy cập website. Socket.id sẽ được lưu trữ trên redis </li>
+
 <h3> vẫn còn đang cập nhật ... </h3>
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
-<h3> Thông báo </h3>
-<li> Sử dụng socket.io làm thông báo realtime đến user nếu user đang truy cập website. Socket.id sẽ được lưu trữ trên redis </li>
+
 <h2> Thực thi code </h2>
 <li>Môi trường dev: npm run start:dev </li>
 <li>Môi trường product: npm run start </li>
