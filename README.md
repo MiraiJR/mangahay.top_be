@@ -1,73 +1,31 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+<h1> Dự án đọc truyện </h1>
+<h2> Mô tả </h2>
+<li> Dự án là back-end cho một website đọc truyện. Cung cấp API cho FE sử dụng. Mã nguồn vẫn còn đang trong quá trình hoàn thiện.</li>
+<h2> Số lượng thành viên: 1 </h2>
+<li> Trương Văn Hào</li>
+<h2> Ngôn ngữ sử dụng trong dự án </h2>
+<li> Môi trường thực thi NodeJS </li>
+<li> Framework: NestJS </li>
+<li> Ngôn ngữ: JavaScript, TypeScript, python (sở dĩ có thêm python vì dùng python để crawl dữ liệu tự động)</li>
+<li> Database: Postgres </li>
+<li> Cache: Redis </li>
+<h2> Các chức năng của dự án </h2>
+<h3> CRUD </h3>
+<li> CRUD cho các đối tượng Comic, Chapter, Comment, Notification, ... </li>
+<h3> Đăng nhập, đăng ký, quên mật khẩu, đăng xuất </h3>
+<li> Dùng JWT để tạo các token cần thiết như accesstoken, refreshtoken, ... </li>
+<li> Nodemailer để gửi mail OTP code xác thực đăng ký (OTP tồn tại trong 5 phút) + dùng redis để quản lý OTP này (vì redis có ttl tự hủy token trong list khi expired time), OTP này là Link đính token</li>
+<li> Ngoài ra ở đây, khi user đăng xuất thì các token vẫn còn ttl sẽ được lưu vào block list trên redis ngăn việc hacker bắt được token của user vẫn truy cập được </li>
+<h3> Tự động cập nhật chapter, comic mỗi 1 giờ </h3> 
+<li> Dùng python cho việc crawl data từ một website khác </li>
+<li> Dùng child_process để kết nối + cron, schedule để tạo lệnh automatic mỗi 1 giờ </li>
+<h3> vẫn còn đang cập nhật ... </h3>
+<h3> Tương tác với database </h3>
+<li> Dùng TypeOrm để tương tác + các decorator Entity </li>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h2> Thực thi code </h2>
+<li>Môi trường dev: npm run start:dev </li>
+<li>Môi trường product: npm run start </li>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
-
-```bash
-$ npm install
-```
-
-## Running the app
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+<h2> Yêu cầu khác </h2>
+<li> Phải khởi chạy redis ở port: 6739 </li>
