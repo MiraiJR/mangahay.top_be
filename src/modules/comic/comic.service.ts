@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { IComic } from './comic.interface';
 @Injectable()
 export class ComicService {
   constructor(
+    private logger: Logger = new Logger(ComicService.name),
     @InjectRepository(Comic)
     private comicRepository: Repository<Comic>,
     @InjectRepository(Genres)
@@ -141,11 +142,13 @@ export class ComicService {
     });
   }
 
-  @Interval(1000 * 60 * 60)
+  @Interval(1000 * 60 * 15)
   automaticUpdate() {
     const link_file_python: string =
       process.cwd() + '/src/common/pythons/update_chapter_auto.py';
     const pyProg = spawn('python', [link_file_python]);
+
+    this.logger.log('Cập nhật chapter mới cho truyện có sẵn!!!!!!!!!');
 
     pyProg.stdout.on('data', (data) => {
       console.log(`stdout: ${data}`);
@@ -156,18 +159,20 @@ export class ComicService {
     });
   }
 
-  @Interval(1000 * 60 * 60)
+  @Interval(1000 * 60 * 15)
   automaticUpdateComic() {
     const link_file_python: string =
       process.cwd() + '/src/common/pythons/update_new_comic.py';
     const pyProg = spawn('python', [link_file_python]);
 
+    this.logger.log('Cập nhật truyện mới!!!!!!!!!');
+
     pyProg.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
+      this.logger.log(`stdout: ${data}`);
     });
 
     pyProg.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
+      this.logger.log(`stderr: ${data}`);
     });
   }
 }
