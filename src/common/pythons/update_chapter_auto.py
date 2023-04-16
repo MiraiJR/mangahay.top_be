@@ -4,7 +4,8 @@ import psycopg2
 from slugify import slugify
 
 conn = psycopg2.connect(
-    database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
+    # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
+    database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
 )
 
 cursor = conn.cursor()
@@ -24,6 +25,7 @@ def getListLinkComic():
             link = ele.findChildren('a',  recursive=False)[0]
             link_comics.append(link.attrs['href'])
     return link_comics
+
 
 def layThongComic(link):
     response = requests.get(link)
@@ -88,6 +90,7 @@ def layThongTin():
     for link_ in link_comics:
         layThongComic(link_)
 
+
 def kiemTraChapterDaTonTaiChua(cursor, id_comic, name_chapter):
     query = """ SELECT * FROM public."chapter" where id_comic = %s and name = %s """
     record = (int(id_comic), str(name_chapter))
@@ -96,6 +99,7 @@ def kiemTraChapterDaTonTaiChua(cursor, id_comic, name_chapter):
     result = cursor.fetchall()
 
     return False if len(result) == 0 else True
+
 
 def capNhatChapter(link, id_comic):
     response = requests.get(link)
@@ -108,6 +112,7 @@ def capNhatChapter(link, id_comic):
         for chapter in link_chapters:
             if layThongTinChapter(chapter, id_comic) == False:
                 break
+
 
 def insert(cursor, record_to_insert):
     postgres_insert_query = """ INSERT INTO public."comic" (name, another_name, genres, authors, state, thumb, brief_desc, slug) VALUES (%s,%s,%s, %s,%s,%s, %s,%s) RETURNING id"""
@@ -124,11 +129,14 @@ def insertChapter(cursor, record_to_insert_chapter):
 
 
 def insertGere(cursor, value_genre, value_slug):
-    postgres_insert_query = """ INSERT INTO public."genres" (genre, slug) VALUES ('{genre}', '{slug}')""".format(genre = value_genre, slug = value_slug)
+    postgres_insert_query = """ INSERT INTO public."genres" (genre, slug) VALUES ('{genre}', '{slug}')""".format(
+        genre=value_genre, slug=value_slug)
     cursor.execute(postgres_insert_query)
     conn.commit()
 
 # layThongTin()
+
+
 def layThongTinGenre():
     response = requests.get('https://truyentranhlh.net/')
     genres = BeautifulSoup(response.content, "html.parser")
@@ -144,11 +152,12 @@ def capNhatChapterChoTruyen(cursor):
     cursor.execute(query)
 
     result = cursor.fetchall()
-  
+
     for x in result:
         link = "https://truyentranhlh.net/truyen-tranh/" + x[1]
 
         capNhatChapter(link, x[0])
+
 
 capNhatChapterChoTruyen(cursor)
 # layThongTinGenre()

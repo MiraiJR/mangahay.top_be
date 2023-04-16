@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ComicController } from './comic.controller';
 import { ComicService } from './comic.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -20,7 +20,7 @@ import { NotificationModule } from '../notification/notification.module';
     TypeOrmModule.forFeature([Comic, Genres]),
   ],
   controllers: [ComicController],
-  providers: [ComicService],
+  providers: [ComicService, Logger],
   exports: [ComicService],
 })
 export class ComicModule {}

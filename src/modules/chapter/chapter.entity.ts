@@ -28,10 +28,21 @@ export class Chapter {
 
   @Column({ nullable: false })
   slug: string;
+  
+  @Column({ type: 'timestamp', default: () => 'now()' })
+  createdAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'now()' })
+  updatedAt:  Date;
 
   @BeforeInsert()
   @BeforeUpdate()
   generateSlug() {
     this.slug = slugify(this.name, { lower: true });
+  }
+
+  @BeforeUpdate()
+  changeUpdatedAt() {
+    this.updatedAt = new Date();
   }
 }

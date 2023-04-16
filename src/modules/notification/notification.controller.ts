@@ -26,7 +26,7 @@ export class NotificationController {
     @Res() response: Response,
   ) {
     try {
-      if (this.notifyService.checkOwner(id_user, id_notify)) {
+      if (await this.notifyService.checkOwner(id_user, id_notify)) {
         this.notifyService.changeState(id_notify);
       } else {
         throw new ForbiddenException(
@@ -62,6 +62,32 @@ export class NotificationController {
         result: result,
       });
     } catch (error) {
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Put('/change-state/all/unread')
+  async changeStateUnread(
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
+    try {
+      console.log(id_user);
+      this.notifyService.changeAllStateOfUser(id_user);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: {},
+      });
+    } catch (error) {
+      console.log(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,

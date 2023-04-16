@@ -38,7 +38,7 @@ import { NotificationModule } from 'src/modules/notification/notification.module
         database: configService.get('DATABASE_NAME'),
         synchronize: true,
         autoLoadEntities: true,
-        // ssl: true,
+        ssl: true,
       }),
     }),
     ScheduleModule.forRoot(),

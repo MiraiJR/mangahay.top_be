@@ -75,4 +75,14 @@ export class NotificationService {
 
     return check ? true : false;
   }
+
+  async changeAllStateOfUser(id_user: number) {
+    return await this.notificationRepository
+      .createQueryBuilder('notification')
+      .update('notification')
+      .set({ is_read: true })
+      .where('notification.id_user = :id_user', { id_user: id_user })
+      .andWhere('notification.is_read = false')
+      .execute();
+  }
 }
