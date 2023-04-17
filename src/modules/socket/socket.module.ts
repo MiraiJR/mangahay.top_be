@@ -13,9 +13,11 @@ import * as redisStore from 'cache-manager-redis-store';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService): Promise<any> => ({
         store: redisStore,
-        host: configService.get('REDIS_HOST'),
-        port: configService.get('REDIS_PORT'),
+        // host: configService.get('REDIS_HOST'),
+        // port: configService.get('REDIS_PORT'),
+        url: configService.get('REDIS_URL'),
         ttl: 120,
+        ssl: true,
       }),
     }),
   ],

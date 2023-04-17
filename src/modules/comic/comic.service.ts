@@ -142,22 +142,22 @@ export class ComicService {
     });
   }
 
-  @Interval(1000 * 60 * 15)
-  automaticUpdate() {
-    const link_file_python: string =
-      process.cwd() + '/src/common/pythons/update_chapter_auto.py';
-    const pyProg = spawn('python', [link_file_python]);
+  // @Interval(1000 * 60 * 15)
+  // automaticUpdate() {
+  //   const link_file_python: string =
+  //     process.cwd() + '/src/common/pythons/update_chapter_auto.py';
+  //   const pyProg = spawn('python', [link_file_python]);
 
-    this.logger.log('Cập nhật chapter mới cho truyện có sẵn!!!!!!!!!');
+  //   this.logger.log('Cập nhật chapter mới cho truyện có sẵn!!!!!!!!!');
 
-    pyProg.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
+  //   pyProg.stdout.on('data', (data) => {
+  //     console.log(`stdout: ${data}`);
+  //   });
 
-    pyProg.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
-    });
-  }
+  //   pyProg.stderr.on('data', (data) => {
+  //     console.error(`stderr: ${data}`);
+  //   });
+  // }
 
   @Interval(1000 * 60 * 15)
   automaticUpdateComic() {

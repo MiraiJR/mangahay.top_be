@@ -15,7 +15,7 @@ def getListLinkComic():
     origin_url = 'https://truyentranhlh.net/danh-sach?sort=update&page='
     array_page = []
     link_comics = []
-    for i in range(6, 0, -1):
+    for i in range(10, 7, -1):
         array_page.append(origin_url + str(i))
 
     for page in array_page:
