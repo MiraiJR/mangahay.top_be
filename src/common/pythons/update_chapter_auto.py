@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import psycopg2
 from slugify import slugify
+from datetime import date
 
 conn = psycopg2.connect(
     # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
@@ -70,17 +71,22 @@ def layThongTinChapter(link, idComic):
     try:
         name = chapter.find('li', class_='active').findChildren(
             'a')[0].text.strip()
-        images = []
-        for ele in chapter.find('div', id='chapter-content').findChildren('img', recursive=False):
-            if ele.has_attr('data-src'):
-                images.append(ele.attrs['data-src'])
-        slug = slugify(name)
+        print(kiemTraChapterDaTonTaiChua(cursor, idComic, name))
         if kiemTraChapterDaTonTaiChua(cursor, idComic, name) == False:
+            images = []
+            for ele in chapter.find('div', id='chapter-content').findChildren('img', recursive=False):
+                if ele.has_attr('data-src'):
+                    images.append(ele.attrs['data-src'])
+            slug = slugify(name)
+
             print(idComic, name)
+
             record_to_insert_chapter = (str(name), images, slug, int(idComic))
             insertChapter(cursor, record_to_insert_chapter)
+            updateDateUpdateForComic(cursor, idComic)
         else:
             return False
+        
     except:
         return False
 
@@ -114,6 +120,12 @@ def capNhatChapter(link, id_comic):
                 break
 
 
+def updateDateUpdateForComic(cursor, id_comic):
+    query = """ UPDATE public."comic" SET updatedAt = '{date}' WHERE id = {id_comic}""".format(date = date.today(), id_comic = id_comic)
+    cursor.execute(query)
+
+    conn.commit()
+
 def insert(cursor, record_to_insert):
     postgres_insert_query = """ INSERT INTO public."comic" (name, another_name, genres, authors, state, thumb, brief_desc, slug) VALUES (%s,%s,%s, %s,%s,%s, %s,%s) RETURNING id"""
     cursor.execute(postgres_insert_query, record_to_insert)
@@ -134,9 +146,6 @@ def insertGere(cursor, value_genre, value_slug):
     cursor.execute(postgres_insert_query)
     conn.commit()
 
-# layThongTin()
-
-
 def layThongTinGenre():
     response = requests.get('https://truyentranhlh.net/')
     genres = BeautifulSoup(response.content, "html.parser")
@@ -155,7 +164,6 @@ def capNhatChapterChoTruyen(cursor):
 
     for x in result:
         link = "https://truyentranhlh.net/truyen-tranh/" + x[1]
-
         capNhatChapter(link, x[0])
 
 

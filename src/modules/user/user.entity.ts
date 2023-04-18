@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
-import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -15,7 +14,6 @@ export class User {
   fullname: string;
 
   @Column({ nullable: false })
-  @Exclude()
   password: string;
 
   @Column({

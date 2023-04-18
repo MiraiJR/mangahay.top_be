@@ -120,4 +120,20 @@ export class UserService {
       },
     });
   }
+
+  async getFollowingComic(id_user: number) {
+    return await this.userFollowComicRepository
+      .createQueryBuilder('follow_comic')
+      .leftJoinAndSelect('follow_comic.id_comic', 'comics')
+      .where('follow_comic.id_user = :id_user', { id_user: id_user })
+      .getRawMany();
+  }
+
+  async getLikedComic(id_user: number) {
+    return await this.userLikeComicRepository
+      .createQueryBuilder('liked_comic')
+      .leftJoinAndSelect('liked_comic.id_comic', 'comics')
+      .where('liked_comic.id_user = :id_user', { id_user: id_user })
+      .getRawMany();
+  }
 }
