@@ -11,6 +11,10 @@ import { CommentModule } from 'src/modules/comment/comment.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SocketModule } from 'src/modules/socket/socket.module';
 import { NotificationModule } from 'src/modules/notification/notification.module';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+
+const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
 
 @Module({
   imports: [
@@ -24,7 +28,7 @@ import { NotificationModule } from 'src/modules/notification/notification.module
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      envFilePath: `.env`,
+      envFilePath: `.${process.env.NODE_ENV}.env`,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -38,10 +42,14 @@ import { NotificationModule } from 'src/modules/notification/notification.module
         database: configService.get('DATABASE_NAME'),
         synchronize: true,
         autoLoadEntities: true,
-        ssl: true,
+        ssl: is_ssl,
       }),
     }),
     ScheduleModule.forRoot(),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: 'schema.gql',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

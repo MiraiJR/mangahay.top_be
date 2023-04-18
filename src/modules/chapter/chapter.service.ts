@@ -15,7 +15,7 @@ export class ChapterService {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'DESC')
+      .orderBy('chapter.id', 'ASC')
       .getMany();
   }
 
@@ -23,7 +23,7 @@ export class ChapterService {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'DESC')
+      .orderBy('chapter.id', 'ASC')
       .getOne();
   }
 

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpStatus,
+  Logger,
   ParseIntPipe,
   Post,
   Put,
@@ -20,10 +21,12 @@ import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
+import { User } from './user.entity';
 
 @Controller('api/user')
 export class UserController {
   constructor(
+    private logger: Logger = new Logger(UserController.name),
     private userService: UserService,
     private cloudinaryService: CloudinaryService,
     private notifyService: NotificationService,
@@ -36,7 +39,7 @@ export class UserController {
     @Res() response: Response,
   ) {
     try {
-      const user = await this.userService.getUserById(id);
+      const user: User = await this.userService.getUserById(id);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -48,6 +51,7 @@ export class UserController {
         },
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status).json({
         statusCode: error.status,
         success: false,
@@ -78,6 +82,7 @@ export class UserController {
         result: {},
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,
@@ -108,6 +113,7 @@ export class UserController {
         result: {},
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,
@@ -147,6 +153,7 @@ export class UserController {
         result: result,
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,
@@ -184,6 +191,7 @@ export class UserController {
         result: response_file.url,
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,
@@ -209,6 +217,54 @@ export class UserController {
         result: notifies,
       });
     } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/comic/following')
+  async getFollowingComic(
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
+    try {
+      const following_comic = await this.userService.getFollowingComic(id_user);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: following_comic,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/comic/following')
+  async getLikedComic(@IdUser() id_user: number, @Res() response: Response) {
+    try {
+      const liked_comic = await this.userService.getLikedComic(id_user);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: liked_comic,
+      });
+    } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,

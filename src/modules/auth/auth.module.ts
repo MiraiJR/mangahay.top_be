@@ -20,9 +20,9 @@ import { MailService } from 'src/common/utils/mail-service';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService): Promise<any> => ({
         store: redisStore,
-        // host: configService.get('REDIS_HOST'),
-        // port: configService.get('REDIS_PORT'),
-        url: configService.get('REDIS_URL'),
+        host: configService.get('REDIS_HOST'),
+        port: configService.get('REDIS_PORT'),
+        // url: configService.get('REDIS_URL'),
         ttl: 120,
         ssl: true,
       }),

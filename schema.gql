@@ -1,0 +1,45 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserDTO {
+  id: Int!
+  email: String!
+  fullname: String!
+  avatar: String!
+  wallpaper: String!
+  active: Boolean!
+  role: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type UserFollowComicDTO {
+  comics_id: Int!
+  comics_slug: String!
+  comics_name: String!
+  comics_another_name: String!
+  comics_genres: [String!]!
+  comics_authors: [String!]!
+  comics_state: String!
+  comics_thumb: String!
+  comics_brief_desc: String!
+  comics_view: Int!
+  comics_like: Int!
+  comics_follow: Int!
+  comics_star: Int!
+  comics_id_owner: Int!
+  comics_createdAt: DateTime!
+  comics_updatedAt: DateTime!
+}
+
+type Query {
+  getCredentialUserInformation: UserDTO!
+  getFollowingComic: [UserFollowComicDTO!]!
+  getLikedComic: [UserFollowComicDTO!]!
+}
