@@ -38,8 +38,20 @@ type UserFollowComicDTO {
   comics_updatedAt: DateTime!
 }
 
+type NotifyDTO {
+  id: Int!
+  title: String!
+  body: String!
+  is_read: Boolean!
+  redirect_url: String!
+  thumb: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   getCredentialUserInformation: UserDTO!
-  getFollowingComic: [UserFollowComicDTO!]!
-  getLikedComic: [UserFollowComicDTO!]!
+  getFollowingComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
+  getLikedComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
+  getNotifiesOfUser: [NotifyDTO!]!
 }

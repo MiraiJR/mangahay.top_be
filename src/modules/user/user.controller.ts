@@ -229,11 +229,15 @@ export class UserController {
   @UseGuards(JwtAuthorizationd)
   @Get('/comic/following')
   async getFollowingComic(
+    @Query() query: any,
     @IdUser() id_user: number,
     @Res() response: Response,
   ) {
     try {
-      const following_comic = await this.userService.getFollowingComic(id_user);
+      const following_comic = await this.userService.getFollowingComic(
+        id_user,
+        query,
+      );
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -253,9 +257,13 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/comic/following')
-  async getLikedComic(@IdUser() id_user: number, @Res() response: Response) {
+  async getLikedComic(
+    @Query() query: any,
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
     try {
-      const liked_comic = await this.userService.getLikedComic(id_user);
+      const liked_comic = await this.userService.getLikedComic(id_user, query);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
