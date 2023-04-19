@@ -19,10 +19,10 @@
 <h3> Tự động cập nhật chapter, comic mỗi 1 giờ </h3> 
 <li> Dùng python cho việc crawl data từ một website khác </li>
 <li> Dùng child_process để kết nối + cron, schedule để tạo lệnh automatic mỗi 1 giờ </li>
-
 <h3> Thông báo </h3>
 <li> Sử dụng socket.io làm thông báo realtime đến user nếu user đang truy cập website. Socket.id sẽ được lưu trữ trên redis </li>
-
+<h3> Chat </h3>
+<li> Sử dụng socket.io để làm chat realtime + thông báo tin mới đến user khi user đã login và đang truy cập website </li>
 <h3 style="color:blue;"> Tích hợp query language Graphql + ApolloServer</h3>
 <li> Đang thực hiện </li>
 
