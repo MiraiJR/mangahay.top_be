@@ -27,10 +27,10 @@ export class Notification {
   @Column({ default: false })
   is_read: boolean;
 
-  @Column()
+  @Column({nullable: true})
   redirect_url: string;
 
-  @Column()
+  @Column({nullable: true})
   thumb: string;
 
   @Column({ type: 'timestamp', default: () => 'now()' })

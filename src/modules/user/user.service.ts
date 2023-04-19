@@ -121,19 +121,23 @@ export class UserService {
     });
   }
 
-  async getFollowingComic(id_user: number) {
+  async getFollowingComic(id_user: number, query: any) {
     return await this.userFollowComicRepository
       .createQueryBuilder('follow_comic')
       .leftJoinAndSelect('follow_comic.id_comic', 'comics')
       .where('follow_comic.id_user = :id_user', { id_user: id_user })
+      .skip(parseInt(query.limit) * (parseInt(query.page) - 1))
+      .limit(parseInt(query.limit))
       .getRawMany();
   }
 
-  async getLikedComic(id_user: number) {
+  async getLikedComic(id_user: number, query: any) {
     return await this.userLikeComicRepository
       .createQueryBuilder('liked_comic')
       .leftJoinAndSelect('liked_comic.id_comic', 'comics')
       .where('liked_comic.id_user = :id_user', { id_user: id_user })
+      .skip(parseInt(query.limit) * (parseInt(query.page) - 1))
+      .limit(parseInt(query.limit))
       .getRawMany();
   }
 }

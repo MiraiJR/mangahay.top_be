@@ -13,6 +13,7 @@ import { SocketModule } from 'src/modules/socket/socket.module';
 import { NotificationModule } from 'src/modules/notification/notification.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { MessageModule } from 'src/modules/message/message.module';
 
 const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
 
@@ -25,6 +26,7 @@ const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
     CommentModule,
     SocketModule,
     NotificationModule,
+    MessageModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
