@@ -35,4 +35,4 @@
 <li>Môi trường product: npm run start </li>
 
 <h2> Yêu cầu khác </h2>
-<li> Phải khởi chạy redis ở port: 6739 </li>
+<li> Phải khởi chạy redis ở port: 6379 </li>
