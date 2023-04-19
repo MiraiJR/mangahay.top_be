@@ -23,6 +23,9 @@
 <h3> Thông báo </h3>
 <li> Sử dụng socket.io làm thông báo realtime đến user nếu user đang truy cập website. Socket.id sẽ được lưu trữ trên redis </li>
 
+<h3 style="color:blue;"> Tích hợp query language Graphql + ApolloServer</h3>
+<li> Đang thực hiện </li>
+
 <h3> vẫn còn đang cập nhật ... </h3>
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
