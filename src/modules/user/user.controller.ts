@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
 import { User } from './user.entity';
+import { ComicService } from '../comic/comic.service';
 
 @Controller('api/user')
 export class UserController {
@@ -30,6 +31,7 @@ export class UserController {
     private userService: UserService,
     private cloudinaryService: CloudinaryService,
     private notifyService: NotificationService,
+    private comicService: ComicService,
   ) {}
 
   @UseGuards(JwtAuthorizationd)
@@ -65,20 +67,39 @@ export class UserController {
   async actionComic(
     @Query('action') action: string,
     @Body('id_comic', new ParseIntPipe()) id_comic: number,
+    @Body('rating_star') rating_star: any,
     @IdUser() id_user: number,
     @Res() response: Response,
   ) {
     try {
+      let message_response = '';
       if (action === 'follow') {
         await this.userService.followComic(id_user, id_comic);
+        message_response = 'Theo dõi truyện thành công!';
       } else if (action === 'like') {
         await this.userService.likeComic(id_user, id_comic);
+        message_response = 'Cảm ơn bạn đã thích truyện! <3';
+      } else if (action === 'evaluate') {
+        await this.userService.evaluateComic(id_user, id_comic);
+        const update_comic = await this.comicService.updateRatingStar(
+          id_comic,
+          parseInt(rating_star),
+        );
+
+        message_response = 'Cảm ơn bạn đã đánh giá truyện <3!';
+
+        return response.status(HttpStatus.OK).json({
+          statusCode: HttpStatus.OK,
+          success: true,
+          message: message_response,
+          result: update_comic,
+        });
       }
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
-        message: 'Theo dõi truyện thành công!',
+        message: message_response,
         result: {},
       });
     } catch (error) {
@@ -133,6 +154,7 @@ export class UserController {
       const result = {
         isFollow: false,
         isLike: false,
+        isEvaluate: false,
       };
 
       const is_follow = await this.userService.isFollowComic(
@@ -145,6 +167,11 @@ export class UserController {
         parseInt(id_comic),
       );
       result.isLike = is_like ? true : false;
+      const is_evaluate = await this.userService.isEvaluateComic(
+        id_user,
+        parseInt(id_comic),
+      );
+      result.isEvaluate = is_evaluate ? true : false;
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,

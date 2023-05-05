@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { User_Follow_Comic } from './user_follow/user_follow.entity';
 import { User_Like_Comic } from './user_like/user-like.entity';
 import { IUser } from './user.interface';
+import { User_Evaluate_Comic } from './user_evaluate/user_evaluate.entity';
 
 @Injectable()
 export class UserService {
@@ -16,6 +17,8 @@ export class UserService {
     private userFollowComicRepository: Repository<User_Follow_Comic>,
     @InjectRepository(User_Like_Comic)
     private userLikeComicRepository: Repository<User_Like_Comic>,
+    @InjectRepository(User_Evaluate_Comic)
+    private userEvaluateComicRepository: Repository<User_Evaluate_Comic>,
   ) {}
 
   async getAll() {
@@ -139,5 +142,21 @@ export class UserService {
       .skip(parseInt(query.limit) * (parseInt(query.page) - 1))
       .limit(parseInt(query.limit))
       .getRawMany();
+  }
+
+  async isEvaluateComic(id_user: number, id_comic: number) {
+    return await this.userEvaluateComicRepository.findOne({
+      where: {
+        id_user: id_user,
+        id_comic: id_comic,
+      },
+    });
+  }
+
+  async evaluateComic(id_user: number, id_comic: number) {
+    return await this.userEvaluateComicRepository.save({
+      id_user,
+      id_comic,
+    });
   }
 }

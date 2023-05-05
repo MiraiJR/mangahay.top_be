@@ -7,6 +7,7 @@ import { Genres } from './genre/genre.entity';
 import { Interval } from '@nestjs/schedule';
 import { spawn } from 'child_process';
 import { IComic } from './comic.interface';
+import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 
 @Injectable()
 export class ComicService {
@@ -16,6 +17,8 @@ export class ComicService {
     private comicRepository: Repository<Comic>,
     @InjectRepository(Genres)
     private genresRepository: Repository<Genres>,
+    @InjectRepository(User_Evaluate_Comic)
+    private userEvaluateComicRepository: Repository<User_Evaluate_Comic>,
   ) {}
 
   async create(comic: IComic) {
@@ -59,13 +62,15 @@ export class ComicService {
 
   // tăng các field như view, follow, like
   async increment(name_comic: string, field: string, jump: number) {
-    return await this.comicRepository.increment(
+    await this.comicRepository.increment(
       {
         slug: name_comic,
       },
       `${field}`,
       jump,
     );
+
+    return await this.getOne(name_comic);
   }
 
   async search(query: any) {
@@ -139,6 +144,24 @@ export class ComicService {
     return await this.comicRepository.save({
       id: id_comic,
       thumb: thumb,
+    });
+  }
+
+  async updateRatingStar(id_comic: number, number_rating: number) {
+    const comic = await this.getById(id_comic);
+    const number_user_rating = await this.userEvaluateComicRepository.count({
+      where: {
+        id_comic: id_comic,
+      },
+    });
+
+    const new_rating =
+      (comic.star * (number_user_rating - 1) + number_rating) /
+      number_user_rating;
+
+    return await this.comicRepository.save({
+      id: id_comic,
+      star: new_rating,
     });
   }
 

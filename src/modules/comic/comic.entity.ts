@@ -40,7 +40,7 @@ export class Comic {
   @Column({default: 0})
   follow: number;
 
-  @Column({default: 0})
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, })
   star: number;
 
   @Column({default: 0})
