@@ -260,7 +260,7 @@ export class ComicController {
     @Res() response: Response,
   ) {
     try {
-      await this.comicService.increment(
+      const updated_comic = await this.comicService.increment(
         slug_comic,
         query.field,
         parseInt(query.jump),
@@ -270,7 +270,7 @@ export class ComicController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Tăng thành công!',
-        result: {},
+        result: updated_comic,
       });
     } catch (error) {
       return response.status(error.status | 500).json({

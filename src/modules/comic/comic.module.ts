@@ -9,6 +9,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
+import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { NotificationModule } from '../notification/notification.module';
     CloudinaryModule,
     UserModule,
     NotificationModule,
-    TypeOrmModule.forFeature([Comic, Genres]),
+    TypeOrmModule.forFeature([Comic, Genres, User_Evaluate_Comic]),
   ],
   controllers: [ComicController],
   providers: [ComicService, Logger],
