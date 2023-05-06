@@ -21,6 +21,10 @@ export class UserService {
     private userEvaluateComicRepository: Repository<User_Evaluate_Comic>,
   ) {}
 
+  async create(user: IUser) {
+    return await this.userRepository.save(user);
+  }
+
   async getAll() {
     return await this.userRepository.find();
   }
@@ -29,6 +33,14 @@ export class UserService {
     return await this.userRepository.findOne({
       where: {
         email,
+      },
+    });
+  }
+
+  async getUserByPhone(phone: string) {
+    return await this.userRepository.findOne({
+      where: {
+        phone,
       },
     });
   }
@@ -99,6 +111,33 @@ export class UserService {
       id_user: id_user,
       id_comic: id_comic,
     });
+  }
+
+  async deleteComicFromFollow(id_comic: number) {
+    return await this.userEvaluateComicRepository
+      .createQueryBuilder('users_follow_comic')
+      .delete()
+      .from(User_Follow_Comic)
+      .where('id_comic = :id_comic', { id_comic })
+      .execute();
+  }
+
+  async deleteComicFromLike(id_comic: number) {
+    return await this.userLikeComicRepository
+      .createQueryBuilder('users_like_comic')
+      .delete()
+      .from(User_Like_Comic)
+      .where('id_comic = :id_comic', { id_comic })
+      .execute();
+  }
+
+  async deleteComicFromEvaluate(id_comic: number) {
+    return await this.userEvaluateComicRepository
+      .createQueryBuilder('users_evaluate_comic')
+      .delete()
+      .from(User_Evaluate_Comic)
+      .where('id_comic = :id_comic', { id_comic })
+      .execute();
   }
 
   async unlikeComic(id_user: number, id_comic: number) {

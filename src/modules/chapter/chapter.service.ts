@@ -45,6 +45,15 @@ export class ChapterService {
     });
   }
 
+  async deleteAllChapterOfComic(id_comic: number) {
+    return await this.chapterRepository
+      .createQueryBuilder('chapters')
+      .delete()
+      .from(Chapter)
+      .where('id_comic = :id_comic', { id_comic })
+      .execute();
+  }
+
   async getOne(id_chapter: number) {
     return await this.chapterRepository.findOne({
       where: {

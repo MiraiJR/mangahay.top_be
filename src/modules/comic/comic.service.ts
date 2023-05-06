@@ -26,6 +26,10 @@ export class ComicService {
     return await this.comicRepository.save(new_comic);
   }
 
+  async delete(id_comic: number) {
+    return await this.comicRepository.delete(id_comic);
+  }
+
   async getAll(query: any) {
     let page = 1;
 

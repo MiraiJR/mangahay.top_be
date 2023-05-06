@@ -1,9 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
+  Logger,
+  NotFoundException,
   Param,
+  ParseIntPipe,
   Post,
   Query,
   Res,
@@ -30,6 +34,7 @@ import { UserService } from '../user/user.service';
 @Controller('api/comic')
 export class ComicController {
   constructor(
+    private logger: Logger = new Logger(ComicController.name),
     private comicService: ComicService,
     private chapterService: ChapterService,
     private cloudinaryService: CloudinaryService,
@@ -106,7 +111,7 @@ export class ComicController {
         result: new_comic,
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -126,6 +131,7 @@ export class ComicController {
         result: genres,
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -146,6 +152,7 @@ export class ComicController {
         result: comics,
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -166,6 +173,7 @@ export class ComicController {
         result: comics ? comics : [],
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -190,6 +198,44 @@ export class ComicController {
         },
       });
     } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status | 500,
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+      });
+    }
+  }
+
+  // @UseGuards(JwtAuthorizationd)
+  @Delete('delete/:id_comic')
+  async deleteComic(
+    @Param('id_comic', new ParseIntPipe()) id_comic: number,
+    @Res() response: Response,
+  ) {
+    try {
+      const is_exist = await this.comicService.getById(id_comic);
+
+      if (is_exist) {
+        await this.chapterService.deleteAllChapterOfComic(id_comic).then(() => {
+          this.userService.deleteComicFromEvaluate(id_comic);
+          this.userService.deleteComicFromFollow(id_comic);
+          this.userService.deleteComicFromLike(id_comic);
+        });
+
+        this.comicService.delete(id_comic);
+      } else {
+        throw new NotFoundException('Truyện không tồn tại');
+      }
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: `Xóa truyện với id ${id_comic} thành công!`,
+        result: {},
+      });
+    } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -244,7 +290,7 @@ export class ComicController {
         result: new_chapter,
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,
@@ -273,6 +319,7 @@ export class ComicController {
         result: updated_comic,
       });
     } catch (error) {
+      this.logger.error(error);
       return response.status(error.status | 500).json({
         statusCode: error.status | 500,
         success: false,

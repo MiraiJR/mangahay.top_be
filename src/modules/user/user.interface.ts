@@ -10,4 +10,7 @@ export interface IUser {
   role?: UserRole;
   createdAt?: Date;
   updatedAt?: Date;
+  phone?: string;
+  facebook?: boolean;
+  active?: boolean;
 }

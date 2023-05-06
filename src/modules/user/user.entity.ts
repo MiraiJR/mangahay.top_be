@@ -7,7 +7,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: false })
@@ -27,6 +27,12 @@ export class User {
 
   @Column({default: false})
   active: boolean;
+
+  @Column({default: false})
+  facebook: boolean;
+
+  @Column({nullable: true})
+  phone: string;
 
   @Column({
     type: 'enum',
