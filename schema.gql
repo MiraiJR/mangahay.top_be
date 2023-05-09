@@ -49,9 +49,30 @@ type NotifyDTO {
   updatedAt: DateTime!
 }
 
+type ComicDTO {
+  id: Int!
+  slug: String!
+  name: String!
+  another_name: String!
+  genres: [String!]!
+  authors: [String!]!
+  state: String!
+  thumb: String!
+  brief_desc: String!
+  view: Int!
+  like: Int!
+  follow: Int!
+  star: Int!
+  id_owner: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   getCredentialUserInformation: UserDTO!
   getFollowingComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
   getLikedComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
   getNotifiesOfUser: [NotifyDTO!]!
+  getAllUser: [UserDTO!]!
+  getAllComic: [ComicDTO!]!
 }

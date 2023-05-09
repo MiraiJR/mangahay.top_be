@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -90,6 +91,27 @@ export class CommentController {
         success: true,
         message: 'get all comic successfully!',
         result: new_answer,
+      });
+    } catch (error) {
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: 500,
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+      });
+    }
+  }
+
+  // top người dùng tương tác website nhiều nhất
+  @Get('analysis/the-most-interactive-user')
+  async theMostInteractiveUser(@Query() query: any, @Res() response: Response) {
+    try {
+      const result = await this.commentService.topTheInteractiveUser(query);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: 200,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: result,
       });
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

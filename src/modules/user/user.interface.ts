@@ -12,5 +12,8 @@ export interface IUser {
   updatedAt?: Date;
   phone?: string;
   facebook?: boolean;
+  id_facebook?: string;
+  google?: boolean;
+  id_google?: string;
   active?: boolean;
 }

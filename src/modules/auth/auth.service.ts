@@ -16,6 +16,9 @@ import * as bcrypt from 'bcrypt';
 import { LoginUserDTO } from './DTO/login-dto';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
+import { HttpService } from '@nestjs/axios';
+import { catchError, firstValueFrom } from 'rxjs';
+import { AxiosError, AxiosResponse } from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
     private userService: UserService,
     private configService: ConfigService,
+    private httpService: HttpService,
     @Inject(CACHE_MANAGER)
     private redisCache: Cache,
   ) {}
@@ -149,5 +153,20 @@ export class AuthService {
 
   async removeSocket(id: number) {
     await this.redisCache.del(`USER:${id}:SOCKET`);
+  }
+
+  getInformationUserFromProvider(
+    provider: string,
+    data: any,
+  ): Promise<AxiosResponse<any>> {
+    if (provider === 'facebook') {
+      return this.httpService.axiosRef.get(
+        `https://graph.facebook.com/debug_token?input_token=${data.access_token}&access_token=${process.env.APP_FACEBOOK_ID}`,
+      );
+    } else if (provider === 'google') {
+      return this.httpService.axiosRef.get(
+        `https://www.googleapis.com/oauth2/v3/userinfo?alt=json&access_token=${data.access_token}`,
+      );
+    }
   }
 }

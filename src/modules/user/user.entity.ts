@@ -32,6 +32,15 @@ export class User {
   facebook: boolean;
 
   @Column({nullable: true})
+  id_facebook: string;
+
+  @Column({default: false})
+  google: boolean;
+
+  @Column({nullable: true})
+  id_google: string;
+
+  @Column({nullable: true})
   phone: string;
 
   @Column({

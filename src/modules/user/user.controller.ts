@@ -307,4 +307,49 @@ export class UserController {
       });
     }
   }
+  // lấy thống kê theo ngày
+  @Get('/analysis/new-user')
+  async analysisByDay(
+    @Query('number_day', new ParseIntPipe()) number_day: number,
+    @Res() response: Response,
+  ) {
+    try {
+      const result = await this.userService.analysisDayAgo(number_day);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: result,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @Get('analysis/grow-past-current')
+  async analysisGrow(@Res() response: Response) {
+    try {
+      const result = await this.userService.compareCurDateAndPreDate();
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
+        result: result,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
 }
