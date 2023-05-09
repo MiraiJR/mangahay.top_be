@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginUserDTO } from './DTO/login-dto';
-import { Response } from 'express';
+import { Response, response } from 'express';
 import { RegisterUserDTO } from './DTO/register-dto';
 import { Cache } from 'cache-manager';
 import { IdUser } from '../user/decorators/id-user';
@@ -212,82 +212,100 @@ export class AuthController {
     }
   }
 
-  @Post('/login/facebook')
-  async loginByFacebook(
-    @Res() response: Response,
-    @Body(new ValidationPipe()) data: LoginFacebookDTO,
-  ) {
+  // @Post('/login/facebook')
+  // async loginByFacebook(
+  //   @Res() response: Response,
+  //   @Body(new ValidationPipe()) data: LoginFacebookDTO,
+  // ) {
+  //   try {
+  //     let user = null;
+
+  //     if (data.phone) {
+  //       user = await this.userService.getUserByPhone(data.phone);
+  //     }
+
+  //     if (data.email) {
+  //       user = await this.userService.getUserByEmail(data.email);
+  //     }
+
+  //     if (user) {
+  //       // người dùng chưa từng đăng nhập = facebook nhưng đã có tài khoản
+  //       if (!user.facebook) {
+  //         if (!user.phone) {
+  //           this.userService.update(user.id, {
+  //             facebook: true,
+  //             phone: data.phone,
+  //           });
+  //         } else {
+  //           this.userService.update(user.id, {
+  //             facebook: true,
+  //           });
+  //         }
+  //       }
+  //     } else {
+  //       // người dùng chưa từng đăng nhập = fb + chưa có tài khoản
+
+  //       // hash password
+  //       const salt = await bcrypt.genSalt(10);
+  //       const hash_password = await bcrypt.hash('12345678', salt);
+
+  //       const new_user: IUser = {
+  //         fullname: data.fullname,
+  //         avatar: data.avatar,
+  //         password: hash_password,
+  //         facebook: true,
+  //       };
+
+  //       if (data.phone) {
+  //         new_user.phone = data.phone;
+  //       }
+
+  //       if (data.email) {
+  //         new_user.email = data.email;
+  //       }
+
+  //       user = await this.userService.create(new_user);
+  //     }
+
+  //     // người dùng đã từng đăng nhập bằng facebook rồi
+  //     const at = await this.authService.signAccessToken(user);
+  //     const rt = await this.authService.signRefreshToken(user);
+
+  //     // thêm rf token vào redis phục vụ cho việc lấy lại at khi at hết hạn
+  //     await this.redisCache.set(`USER:${user.id}:REFRESHTOKEN`, rt, {
+  //       ttl: 1000 * 60 * 60 * 24 * 7,
+  //     } as any);
+  //     await this.redisCache.set(`USER:${user.id}:ACCESSTOKEN`, at, {
+  //       ttl: 1000 * 60 * 60 * 2,
+  //     } as any);
+
+  //     return response.status(HttpStatus.OK).json({
+  //       statusCode: HttpStatus.OK,
+  //       success: true,
+  //       message: 'Đăng nhập thành công!',
+  //       result: {
+  //         access_token: at,
+  //         refresh_token: rt,
+  //       },
+  //     });
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //     return response.status(error.status | 500).json({
+  //       statusCode: error.status,
+  //       success: false,
+  //       message: error.message,
+  //     });
+  //   }
+  // }
+
+  @Post('/login/third-party')
+  async loginThirdParty(@Res() response: Response, @Body() data: any) {
     try {
-      let user = null;
-
-      if (data.phone) {
-        user = await this.userService.getUserByPhone(data.phone);
-      }
-
-      if (data.email) {
-        user = await this.userService.getUserByEmail(data.email);
-      }
-
-      if (user) {
-        // người dùng chưa từng đăng nhập = facebook nhưng đã có tài khoản
-        if (!user.facebook) {
-          if (!user.phone) {
-            this.userService.update(user.id, {
-              facebook: true,
-              phone: data.phone,
-            });
-          } else {
-            this.userService.update(user.id, {
-              facebook: true,
-            });
-          }
-        }
-      } else {
-        // người dùng chưa từng đăng nhập = fb + chưa có tài khoản
-
-        // hash password
-        const salt = await bcrypt.genSalt(10);
-        const hash_password = await bcrypt.hash('12345678', salt);
-
-        const new_user: IUser = {
-          fullname: data.fullname,
-          avatar: data.avatar,
-          password: hash_password,
-          facebook: true,
-        };
-
-        if (data.phone) {
-          new_user.phone = data.phone;
-        }
-
-        if (data.email) {
-          new_user.email = data.email;
-        }
-
-        user = await this.userService.create(new_user);
-      }
-
-      // người dùng đã từng đăng nhập bằng facebook rồi
-      const at = await this.authService.signAccessToken(user);
-      const rt = await this.authService.signRefreshToken(user);
-
-      // thêm rf token vào redis phục vụ cho việc lấy lại at khi at hết hạn
-      await this.redisCache.set(`USER:${user.id}:REFRESHTOKEN`, rt, {
-        ttl: 1000 * 60 * 60 * 24 * 7,
-      } as any);
-      await this.redisCache.set(`USER:${user.id}:ACCESSTOKEN`, at, {
-        ttl: 1000 * 60 * 60 * 2,
-      } as any);
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Đăng nhập thành công!',
-        result: {
-          access_token: at,
-          refresh_token: rt,
-        },
-      });
+      const data_provider = await this.authService
+        .getInformationUserFromProvider('facebook', {
+          data,
+        })
+        .then((response) => response.data);
     } catch (error) {
       this.logger.error(error);
       return response.status(error.status | 500).json({

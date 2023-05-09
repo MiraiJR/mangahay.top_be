@@ -78,4 +78,13 @@ export class UserResolver {
       this.logger.error(error);
     }
   }
+
+  @Query(() => [UserDTO])
+  async getAllUser() {
+    try {
+      return await this.userService.getAll();
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
 }

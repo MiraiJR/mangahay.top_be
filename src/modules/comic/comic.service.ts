@@ -8,6 +8,7 @@ import { Interval } from '@nestjs/schedule';
 import { spawn } from 'child_process';
 import { IComic } from './comic.interface';
 import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
+import * as moment from 'moment';
 
 @Injectable()
 export class ComicService {
@@ -28,6 +29,14 @@ export class ComicService {
 
   async delete(id_comic: number) {
     return await this.comicRepository.delete(id_comic);
+  }
+
+  async getAllComic() {
+    return await this.comicRepository.find({
+      order: {
+        id: 'ASC',
+      },
+    });
   }
 
   async getAll(query: any) {
@@ -167,6 +176,92 @@ export class ComicService {
       id: id_comic,
       star: new_rating,
     });
+  }
+
+  async analysisDayAgo(number_day: number) {
+    const analysis = await this.comicRepository.manager.query(
+      `select COUNT(id) as "count", DATE("createdAt")
+      from public."comic"
+      where DATE("createdAt") between DATE('${moment()
+        .subtract(number_day, 'days')
+        .startOf('day')
+        .format('yyyy-MM-DD')}') AND DATE('${moment().format('yyyy-MM-DD')}')
+      group by DATE("createdAt")`,
+    );
+
+    const result = [];
+
+    for (let i = number_day; i >= 1; i--) {
+      const temp_date = moment()
+        .subtract(i, 'days')
+        .startOf('day')
+        .format('yyyy-MM-DD');
+
+      const check = analysis.filter(
+        (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,
+      );
+
+      if (check.length !== 0) {
+        result.push({
+          date: temp_date,
+          value: parseInt(check[0].count),
+        });
+      } else {
+        result.push({
+          date: temp_date,
+          value: 0,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  async compareCurDateAndPreDate() {
+    const analysis = await this.comicRepository.manager.query(
+      `select COUNT(id) as "count", DATE("createdAt")
+      from public."comic"
+      where DATE("createdAt") between DATE('${moment()
+        .subtract(1, 'days')
+        .startOf('day')
+        .format('yyyy-MM-DD')}') AND DATE('${moment().format('yyyy-MM-DD')}')
+      group by DATE("createdAt")`,
+    );
+
+    const result = [];
+
+    for (let i = 1; i >= 0; i--) {
+      const temp_date = moment()
+        .subtract(i, 'days')
+        .startOf('day')
+        .format('yyyy-MM-DD');
+
+      const check = analysis.filter(
+        (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,
+      );
+
+      if (check.length !== 0) {
+        result.push({
+          date: temp_date,
+          value: parseInt(check[0].count),
+        });
+      } else {
+        result.push({
+          date: temp_date,
+          value: 0,
+        });
+      }
+    }
+    let percent_increment =
+      (result[1].value - result[0].value) / result[0].value;
+
+    percent_increment = percent_increment ? percent_increment * 100 : 0;
+
+    return {
+      increase: result[1].value - result[0].value,
+      percent_increment: percent_increment,
+      is_increase: percent_increment >= 0 ? true : false,
+    };
   }
 
   @Interval(1000 * 60 * 30)

@@ -10,8 +10,8 @@ import { Answer } from './answer/answer.entity';
 
 @Module({
   imports: [
-    UserModule,
     ComicModule,
+    UserModule,
     JwtModule,
     TypeOrmModule.forFeature([Comment, Answer]),
   ],

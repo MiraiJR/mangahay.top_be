@@ -63,4 +63,13 @@ export class CommentService {
       ...answer,
     });
   }
+
+  async topTheInteractiveUser(query: any) {
+    return await this.commentRepository.manager.query(
+      `select "id_user", u.fullname, count(cmt.id)
+      from public."comment" as cmt join public."user" as u on cmt."id_user" = u.id
+      group by "id_user", u.fullname
+      limit ${query.limit}`,
+    );
+  }
 }
