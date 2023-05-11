@@ -13,7 +13,6 @@ export class ComicResolver {
   @Query(() => [ComicDTO])
   async getAllComic() {
     try {
-      console.log('zo');
       const result = await this.comicService.getAllComic();
 
       return result;

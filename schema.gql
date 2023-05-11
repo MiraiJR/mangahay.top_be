@@ -62,10 +62,15 @@ type ComicDTO {
   view: Int!
   like: Int!
   follow: Int!
-  star: Int!
+  star: Float!
   id_owner: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+type SlideImageDTO {
+  id: Int!
+  link_image: String!
 }
 
 type Query {
@@ -75,4 +80,5 @@ type Query {
   getNotifiesOfUser: [NotifyDTO!]!
   getAllUser: [UserDTO!]!
   getAllComic: [ComicDTO!]!
+  getSlideImages: [SlideImageDTO!]!
 }

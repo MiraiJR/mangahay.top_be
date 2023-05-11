@@ -33,6 +33,8 @@ def layThongComic(link):
     comic = BeautifulSoup(response.content, "html.parser")
     try:
         slug = link.split('/')[-1]
+        
+        print(kiemTraComicDaTonTaiChua(cursor, slug))
 
         if kiemTraComicDaTonTaiChua(cursor, slug) == False:
             link_image = comic.find(

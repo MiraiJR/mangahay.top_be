@@ -5,6 +5,8 @@ import {
   Get,
   HttpStatus,
   Logger,
+  Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -17,7 +19,7 @@ import {
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
 import { IdUser } from './decorators/id-user';
-import { Response } from 'express';
+import { Response, query } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
@@ -131,6 +133,41 @@ export class UserController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Hủy theo dõi truyện thành công!',
+        result: {},
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  @Get('/management/:id_user')
+  async banOrUnbanUser(
+    @Param('id_user', new ParseIntPipe()) id_user: number,
+    @Query() query: any,
+    @Res() response: Response,
+  ) {
+    try {
+      let message_response = '';
+
+      if (query.ban) {
+        if (query.ban === 'true') {
+          this.userService.updateActive(id_user, false);
+          message_response = `Ban user với id ${id_user} thành công!`;
+        } else {
+          this.userService.updateActive(id_user, true);
+          message_response = `Unban user với id ${id_user} thành công!`;
+        }
+      }
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: message_response,
         result: {},
       });
     } catch (error) {

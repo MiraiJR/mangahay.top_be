@@ -24,7 +24,6 @@ import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { IComic } from './comic.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { CreateComicDTO } from './DTO/create-comic';
 import { CreateChapterDTO } from '../chapter/DTO/create-chapter';
 import { INotification } from '../notification/notification.interface';
 import { IdUser } from '../user/decorators/id-user';
@@ -83,7 +82,7 @@ export class ComicController {
   @UseInterceptors(FileInterceptor('file'))
   @Post('/create')
   async createComic(
-    @Body(new ValidationPipe()) comic: CreateComicDTO,
+    @Body() comic: any,
     // @IdUser() id_user: number,
     @Res() response: Response,
     @UploadedFile() file: Express.Multer.File,
@@ -93,8 +92,8 @@ export class ComicController {
         ...comic,
       };
 
-      data_new_comic.authors = JSON.parse(data_new_comic.authors[0]);
-      data_new_comic.genres = JSON.parse(data_new_comic.genres[0]);
+      data_new_comic.authors = JSON.parse(data_new_comic.authors.toString());
+      data_new_comic.genres = JSON.parse(data_new_comic.genres.toString());
 
       const new_comic = await this.comicService.create(data_new_comic);
 
