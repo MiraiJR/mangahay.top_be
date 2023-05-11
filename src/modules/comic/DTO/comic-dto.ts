@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
 export class ComicDTO {
@@ -40,7 +40,7 @@ export class ComicDTO {
   @Field((type) => Int)
   follow: number;
 
-  @Field((type) => Int)
+  @Field((type) => Float)
   star: number;
 
   @Field((type) => Int)

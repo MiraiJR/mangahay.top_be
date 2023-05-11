@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import psycopg2
 from slugify import slugify
 from datetime import date
+import time   
 
 conn = psycopg2.connect(
     # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
@@ -121,7 +122,7 @@ def capNhatChapter(link, id_comic):
 
 
 def updateDateUpdateForComic(cursor, id_comic):
-    query = """ UPDATE public."comic" SET updatedAt = '{date}' WHERE id = {id_comic}""".format(date = date.today(), id_comic = id_comic)
+    query = """ UPDATE public."comic" SET "updatedAt" = '{date}' WHERE id = {id_comic}""".format(date = time.strftime('%Y-%m-%d %H:%M:%S'), id_comic = id_comic)
     cursor.execute(query)
 
     conn.commit()
@@ -168,6 +169,6 @@ def capNhatChapterChoTruyen(cursor):
 
 
 capNhatChapterChoTruyen(cursor)
-# layThongTinGenre()
+
 conn.commit()
 conn.close()

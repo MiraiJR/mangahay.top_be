@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginUserDTO } from './DTO/login-dto';
-import { Response, response } from 'express';
+import { Response } from 'express';
 import { RegisterUserDTO } from './DTO/register-dto';
 import { Cache } from 'cache-manager';
 import { IdUser } from '../user/decorators/id-user';

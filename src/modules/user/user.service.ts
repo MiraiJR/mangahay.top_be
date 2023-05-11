@@ -59,11 +59,11 @@ export class UserService {
     });
   }
 
-  async updateActive(email: any) {
-    const user = await this.getUserByEmail(email);
+  async updateActive(id_user: number, active: boolean) {
+    const user = await this.getUserById(id_user);
     return await this.userRepository.save({
       ...user,
-      active: true,
+      active: active,
     });
   }
 
@@ -218,7 +218,7 @@ export class UserService {
 
     const result = [];
 
-    for (let i = number_day; i >= 1; i--) {
+    for (let i = number_day - 1; i >= 0; i--) {
       const temp_date = moment()
         .subtract(i, 'days')
         .startOf('day')
@@ -279,8 +279,18 @@ export class UserService {
         });
       }
     }
-    let percent_increment =
-      (result[1].value - result[0].value) / result[0].value;
+
+    let percent_increment = 0;
+
+    if (result[0].value !== 0) {
+      percent_increment = (result[1].value - result[0].value) / result[0].value;
+    } else {
+      if (result[1].value === 0) {
+        percent_increment = 0;
+      } else {
+        percent_increment = 1;
+      }
+    }
 
     percent_increment = percent_increment ? percent_increment * 100 : 0;
 
