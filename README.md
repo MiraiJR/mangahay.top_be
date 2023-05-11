@@ -25,7 +25,8 @@
 <li> Sử dụng socket.io để làm chat realtime + thông báo tin mới đến user khi user đã login và đang truy cập website </li>
 <h3 style="color:blue;"> Tích hợp query language Graphql + ApolloServer</h3>
 <li> Đang thực hiện </li>
-
+<h3> Thống kê </h3>
+<li> Làm API thống kê lượng truyện, user mới 7 ngày gấn đây, user tương tác nhiều nhất, ... </li>
 <h3> vẫn còn đang cập nhật ... </h3>
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
