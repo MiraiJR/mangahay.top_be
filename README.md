@@ -30,6 +30,7 @@
 <h3> Upload hình ảnh </h3>
 <li> Dùng multer để upload image + cloudinary để lưu trữ hình ảnh </li>
 <li> Thay đổi slide ở trang chủ FE, avatar user, ... </li>
+<h3> Báo cáo truyện, chapter, comment </h3>
 <h3> vẫn còn đang cập nhật ... </h3>
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
