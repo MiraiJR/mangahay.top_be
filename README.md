@@ -27,6 +27,9 @@
 <li> Đang thực hiện </li>
 <h3> Thống kê </h3>
 <li> Làm API thống kê lượng truyện, user mới 7 ngày gấn đây, user tương tác nhiều nhất, ... </li>
+<h3> Upload hình ảnh </h3>
+<li> Dùng multer để upload image + cloudinary để lưu trữ hình ảnh </li>
+<li> Thay đổi slide ở trang chủ FE, avatar user, ... </li>
 <h3> vẫn còn đang cập nhật ... </h3>
 <h3> Tương tác với database </h3>
 <li> Dùng TypeOrm để tương tác + các decorator Entity </li>
