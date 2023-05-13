@@ -1,0 +1,29 @@
+import { Args, Int, Query, Resolver } from '@nestjs/graphql';
+import { ReportService } from './report.service';
+import { Logger } from '@nestjs/common';
+import { ReportDTO } from './DTO/report-dto';
+
+@Resolver()
+export class ReportResolver {
+  constructor(
+    private reportService: ReportService,
+    private logger: Logger = new Logger(ReportResolver.name),
+  ) {}
+
+  @Query(() => [ReportDTO])
+  async getReports(
+    @Args('type', { type: () => String }) type: string,
+    @Args('page', { type: () => Int }) page: number,
+    @Args('limit', { type: () => Int }) limit: number,
+  ) {
+    try {
+      return await this.reportService.getReports({
+        type,
+        page: page,
+        limit: limit,
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+}

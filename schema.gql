@@ -73,6 +73,15 @@ type SlideImageDTO {
   link_image: String!
 }
 
+type ReportDTO {
+  id: Int!
+  type: String!
+  detail_report: String!
+  errors: [String!]!
+  id_object: Int!
+  link: String!
+}
+
 type Query {
   getCredentialUserInformation: UserDTO!
   getFollowingComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
@@ -81,4 +90,5 @@ type Query {
   getAllUser: [UserDTO!]!
   getAllComic: [ComicDTO!]!
   getSlideImages: [SlideImageDTO!]!
+  getReports(type: String!, page: Int!, limit: Int!): [ReportDTO!]!
 }
