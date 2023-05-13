@@ -15,6 +15,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { MessageModule } from 'src/modules/message/message.module';
 import { AdminModule } from 'src/modules/admin/admin.module';
+import { ReportModule } from 'src/modules/report/report.module';
 
 const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
 
@@ -29,6 +30,7 @@ const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
     NotificationModule,
     MessageModule,
     AdminModule,
+    ReportModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
