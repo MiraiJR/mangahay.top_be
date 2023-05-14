@@ -19,16 +19,20 @@ export class ReportService {
 
   async getReports(query: any) {
     return query.type === 'all'
-      ? await this.reportRepository
-          .createQueryBuilder('reports')
-          .where('reports.type = :type', { type: query.type })
-          .skip((query.page - 1) * query.limit)
-          .limit(query.limit)
-          .getMany()
-      : await this.reportRepository
-          .createQueryBuilder('reports')
-          .skip((query.page - 1) * query.limit)
-          .limit(query.limit)
-          .getMany();
+      ? await await this.reportRepository.manager
+          .query(`select rp.id as id, rp.is_resolve as is_resolve, rp.type as type, rp.detail_report as detail_report, rp.errors as errors, rp.id_object as id_object, rp.link as link, u.fullname as fullname, u.email as email
+          from public."report" as rp join public."user" as u on rp.reporter = u.id
+         `)
+      : await await this.reportRepository.manager
+          .query(`select rp.id as id, rp.is_resolve as is_resolve, rp.type as type, rp.detail_report as detail_report, rp.errors as errors, rp.id_object as id_object, rp.link as link, u.fullname as fullname, u.email as email
+            from public."report" as rp join public."user" as u on rp.reporter = u.id where rp.type = '${query.type}'
+            `);
+  }
+
+  async updateReport(id_report: number, report: any) {
+    return await this.reportRepository.save({
+      id: id_report,
+      ...report,
+    });
   }
 }

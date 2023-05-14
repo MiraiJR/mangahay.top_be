@@ -6,4 +6,5 @@ export interface IReport {
   errors?: string[];
   id_object?: number;
   link?: string;
+  is_resolve?: boolean;
 }

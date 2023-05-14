@@ -3,7 +3,11 @@ import {
   Controller,
   HttpStatus,
   Logger,
+  Param,
+  ParseIntPipe,
   Post,
+  Put,
+  Query,
   Res,
   UseGuards,
   ValidationPipe,
@@ -38,6 +42,32 @@ export class ReportController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Báo cáo thành công!',
+        result: {},
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  @Put('/update/:id_report')
+  async updatedReport(
+    @Param('id_report', new ParseIntPipe()) id_report: number,
+    @Query() query: any,
+    @Res() response: Response,
+  ) {
+    try {
+      query.is_resolve = query.is_resolve === 'true' ? true : false;
+      this.reportService.updateReport(id_report, query);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thao tác thành công!',
         result: {},
       });
     } catch (error) {
