@@ -75,11 +75,14 @@ type SlideImageDTO {
 
 type ReportDTO {
   id: Int!
+  fullname: String!
+  email: String!
   type: String!
   detail_report: String!
   errors: [String!]!
   id_object: Int!
   link: String!
+  is_resolve: Boolean!
 }
 
 type Query {
@@ -90,5 +93,5 @@ type Query {
   getAllUser: [UserDTO!]!
   getAllComic: [ComicDTO!]!
   getSlideImages: [SlideImageDTO!]!
-  getReports(type: String!, page: Int!, limit: Int!): [ReportDTO!]!
+  getReports(type: String!): [ReportDTO!]!
 }

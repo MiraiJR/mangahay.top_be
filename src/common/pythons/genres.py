@@ -1,4 +1,5 @@
 import requests
+import os
 from bs4 import BeautifulSoup
 import psycopg2
 from slugify import slugify

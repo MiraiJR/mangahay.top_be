@@ -35,4 +35,7 @@ export class Report {
 
   @Column({nullable: false})
   link: string;
+
+  @Column({default: false})
+  is_resolve: boolean;
 }

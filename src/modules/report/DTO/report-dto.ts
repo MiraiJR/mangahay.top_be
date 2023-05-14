@@ -8,6 +8,12 @@ export class ReportDTO {
   id: number;
 
   @Field((type) => String)
+  fullname: string;
+
+  @Field((type) => String)
+  email: string;
+
+  @Field((type) => String)
   type: string;
 
   @Field((type) => String)
@@ -21,4 +27,7 @@ export class ReportDTO {
 
   @Field((type) => String)
   link: string;
+
+  @Field((type) => Boolean)
+  is_resolve: boolean;
 }
