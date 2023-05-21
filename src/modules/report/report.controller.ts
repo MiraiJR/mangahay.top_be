@@ -14,9 +14,11 @@ import {
 } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { Response } from 'express';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { CreateReportDTO } from './DTO/create-report';
 import { IdUser } from '../user/decorators/id-user';
+import { UserRole } from '../user/user.role';
 
 @Controller('api/report')
 export class ReportController {
@@ -54,6 +56,8 @@ export class ReportController {
     }
   }
 
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('/update/:id_report')
   async updatedReport(
     @Param('id_report', new ParseIntPipe()) id_report: number,
