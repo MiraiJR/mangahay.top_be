@@ -18,13 +18,15 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { IdUser } from './decorators/id-user';
-import { Response, query } from 'express';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
 import { User } from './user.entity';
 import { ComicService } from '../comic/comic.service';
+import { UserRole } from './user.role';
 
 @Controller('api/user')
 export class UserController {
@@ -145,6 +147,8 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get('/management/:id_user')
   async banOrUnbanUser(
     @Param('id_user', new ParseIntPipe()) id_user: number,

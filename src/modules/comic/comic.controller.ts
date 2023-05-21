@@ -29,6 +29,8 @@ import { INotification } from '../notification/notification.interface';
 import { IdUser } from '../user/decorators/id-user';
 import { NotificationService } from '../notification/notification.service';
 import { UserService } from '../user/user.service';
+import { Roles, RolesGuard } from 'src/common/guards/check-role';
+import { UserRole } from '../user/user.role';
 
 @Controller('api/comic')
 export class ComicController {
@@ -78,12 +80,13 @@ export class ComicController {
     }
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @Post('/create')
   async createComic(
     @Body() comic: any,
-    // @IdUser() id_user: number,
+    @IdUser() id_user: number,
     @Res() response: Response,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -92,14 +95,16 @@ export class ComicController {
         ...comic,
       };
 
-      data_new_comic.authors = JSON.parse(data_new_comic.authors.toString());
-      data_new_comic.genres = JSON.parse(data_new_comic.genres.toString());
+      // data_new_comic.authors = JSON.parse(data_new_comic.authors.toString());
+      // data_new_comic.genres = JSON.parse(data_new_comic.genres.toString());
+      data_new_comic.genres = data_new_comic.genres.toString().split(',');
+      data_new_comic.authors = data_new_comic.authors.toString().split(',');
 
       const new_comic = await this.comicService.create(data_new_comic);
 
       this.cloudinaryService
         .uploadFileFromBuffer(file.buffer, `comics/${new_comic.id}/thumb`)
-        .then((data) => {
+        .then((data: any) => {
           this.comicService.updateThumb(new_comic.id, data.url);
         });
 
@@ -206,7 +211,8 @@ export class ComicController {
     }
   }
 
-  // @UseGuards(JwtAuthorizationd)
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete('delete/:id_comic')
   async deleteComic(
     @Param('id_comic', new ParseIntPipe()) id_comic: number,
@@ -243,6 +249,8 @@ export class ComicController {
     }
   }
 
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthorizationd)
   @UseInterceptors(AnyFilesInterceptor())
   @Post('/chapter/create')
@@ -285,7 +293,7 @@ export class ComicController {
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
-        message: 'Tạo chpater cho truyện thành công!',
+        message: 'Tạo chapter mới cho truyện thành công!',
         result: new_chapter,
       });
     } catch (error) {

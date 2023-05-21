@@ -269,7 +269,7 @@ export class ComicService {
 
     return {
       increase: result[1].value - result[0].value,
-      percent_increment: percent_increment,
+      percent_increment: percent_increment.toFixed(2),
       is_increase: percent_increment >= 0 ? true : false,
     };
   }

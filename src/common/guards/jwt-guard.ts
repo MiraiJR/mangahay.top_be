@@ -27,6 +27,7 @@ export class JwtAuthorizationd implements CanActivate {
 
       if (curUser) {
         request.idUser = payload.idUser;
+        request.roleUser = curUser.role;
       }
 
       return curUser ? true : false;

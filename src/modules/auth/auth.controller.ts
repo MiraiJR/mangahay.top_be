@@ -23,9 +23,6 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
 import { MailService } from 'src/common/utils/mail-service';
-import { IUser } from '../user/user.interface';
-import * as bcrypt from 'bcrypt';
-import { LoginFacebookDTO } from './DTO/facebook-dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -140,7 +137,7 @@ export class AuthController {
           secret: process.env.VERIFY_EMAIL_KEY,
         },
       );
-      await this.authService.register(payload);
+      await this.authService.register(payload, 'viewer');
       return response.redirect('http://localhost:3001/auth/login');
     } catch (error) {
       return response.status(error.status).json({
@@ -205,6 +202,61 @@ export class AuthController {
     } catch (error) {
       console.log(error);
       return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  @Post('/admin/register')
+  async adminRegister(
+    @Body(new ValidationPipe()) data: RegisterUserDTO,
+    @Res() response: Response,
+  ) {
+    try {
+      const check_user = await this.userService.getUserByEmail(data.email);
+
+      // email đã tồn tại
+      if (check_user) {
+        throw new ConflictException(`Email ${data.email} đã được sử dụng`);
+      }
+
+      const mail_otp: string = await this.authService.signTokenVerifyMail(data);
+      await this.mailService.sendMailRegisterAdmin(
+        data.email,
+        'Xác nhận email',
+        mail_otp,
+      );
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Vui lòng vào mail để xác nhận tài khoản!',
+        result: {},
+      });
+    } catch (error) {
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  @Get('/admin/verify-email')
+  async adminVerifyEmail(@Query() data: any, @Res() response: Response) {
+    try {
+      const payload: RegisterUserDTO = await this.jwtService.verify(
+        data.token,
+        {
+          secret: process.env.VERIFY_EMAIL_KEY,
+        },
+      );
+      await this.authService.register(payload, 'admin');
+      return response.redirect('http://localhost:3002/auth/login');
+    } catch (error) {
+      return response.status(error.status).json({
         statusCode: error.status,
         success: false,
         message: error.message,
@@ -298,21 +350,21 @@ export class AuthController {
   //   }
   // }
 
-  @Post('/login/third-party')
-  async loginThirdParty(@Res() response: Response, @Body() data: any) {
-    try {
-      const data_provider = await this.authService
-        .getInformationUserFromProvider('facebook', {
-          data,
-        })
-        .then((response) => response.data);
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
-    }
-  }
+  // @Post('/login/third-party')
+  // async loginThirdParty(@Res() response: Response, @Body() data: any) {
+  //   try {
+  //     const data_provider = await this.authService
+  //       .getInformationUserFromProvider('facebook', {
+  //         data,
+  //       })
+  //       .then((response) => response.data);
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //     return response.status(error.status | 500).json({
+  //       statusCode: error.status,
+  //       success: false,
+  //       message: error.message,
+  //     });
+  //   }
+  // }
 }
