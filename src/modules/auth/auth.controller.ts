@@ -138,7 +138,7 @@ export class AuthController {
         },
       );
       await this.authService.register(payload, 'viewer');
-      return response.redirect('http://localhost:3001/auth/login');
+      return response.redirect(process.env.URL_SIGNIN);
     } catch (error) {
       return response.status(error.status).json({
         statusCode: error.status,
@@ -198,7 +198,7 @@ export class AuthController {
       });
 
       await this.userService.updatePassword(payload.email, new_pwd);
-      return response.redirect('http://localhost:3001/auth/login');
+      return response.redirect(process.env.URL_SIGNIN);
     } catch (error) {
       console.log(error);
       return response.status(error.status | 500).json({
