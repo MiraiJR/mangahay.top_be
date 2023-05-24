@@ -105,6 +105,30 @@ export class AuthController {
     }
   }
 
+  @Post('/refresh-token')
+  async resignToken(
+    @Body('refresh-token') rftoken: string,
+    @Res() response: Response,
+  ) {
+    try {
+      const token = await this.authService.resignToken(rftoken);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Cấp lại token thành công!',
+        result: token,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
   @Get('/logout')
   @UseGuards(JwtAuthorizationd)
   async logout(@IdUser() id: any, @Res() response: Response) {

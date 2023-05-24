@@ -155,6 +155,51 @@ export class AuthService {
     await this.redisCache.del(`USER:${id}:SOCKET`);
   }
 
+  async resignToken(token: string) {
+    // check token in block list token
+    const checking = await this.redisCache.get(`BLOCKLIST:${token}`);
+
+    if (checking) {
+      throw new BadRequestException('Không hợp lệ!');
+    }
+
+    // lấy thông tin rftoken
+    const payload = await this.jwtService.verify(token, {
+      secret: process.env.REFRESHTOKEN_KEY,
+    });
+
+    if (payload) {
+      const id_user = payload.idUser;
+
+      // block token cuar phiển đăng nhập hiện tại
+      await this.blockToken(id_user, 'ACCESSTOKEN');
+      await this.blockToken(id_user, 'REFRESHTOKEN');
+
+      // tạo token mới
+      const at = await this.signAccessToken({
+        id: id_user,
+      });
+      const rt = await this.signRefreshToken({
+        id: id_user,
+      });
+
+      // thêm rf token vào redis phục vụ cho việc lấy lại at khi at hết hạn
+      await this.redisCache.set(`USER:${id_user}:REFRESHTOKEN`, rt, {
+        ttl: 1000 * 60 * 60 * 24 * 7,
+      } as any);
+      await this.redisCache.set(`USER:${id_user}:ACCESSTOKEN`, at, {
+        ttl: 1000 * 60 * 60 * 2,
+      } as any);
+
+      return {
+        access_token: at,
+        refresh_token: rt,
+      };
+    } else {
+      throw new BadRequestException('Không hợp lệ!');
+    }
+  }
+
   // getInformationUserFromProvider(
   //   provider: string,
   //   data: any,

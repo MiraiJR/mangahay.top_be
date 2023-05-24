@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
   Res,
   UploadedFile,
@@ -95,8 +96,6 @@ export class ComicController {
         ...comic,
       };
 
-      // data_new_comic.authors = JSON.parse(data_new_comic.authors.toString());
-      // data_new_comic.genres = JSON.parse(data_new_comic.genres.toString());
       data_new_comic.genres = data_new_comic.genres.toString().split(',');
       data_new_comic.authors = data_new_comic.authors.toString().split(',');
 
@@ -113,6 +112,52 @@ export class ComicController {
         success: true,
         message: 'Tạo truyện mới thành công!',
         result: new_comic,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status | 500,
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+      });
+    }
+  }
+
+  @Put('/update/:id_comic')
+  @UseInterceptors(FileInterceptor('file'))
+  async updateComic(
+    @Body() comic: any,
+    @IdUser() id_user: number,
+    @Param('id_comic', new ParseIntPipe()) id_comic: number,
+    @Res() response: Response,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      const data_update_comic: IComic = {
+        ...comic,
+        id: id_comic,
+      };
+
+      data_update_comic.genres = data_update_comic.genres.toString().split(',');
+      data_update_comic.authors = data_update_comic.authors
+        .toString()
+        .split(',');
+
+      const update_comic = await this.comicService.update(data_update_comic);
+
+      if (comic.file !== 'undefined') {
+        this.cloudinaryService
+          .uploadFileFromBuffer(file.buffer, `comics/${update_comic.id}/thumb`)
+          .then((data: any) => {
+            this.comicService.updateThumb(id_comic, data.url);
+          });
+      }
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: `Cập nhật truyện ${comic.name} thành công!`,
+        result: update_comic,
       });
     } catch (error) {
       this.logger.error(error);
