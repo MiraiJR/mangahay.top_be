@@ -31,6 +31,13 @@ export class ComicService {
     return await this.comicRepository.delete(id_comic);
   }
 
+  async update(comic: IComic) {
+    return await this.comicRepository.save({
+      id: comic.id,
+      ...comic,
+    });
+  }
+
   async getAllComic() {
     return await this.comicRepository.find({
       order: {
