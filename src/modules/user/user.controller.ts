@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Logger,
   Param,
-  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -324,7 +323,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/comic/following')
+  @Get('/comic/liked')
   async getLikedComic(
     @Query() query: any,
     @IdUser() id_user: number,
