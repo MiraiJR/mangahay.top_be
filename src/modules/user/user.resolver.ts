@@ -73,7 +73,7 @@ export class UserResolver {
   @Query(() => [NotifyDTO])
   async getNotifiesOfUser(@Context() context: { req: { idUser: number } }) {
     try {
-      return await this.notifyService.getNotifiesOfUser(context.req.idUser);
+      // return await this.notifyService.getNotifiesOfUser(context.req.idUser);
     } catch (error) {
       this.logger.error(error);
     }
