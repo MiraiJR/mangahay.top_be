@@ -22,11 +22,7 @@ import { ComicService } from './comic.service';
 import { Response } from 'express';
 import { ChapterService } from '../chapter/chapter.service';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
-import {
-  AnyFilesInterceptor,
-  FileInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { IComic } from './comic.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateChapterDTO } from '../chapter/DTO/create-chapter';

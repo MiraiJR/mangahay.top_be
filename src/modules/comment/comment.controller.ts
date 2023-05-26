@@ -33,11 +33,15 @@ export class CommentController {
         id_comic,
       });
 
+      const result_comment = await this.commentService.getOneComment(
+        new_comment.id,
+      );
+
       return response.status(HttpStatus.OK).json({
         statusCode: 200,
         success: true,
         message: 'get all comic successfully!',
-        result: new_comment,
+        result: result_comment,
       });
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

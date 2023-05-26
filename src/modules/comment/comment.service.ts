@@ -18,6 +18,14 @@ export class CommentService {
     private answerRepository: Repository<Answer>,
   ) {}
 
+  async getOneComment(id_comment: number) {
+    return await this.commentRepository.manager.query(`
+      select cmt.id, cmt.id_comic, cmt."id_user", cmt.content, cmt."createdAt", cmt."updatedAt", u.fullname
+      from public.comment cmt join public.user u on cmt.id_user = u.id
+      where cmt.id = ${id_comment}
+    `);
+  }
+
   async create(comment: IComment) {
     return await this.commentRepository.save(comment);
   }
