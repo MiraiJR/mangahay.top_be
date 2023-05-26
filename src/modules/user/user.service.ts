@@ -9,6 +9,7 @@ import { User_Like_Comic } from './user_like/user-like.entity';
 import { IUser } from './user.interface';
 import { User_Evaluate_Comic } from './user_evaluate/user_evaluate.entity';
 import * as moment from 'moment';
+import { UserRole } from './user.role';
 
 @Injectable()
 export class UserService {
@@ -29,6 +30,9 @@ export class UserService {
 
   async getAll() {
     return await this.userRepository.find({
+      where: {
+        role: UserRole.VIEWER || UserRole.TRANSLATOR,
+      },
       order: {
         id: 'ASC',
       },

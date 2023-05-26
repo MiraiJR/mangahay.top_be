@@ -33,10 +33,9 @@ export class ChapterService {
   }
 
   async update(chapter: IChapter) {
-    return await this.chapterRepository.save({
-      id: chapter.id,
-      ...chapter,
-    });
+    const update_chapter = this.chapterRepository.create(chapter);
+
+    return await this.chapterRepository.save(update_chapter);
   }
 
   async delete(id_chapter: number) {
@@ -66,6 +65,24 @@ export class ChapterService {
     return await this.chapterRepository.save({
       id: id_chapter,
       images: images,
+    });
+  }
+
+  async updateImagesAtSpecificPosition(
+    id_chapter: number,
+    positions: number[],
+    images: string[],
+  ) {
+    const chapter = await this.getOne(id_chapter);
+    const chapter_images = chapter.images;
+
+    for (const i in positions) {
+      chapter_images[positions[i]] = images[i];
+    }
+
+    return await this.chapterRepository.save({
+      id: id_chapter,
+      images: chapter_images,
     });
   }
 }

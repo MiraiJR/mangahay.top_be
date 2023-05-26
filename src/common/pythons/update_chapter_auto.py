@@ -6,8 +6,8 @@ from datetime import date
 import time   
 
 conn = psycopg2.connect(
-    # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
-    database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
+    database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
+    # database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
 )
 
 cursor = conn.cursor()
