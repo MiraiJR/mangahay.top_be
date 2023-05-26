@@ -4,6 +4,7 @@ import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
 import { SocketService } from '../socket/socket.service';
+import { query } from 'express';
 
 @Injectable()
 export class NotificationService {
@@ -54,7 +55,7 @@ export class NotificationService {
       .getCount();
   }
 
-  async getNotifiesOfUser(id_user: number) {
+  async getNotifiesOfUser(id_user: number, query: any) {
     return await this.notificationRepository.find({
       where: {
         id_user: id_user,
@@ -62,6 +63,8 @@ export class NotificationService {
       order: {
         createdAt: 'DESC',
       },
+      take: parseInt(query.limit),
+      skip: (parseInt(query.page) - 1) * parseInt(query.limit),
     });
   }
 
