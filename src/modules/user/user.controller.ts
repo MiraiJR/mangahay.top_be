@@ -270,12 +270,15 @@ export class UserController {
   @UseGuards(JwtAuthorizationd)
   @Get('/notifies')
   async getNotifies(
-    // @Query() query: any,
+    @Query() query: any,
     @IdUser() id_user: number,
     @Res() response: Response,
   ) {
     try {
-      const notifies = await this.notifyService.getNotifiesOfUser(id_user);
+      const notifies = await this.notifyService.getNotifiesOfUser(
+        id_user,
+        query,
+      );
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
