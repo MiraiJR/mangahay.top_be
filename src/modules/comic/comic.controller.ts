@@ -22,7 +22,11 @@ import { ComicService } from './comic.service';
 import { Response } from 'express';
 import { ChapterService } from '../chapter/chapter.service';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  AnyFilesInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import { IComic } from './comic.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateChapterDTO } from '../chapter/DTO/create-chapter';
@@ -32,6 +36,8 @@ import { NotificationService } from '../notification/notification.service';
 import { UserService } from '../user/user.service';
 import { Roles, RolesGuard } from 'src/common/guards/check-role';
 import { UserRole } from '../user/user.role';
+import { IChapter } from '../chapter/chapter.interface';
+import { UpdateChapterDTO } from '../chapter/DTO/update-chapter';
 
 @Controller('api/comic')
 export class ComicController {
@@ -296,8 +302,7 @@ export class ComicController {
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthorizationd)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(FilesInterceptor('files'))
   @Post('/chapter/create')
   async createChapterForComic(
     @Body(new ValidationPipe()) chapter: CreateChapterDTO,
@@ -339,7 +344,75 @@ export class ComicController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Tạo chapter mới cho truyện thành công!',
-        result: new_chapter,
+        result: {},
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status | 500,
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FilesInterceptor('files'))
+  @Post('/chapter/update/:id_chapter')
+  async updateChapterForComic(
+    @Body(new ValidationPipe()) chapter_information: UpdateChapterDTO,
+    @Param('id_chapter', new ParseIntPipe()) id_chapter: number,
+    @IdUser() id_user: number,
+    @Res() response: Response,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    try {
+      const update_chapter: IChapter = {
+        ...chapter_information,
+        id_comic: parseInt(chapter_information.id_comic.toString()),
+        id: id_chapter,
+      };
+
+      const chapter = await this.chapterService.update({ ...update_chapter });
+
+      this.cloudinaryService
+        .uploadMultipleFile(files, `comics/${chapter.id_comic}/${chapter.id}`)
+        .then((data) =>
+          this.chapterService.updateImagesAtSpecificPosition(
+            chapter.id,
+            chapter_information.change_image_at
+              .split(',')
+              .map((ele: string) => parseInt(ele)),
+            data,
+          ),
+        );
+
+      this.comicService.getById(chapter.id_comic).then((comic) => {
+        const notify: INotification = {
+          id_user,
+          title: 'Chương mới!',
+          body: `${comic.name} vừa cập nhật lại chapter - ${chapter.name}.`,
+          redirect_url: `http://localhost:3001/comic/${comic.slug}/${chapter.slug}`,
+          thumb: comic.thumb,
+        };
+
+        this.notifyService.create(notify);
+
+        this.userService
+          .checkFollowing(id_user, chapter.id_comic)
+          .then((data) => {
+            if (data) {
+              this.notifyService.notifyToUser(notify);
+            }
+          });
+      });
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: `Cập nhật chapter ${chapter_information.name} truyện thành công!`,
+        result: {},
       });
     } catch (error) {
       this.logger.error(error);

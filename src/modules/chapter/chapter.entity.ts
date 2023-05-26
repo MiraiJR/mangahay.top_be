@@ -22,6 +22,7 @@ export class Chapter {
   @Column('text', { array: true, nullable: true })
   images: string[];
 
+  @Column()
   @ManyToOne(() => Comic, (comic) => comic.id)
   @JoinColumn({ name: 'id_comic' })
   id_comic: number;
