@@ -4,7 +4,6 @@ import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
 import { SocketService } from '../socket/socket.service';
-import { query } from 'express';
 
 @Injectable()
 export class NotificationService {

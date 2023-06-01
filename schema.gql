@@ -89,7 +89,7 @@ type Query {
   getCredentialUserInformation: UserDTO!
   getFollowingComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
   getLikedComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
-  getNotifiesOfUser: [NotifyDTO!]!
+  getNotifiesOfUser(page: Int!, limit: Int!): [NotifyDTO!]!
   getAllUser: [UserDTO!]!
   getAllComic: [ComicDTO!]!
   getSlideImages: [SlideImageDTO!]!
