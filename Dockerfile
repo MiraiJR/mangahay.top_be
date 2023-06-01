@@ -1,6 +1,17 @@
 FROM node:18-alpine
-WORKDIR /app
+
+# port sẽ chạy
+EXPOSE 3000 
+
+# dir mã nguồn
+WORKDIR /src/app
+
+RUN npm i npm@latest -g
+
+COPY package.json package-lock.json ./
+
+RUN npm install
+
 COPY . .
-RUN yarn install --production
+
 CMD ["npm", "run", "start:dev"]
-EXPOSE 3000

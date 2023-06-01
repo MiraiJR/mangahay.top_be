@@ -148,7 +148,7 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @Get('/management/:id_user')
+  @Put('/management/:id_user')
   async banOrUnbanUser(
     @Param('id_user', new ParseIntPipe()) id_user: number,
     @Query() query: any,

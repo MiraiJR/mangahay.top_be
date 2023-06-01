@@ -71,9 +71,16 @@ export class UserResolver {
 
   @UseGuards(GraphqlJwtAuthGuard)
   @Query(() => [NotifyDTO])
-  async getNotifiesOfUser(@Context() context: { req: { idUser: number } }) {
+  async getNotifiesOfUser(
+    @Args('page', { type: () => Int }) page: number,
+    @Args('limit', { type: () => Int }) limit: number,
+    @Context() context: { req: { idUser: number } },
+  ) {
     try {
-      // return await this.notifyService.getNotifiesOfUser(context.req.idUser);
+      return await this.notifyService.getNotifiesOfUser(context.req.idUser, {
+        page,
+        limit,
+      });
     } catch (error) {
       this.logger.error(error);
     }
