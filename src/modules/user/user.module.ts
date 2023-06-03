@@ -14,6 +14,7 @@ import { ComicModule } from '../comic/comic.module';
 import { ComicService } from '../comic/comic.service';
 import { Comic } from '../comic/comic.entity';
 import { Genres } from '../comic/genre/genre.entity';
+import { UserHistory } from './user_history/user_history.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { Genres } from '../comic/genre/genre.entity';
       User_Evaluate_Comic,
       Comic,
       Genres,
+      UserHistory,
     ]),
   ],
   controllers: [UserController],

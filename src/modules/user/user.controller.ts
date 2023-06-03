@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -14,6 +15,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
@@ -26,6 +28,7 @@ import { NotificationService } from '../notification/notification.service';
 import { User } from './user.entity';
 import { ComicService } from '../comic/comic.service';
 import { UserRole } from './user.role';
+import { HistoryDTO } from './user_history/history.dto';
 
 @Controller('api/user')
 export class UserController {
@@ -142,6 +145,94 @@ export class UserController {
         statusCode: error.status,
         success: false,
         message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/history')
+  async getHistory(@IdUser() id_user: number, @Res() response: Response) {
+    try {
+      const history = await this.userService.getHistory(id_user);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Lấy lịch sử thành công!',
+        result: history,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Post('/history')
+  async addToHistory(
+    @Body(new ValidationPipe()) history: HistoryDTO,
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
+    try {
+      history = {
+        id_user: id_user,
+        id_comic: parseInt(history.id_comic.toString()),
+        id_chapter: parseInt(history.id_chapter.toString()),
+      };
+
+      await this.userService.addToHistory(history);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Thêm vào lịch sử thành công!',
+        result: {},
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Delete('/history')
+  async deleteHistory(
+    @Query('delete_all', new ParseBoolPipe()) delete_all: boolean,
+    @Body('id_comic') id_comic: any,
+    @IdUser() id_user: number,
+    @Res() response: Response,
+  ) {
+    try {
+      if (id_comic) {
+        id_comic = parseInt(id_comic);
+      }
+
+      await this.userService.deleteHistory(delete_all, id_user, id_comic);
+
+      const history = await this.userService.getHistory(id_user);
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: delete_all
+          ? `Xóa toàn bộ lịch sử thành công!`
+          : `Xóa truyện khỏi lịch sử thành công thành công!`,
+        result: history,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status,
+        success: false,
+        message: 'Lỗi!',
       });
     }
   }
