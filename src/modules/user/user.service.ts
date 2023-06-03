@@ -10,6 +10,8 @@ import { IUser } from './user.interface';
 import { User_Evaluate_Comic } from './user_evaluate/user_evaluate.entity';
 import * as moment from 'moment';
 import { UserRole } from './user.role';
+import { IHistory } from './user_history/history.interface';
+import { UserHistory } from './user_history/user_history.entity';
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,8 @@ export class UserService {
     private userLikeComicRepository: Repository<User_Like_Comic>,
     @InjectRepository(User_Evaluate_Comic)
     private userEvaluateComicRepository: Repository<User_Evaluate_Comic>,
+    @InjectRepository(UserHistory)
+    private userHistoryRepository: Repository<UserHistory>,
   ) {}
 
   async create(user: IUser) {
@@ -303,5 +307,56 @@ export class UserService {
       percent_increment: percent_increment.toFixed(2),
       is_increase: percent_increment >= 0 ? true : false,
     };
+  }
+
+  async getHistory(id_user: number) {
+    return this.userHistoryRepository.manager.query(
+      `select comic_tb.id as "comic_id", comic_tb.name as "comic_name", comic_tb.thumb as "comic_thumb", comic_tb.slug as "comic_slug", comic_tb.star, comic_tb.view, comic_tb.like, comic_tb.follow, chapter_tb.name as "chapter_name", chapter_tb.slug as "chapter_slug"
+      from public."user_history" uh_tb
+      join public.comic comic_tb on uh_tb.id_comic = comic_tb.id
+      join public.chapter chapter_tb on uh_tb.id_chapter = chapter_tb.id
+      where uh_tb.id_user = ${id_user}
+      `,
+    );
+  }
+
+  async addToHistory(history: IHistory) {
+    const is_existed = await this.userHistoryRepository.findOne({
+      where: {
+        id_comic: history.id_comic,
+        id_user: history.id_user,
+      },
+    });
+
+    if (is_existed) {
+      return await this.userHistoryRepository
+        .createQueryBuilder()
+        .update(UserHistory)
+        .set({ id_chapter: history.id_chapter })
+        .where('id_user = :id_user', { id_user: history.id_user })
+        .andWhere('id_comic = :id_comic', { id_comic: history.id_comic })
+        .execute();
+    }
+
+    return await this.userHistoryRepository.save(history);
+  }
+
+  async deleteHistory(delete_all: boolean, id_user: number, id_comic: number) {
+    if (delete_all) {
+      return await this.userHistoryRepository
+        .createQueryBuilder()
+        .delete()
+        .from(UserHistory)
+        .where('id_user = :id_user', { id_user: id_user })
+        .execute();
+    }
+
+    return await this.userHistoryRepository
+      .createQueryBuilder()
+      .delete()
+      .from(UserHistory)
+      .where('id_user = :id_user', { id_user: id_user })
+      .andWhere('id_comic = :id_comic', { id_comic: id_comic })
+      .execute();
   }
 }
