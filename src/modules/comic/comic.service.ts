@@ -140,9 +140,12 @@ export class ComicService {
     }
 
     if (query.filter_genre != '') {
-      result.andWhere("array_to_string(comics.genres, ',') like :genres", {
-        genres: `%${query.filter_genre}%`,
-      });
+      let query_filter: any = `genres @> ARRAY[${query.filter_genre}]`
+        .replace('[', "['")
+        .replace(']', "']");
+
+      query_filter = query_filter.replaceAll(',', "','");
+      result.andWhere(query_filter);
     }
 
     return result.getMany();
