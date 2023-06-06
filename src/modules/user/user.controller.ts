@@ -29,6 +29,7 @@ import { User } from './user.entity';
 import { ComicService } from '../comic/comic.service';
 import { UserRole } from './user.role';
 import { HistoryDTO } from './user_history/history.dto';
+import { ActionComicDTO } from './DTO/action-comic-dto';
 
 @Controller('api/user')
 export class UserController {
@@ -121,16 +122,15 @@ export class UserController {
   @UseGuards(JwtAuthorizationd)
   @Delete('/comic')
   async removeActionComic(
-    @Query('action') action: string,
-    @Body('id_comic', new ParseIntPipe()) id_comic: number,
+    @Query(new ValidationPipe()) query: ActionComicDTO,
     @IdUser() id_user: number,
     @Res() response: Response,
   ) {
     try {
-      if (action === 'follow') {
-        await this.userService.unfollowComic(id_user, id_comic);
-      } else if (action === 'like') {
-        await this.userService.unlikeComic(id_user, id_comic);
+      if (query.action === 'follow') {
+        await this.userService.unfollowComic(id_user, query.id_comic);
+      } else if (query.action === 'like') {
+        await this.userService.unlikeComic(id_user, query.id_comic);
       }
 
       return response.status(HttpStatus.OK).json({
