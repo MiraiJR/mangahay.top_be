@@ -128,9 +128,9 @@ export class UserController {
   ) {
     try {
       if (query.action === 'follow') {
-        await this.userService.unfollowComic(id_user, query.id_comic);
+        await this.userService.unfollowComic(id_user, parseInt(query.id_comic));
       } else if (query.action === 'like') {
-        await this.userService.unlikeComic(id_user, query.id_comic);
+        await this.userService.unlikeComic(id_user, parseInt(query.id_comic));
       }
 
       return response.status(HttpStatus.OK).json({
