@@ -221,7 +221,8 @@ export class ComicController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Tìm kiếm thành công!',
-        result: result,
+        result: result.comics,
+        total: result.total,
       });
     } catch (error) {
       this.logger.error(error);
