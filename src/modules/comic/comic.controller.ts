@@ -215,13 +215,13 @@ export class ComicController {
   @Get('/search')
   async search(@Query() query: any, @Res() response: Response) {
     try {
-      const comics = await this.comicService.search(query);
+      const result = await this.comicService.search(query);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Tìm kiếm thành công!',
-        result: comics ? comics : [],
+        result: result,
       });
     } catch (error) {
       this.logger.error(error);
