@@ -56,8 +56,8 @@ export class ComicService {
     return await this.comicRepository
       .createQueryBuilder('comic')
       .orderBy('comic.updatedAt', 'DESC')
-      .skip((page - 1) * 12)
-      .take(12)
+      .skip((page - 1) * query.limit)
+      .take(query.limit)
       .getMany();
   }
 
@@ -117,10 +117,6 @@ export class ComicService {
       });
     }
 
-    if (!query.get_total) {
-      result.skip((page - 1) * 18).take(18);
-    }
-
     if (query.filter_state != '') {
       result.andWhere('comics.state = :state', { state: query.filter_state });
     }
@@ -148,7 +144,13 @@ export class ComicService {
       result.andWhere(query_filter);
     }
 
-    return result.getMany();
+    return {
+      total: await result.getCount(),
+      comics: await result
+        .skip((page - 1) * query.limit)
+        .take(query.limit)
+        .getMany(),
+    };
   }
 
   async ranking(query: any) {
