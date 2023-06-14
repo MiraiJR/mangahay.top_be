@@ -21,7 +21,7 @@ import {
 import { ComicService } from './comic.service';
 import { Response } from 'express';
 import { ChapterService } from '../chapter/chapter.service';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { IComic } from './comic.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -30,7 +30,7 @@ import { INotification } from '../notification/notification.interface';
 import { IdUser } from '../user/decorators/id-user';
 import { NotificationService } from '../notification/notification.service';
 import { UserService } from '../user/user.service';
-import { Roles, RolesGuard } from 'src/common/guards/check-role';
+import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { UserRole } from '../user/user.role';
 import { IChapter } from '../chapter/chapter.interface';
 import { UpdateChapterDTO } from '../chapter/DTO/update-chapter';

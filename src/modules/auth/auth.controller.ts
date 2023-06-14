@@ -21,8 +21,8 @@ import { Cache } from 'cache-manager';
 import { IdUser } from '../user/decorators/id-user';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
-import { MailService } from 'src/common/utils/mail-service';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import { MailService } from '../../common/utils/mail-service';
 
 @Controller('api/auth')
 export class AuthController {

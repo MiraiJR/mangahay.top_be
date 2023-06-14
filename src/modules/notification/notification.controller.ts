@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { IdUser } from '../user/decorators/id-user';
 import { Response } from 'express';
 
