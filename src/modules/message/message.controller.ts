@@ -11,7 +11,7 @@ import {
 import { MessageService } from './message.service';
 import { IdUser } from '../user/decorators/id-user';
 import { Response } from 'express';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 
 @Controller('api/message')
 export class MessageController {

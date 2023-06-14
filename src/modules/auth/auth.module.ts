@@ -7,7 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as redisStore from 'cache-manager-redis-store';
-import { MailService } from 'src/common/utils/mail-service';
+import { MailService } from '../../common/utils/mail-service';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({

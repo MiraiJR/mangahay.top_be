@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { Response } from 'express';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { IdUser } from '../user/decorators/id-user';
 
 @Controller('api/comment')

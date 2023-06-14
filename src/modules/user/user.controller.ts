@@ -18,7 +18,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { IdUser } from './decorators/id-user';
 import { Response } from 'express';
