@@ -317,24 +317,22 @@ export class ComicController {
         )
         .then((data) => this.chapterService.updateImages(new_chapter.id, data));
 
-      this.comicService.getById(new_chapter.id_comic).then((comic) => {
-        const notify: INotification = {
-          id_user,
-          title: 'Chương mới!',
-          body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
-          redirect_url: `http://localhost:3001/comic/${comic.slug}/${new_chapter.slug}`,
-          thumb: comic.thumb,
-        };
+      this.comicService.getById(new_chapter.id_comic).then(async (comic) => {
+        const users_following =
+          await this.userService.getListUserFollowingComic(comic.id);
 
-        this.notifyService.create(notify);
+        for (const user of users_following) {
+          const notify: INotification = {
+            id_user: user.id_user,
+            title: 'Chương mới!',
+            body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
+            redirect_url: `${process.env.HOST_FE}/comic/${comic.slug}/${new_chapter.slug}`,
+            thumb: comic.thumb,
+          };
 
-        this.userService
-          .checkFollowing(id_user, new_chapter.id_comic)
-          .then((data) => {
-            if (data) {
-              this.notifyService.notifyToUser(notify);
-            }
-          });
+          this.notifyService.create(notify);
+          this.notifyService.notifyToUser(notify);
+        }
       });
 
       return response.status(HttpStatus.OK).json({

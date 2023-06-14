@@ -177,6 +177,14 @@ export class UserService {
     });
   }
 
+  async getListUserFollowingComic(id_comic: number) {
+    return await this.userFollowComicRepository.find({
+      where: {
+        id_comic: id_comic,
+      },
+    });
+  }
+
   async getFollowingComic(id_user: number, query: any) {
     return await this.userFollowComicRepository
       .createQueryBuilder('follow_comic')
