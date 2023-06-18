@@ -49,22 +49,8 @@ export class ComicController {
   @Get()
   async getAllComic(@Query() query: any, @Res() response: Response) {
     try {
-      const temp_comics = await this.comicService.getAll(query);
+      const comics = await this.comicService.getAll(query);
 
-      const comics = [];
-
-      for (const comic of temp_comics) {
-        const chapter_newest = await this.chapterService.getNewestChapter(
-          comic.id,
-        );
-
-        const temp_comic = {
-          ...comic,
-          new_chapter: chapter_newest,
-        };
-
-        comics.push(temp_comic);
-      }
       const total = await this.comicService.getTotal();
 
       return response.status(HttpStatus.OK).json({
@@ -326,7 +312,7 @@ export class ComicController {
             id_user: user.id_user,
             title: 'Chương mới!',
             body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
-            redirect_url: `${process.env.HOST_FE}/comic/${comic.slug}/${new_chapter.slug}`,
+            redirect_url: `comic/${comic.slug}/${new_chapter.slug}`,
             thumb: comic.thumb,
           };
 

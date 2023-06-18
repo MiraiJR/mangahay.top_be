@@ -324,6 +324,7 @@ export class UserService {
       join public.comic comic_tb on uh_tb.id_comic = comic_tb.id
       join public.chapter chapter_tb on uh_tb.id_chapter = chapter_tb.id
       where uh_tb.id_user = ${id_user}
+      order by uh_tb."readAt" DESC
       `,
     );
   }
