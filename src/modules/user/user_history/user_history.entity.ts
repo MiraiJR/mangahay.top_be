@@ -20,4 +20,7 @@ export class UserHistory {
   @JoinColumn({ name: 'id_chapter' })
   @Column()
   id_chapter: number;
+
+  @Column({ type: 'timestamp', default: () => 'now()' })
+  readAt: Date;
 }
