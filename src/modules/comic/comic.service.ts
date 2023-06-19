@@ -100,8 +100,6 @@ export class ComicService {
       `${field}`,
       jump,
     );
-
-    return await this.getOne(name_comic);
   }
 
   async search(query: any) {
