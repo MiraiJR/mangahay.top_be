@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import psycopg2
 from slugify import slugify
 from datetime import date
-import time   
+import time
 
 conn = psycopg2.connect(
     # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
@@ -11,6 +11,7 @@ conn = psycopg2.connect(
 )
 
 cursor = conn.cursor()
+
 
 def getListLinkComic():
     origin_url = 'https://truyentranhlh.net/danh-sach?sort=update&page='
@@ -87,7 +88,7 @@ def layThongTinChapter(link, idComic):
             updateDateUpdateForComic(cursor, idComic)
         else:
             return False
-        
+
     except:
         return False
 
@@ -114,18 +115,24 @@ def capNhatChapter(link, id_comic):
 
     link_chapters = []
     if (comic.find('ul', class_='list-chapters at-series')) is not None:
+        array_temp_at_series = []
         for ele in comic.find('ul', class_='list-chapters at-series'):
-            link_chapters.append(ele.attrs['href'])
-        for chapter in link_chapters:
-            if layThongTinChapter(chapter, id_comic) == False:
-                break
+            array_temp_at_series.append(ele)
+        if(len(array_temp_at_series) != 0):
+            for ele in array_temp_at_series[::-1]:
+                link_chapters.append(ele.attrs['href'])
+            for chapter in link_chapters:
+                if layThongTinChapter(chapter, id_comic) == False:
+                    break
 
 
 def updateDateUpdateForComic(cursor, id_comic):
-    query = """ UPDATE public."comic" SET "updatedAt" = '{date}' WHERE id = {id_comic}""".format(date = time.strftime('%Y-%m-%d %H:%M:%S'), id_comic = id_comic)
+    query = """ UPDATE public."comic" SET "updatedAt" = '{date}' WHERE id = {id_comic}""".format(
+        date=time.strftime('%Y-%m-%d %H:%M:%S'), id_comic=id_comic)
     cursor.execute(query)
 
     conn.commit()
+
 
 def insert(cursor, record_to_insert):
     postgres_insert_query = """ INSERT INTO public."comic" (name, another_name, genres, authors, state, thumb, brief_desc, slug) VALUES (%s,%s,%s, %s,%s,%s, %s,%s) RETURNING id"""
@@ -146,6 +153,7 @@ def insertGere(cursor, value_genre, value_slug):
         genre=value_genre, slug=value_slug)
     cursor.execute(postgres_insert_query)
     conn.commit()
+
 
 def layThongTinGenre():
     response = requests.get('https://truyentranhlh.net/')
