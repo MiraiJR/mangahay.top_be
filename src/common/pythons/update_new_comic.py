@@ -134,11 +134,15 @@ def capNhatChapter(link, id_comic):
 
     link_chapters = []
     if (comic.find('ul', class_='list-chapters at-series')) is not None:
+        array_temp_at_series = []
         for ele in comic.find('ul', class_='list-chapters at-series'):
-            link_chapters.append(ele.attrs['href'])
-        for chapter in link_chapters:
-            if layThongTinChapter(chapter, id_comic) == False:
-                break
+            array_temp_at_series.append(ele)
+        if(len(array_temp_at_series) != 0):
+            for ele in array_temp_at_series[::-1]:
+                link_chapters.append(ele.attrs['href'])
+            for chapter in link_chapters:
+                if layThongTinChapter(chapter, id_comic) == False:
+                    break
 
 
 def insert(cursor, record_to_insert):
