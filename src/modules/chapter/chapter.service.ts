@@ -14,6 +14,12 @@ export class ChapterService {
   async getAll(id_comic: any) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
+      .select([
+        'chapter.id',
+        'chapter.name',
+        'chapter.slug',
+        'chapter.updatedAt',
+      ])
       .where('chapter.id_comic = :id_comic', { id_comic })
       .orderBy('chapter.id', 'ASC')
       .getMany();

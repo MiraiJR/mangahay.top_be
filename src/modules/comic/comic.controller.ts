@@ -224,16 +224,36 @@ export class ComicController {
   async getComic(@Param('name') name_comic: string, @Res() response: Response) {
     try {
       const comic = await this.comicService.getOne(name_comic);
-      const chapters = await this.chapterService.getAll(comic.id);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
-        message: 'get all comic successfully!',
-        result: {
-          comic,
-          chapters,
-        },
+        message: 'Lấy thông tin của truyện thành công!',
+        result: comic,
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return response.status(error.status | 500).json({
+        statusCode: error.status | 500,
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+      });
+    }
+  }
+
+  @Get('chapter/:id_comic')
+  async getChapterOfComic(
+    @Param('id_comic', new ParseIntPipe()) id_comic: number,
+    @Res() response: Response,
+  ) {
+    try {
+      const chapters = await this.chapterService.getAll(id_comic);
+
+      return response.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: 'Lấy chapter của truyện thành công!',
+        result: chapters,
       });
     } catch (error) {
       this.logger.error(error);
@@ -412,7 +432,7 @@ export class ComicController {
     @Res() response: Response,
   ) {
     try {
-      const updated_comic = await this.comicService.increment(
+      await this.comicService.increment(
         slug_comic,
         query.field,
         parseInt(query.jump),
@@ -422,7 +442,7 @@ export class ComicController {
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Tăng thành công!',
-        result: updated_comic,
+        result: {},
       });
     } catch (error) {
       this.logger.error(error);
