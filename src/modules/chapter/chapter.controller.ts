@@ -17,19 +17,35 @@ export class ChapterController {
     private chapterService: ChapterService,
   ) {}
 
-  @Get('/get/:id_chapter')
+  @Get('/get/:id_comic/:id_chapter')
   async getOneChapter(
     @Param('id_chapter', new ParseIntPipe()) id_chapter,
+    @Param('id_comic', new ParseIntPipe()) id_comic,
     @Res() response: Response,
   ) {
     try {
-      const chapter = await this.chapterService.getOne(id_chapter);
+      const chapters = await this.chapterService.getAll(id_comic);
+      let pre = null;
+      let next = null;
+      let cur = null;
+
+      for (let i = 0; i < chapters.length; i++) {
+        if (chapters[i].id === id_chapter) {
+          next = chapters[i - 1] ? chapters[i - 1] : null;
+          cur = chapters[i];
+          pre = chapters[i + 1] ? chapters[i + 1] : null;
+        }
+      }
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Thao tác thành công!',
-        result: chapter,
+        result: {
+          pre,
+          cur,
+          next,
+        },
       });
     } catch (error) {
       this.logger.error(error);
