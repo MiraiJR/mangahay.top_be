@@ -5,17 +5,17 @@ from slugify import slugify
 
 conn = psycopg2.connect(
     # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
-    database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
+    database="comic_uqxm", user='mangahay', password='YVwXMiVQkriJ6oOoW2RwFLfNoX9jmw1N', host='dpg-ci8ost5gkuvmfnrrde80-a.singapore-postgres.render.com', port='5432'
+    # database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
 )
 
 cursor = conn.cursor()
-
 
 def getListLinkComic():
     origin_url = 'https://truyentranhlh.net/danh-sach?sort=update&page='
     array_page = []
     link_comics = []
-    for i in range(6, 0, -1):
+    for i in range(100, 0, -1):
         array_page.append(origin_url + str(i))
 
     for page in array_page:
@@ -61,10 +61,14 @@ def layThongComic(link):
             conn.commit()
             link_chapters = []
             if (comic.find('ul', class_='list-chapters at-series')) is not None:
+                array_temp_at_series = []
                 for ele in comic.find('ul', class_='list-chapters at-series'):
-                    link_chapters.append(ele.attrs['href'])
-                for chapter in link_chapters:
-                    layThongTinChapter(chapter, id)
+                    array_temp_at_series.append(ele)
+                if(len(array_temp_at_series) != 0):
+                    for ele in array_temp_at_series[::-1]:
+                        link_chapters.append(ele.attrs['href'])
+                    for chapter in link_chapters:
+                        layThongTinChapter(chapter, id)
         else:
             id_comic = layIdComic(cursor, slug)
             capNhatChapter("https://truyentranhlh.net/truyen-tranh/" + slug, id_comic)
