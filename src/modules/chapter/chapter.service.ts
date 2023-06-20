@@ -21,7 +21,7 @@ export class ChapterService {
         'chapter.updatedAt',
       ])
       .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'ASC')
+      .orderBy('chapter.id', 'DESC')
       .getMany();
   }
 
