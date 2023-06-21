@@ -319,7 +319,7 @@ export class UserService {
 
   async getHistory(id_user: number) {
     return this.userHistoryRepository.manager.query(
-      `select comic_tb.id as "comic_id", comic_tb.name as "comic_name", comic_tb.thumb as "comic_thumb", comic_tb.slug as "comic_slug", comic_tb.star, comic_tb.view, comic_tb.like, comic_tb.follow, chapter_tb.name as "chapter_name", chapter_tb.slug as "chapter_slug"
+      `select comic_tb.id as "comic_id", comic_tb.name as "comic_name", comic_tb.thumb as "comic_thumb", comic_tb.slug as "comic_slug", comic_tb.star, comic_tb.view, comic_tb.like, comic_tb.follow, chapter_tb.name as "chapter_name", chapter_tb.slug as "chapter_slug", chapter_tb.id as "chapter_id"
       from public."user_history" uh_tb
       join public.comic comic_tb on uh_tb.id_comic = comic_tb.id
       join public.chapter chapter_tb on uh_tb.id_chapter = chapter_tb.id
