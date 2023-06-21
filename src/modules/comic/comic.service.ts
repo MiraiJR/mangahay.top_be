@@ -55,7 +55,7 @@ export class ComicService {
 
     return await this.comicRepository.manager.query(
       `
-      select co_2.id, co_2.slug, co_2.name,co_2.another_name, co_2.genres,co_2.authors,co_2.state, co_2.thumb,co_2.brief_desc, co_2.view, co_2.like, co_2.follow, co_2.star, co_2.id_owner, co_2."createdAt", co_2."updatedAt", ch_2.name as "newest_chapter_name", ch_2.slug as "newest_chapter_slug"
+      select co_2.id, co_2.slug, co_2.name,co_2.another_name, co_2.genres,co_2.authors,co_2.state, co_2.thumb,co_2.brief_desc, co_2.view, co_2.like, co_2.follow, co_2.star, co_2.id_owner, co_2."createdAt", co_2."updatedAt", ch_2.name as "newest_chapter_name", ch_2.slug as "newest_chapter_slug", co_ch.id_chapter as "newest_chapter_id"
       from (select co.id,max(ch.id) as id_chapter
       from public.comic as co join public.chapter ch on co.id = ch.id_comic
       group by co.id) as co_ch join public.comic co_2 on co_ch.id = co_2.id
