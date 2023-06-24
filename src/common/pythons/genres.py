@@ -6,7 +6,7 @@ from slugify import slugify
 
 conn = psycopg2.connect(
     # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
-    database="comic_uqxm", user='mangahay', password='YVwXMiVQkriJ6oOoW2RwFLfNoX9jmw1N', host='dpg-ci8ost5gkuvmfnrrde80-a.singapore-postgres.render.com', port='5432'
+    database="mangahay_comic", user='mangahay_admin', password='9TRrkD1nkgtrpGx6PfLqDejOXOBJ5QK6', host='dpg-cibg21h5rnuk9q8q0rbg-a.singapore-postgres.render.com', port='5432'
     # database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
 )
 
