@@ -19,6 +19,7 @@ export class ChapterService {
         'chapter.name',
         'chapter.slug',
         'chapter.updatedAt',
+        'chapter.images',
       ])
       .where('chapter.id_comic = :id_comic', { id_comic })
       .orderBy('chapter.id', 'DESC')
