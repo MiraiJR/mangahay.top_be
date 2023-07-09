@@ -1,17 +1,15 @@
 FROM node:18-alpine
 
-# port sẽ chạy
-EXPOSE 3000 
+WORKDIR /mangahay_be/app
 
-# dir mã nguồn
-WORKDIR /src/app
+COPY package*.json ./
 
-RUN npm i npm@latest -g
-
-COPY package.json package-lock.json ./
-
-RUN npm install
+RUN npm install 
 
 COPY . .
 
-CMD ["npm", "run", "start:dev"]
+RUN npm run build 
+
+EXPOSE 3000
+
+CMD [ "npm", "run", "start:prod" ]
