@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { HttpService } from '@nestjs/axios';
 import { UserRole } from '../user/user.role';
+import { SALT_HASH_PWD } from 'src/common/utils/salt';
 
 @Injectable()
 export class AuthService {
@@ -35,14 +36,10 @@ export class AuthService {
   async register(new_user: RegisterUserDTO, role: string) {
     try {
       // hash password
-      const salt = await bcrypt.genSalt(10);
+      const salt = await SALT_HASH_PWD;
+      console.log(salt);
       const hash_password = await bcrypt.hash(new_user.password, salt);
 
-      // const user = await this.userRepository.save({
-      //   ...new_user,
-      //   password: hash_password,
-      //   active: true,
-      // });
       const user = await this.userService.create({
         ...new_user,
         password: hash_password,
@@ -75,6 +72,7 @@ export class AuthService {
             user_login.password,
             check_user.password,
           );
+
           if (check_password) {
             return check_user;
           }
@@ -199,19 +197,4 @@ export class AuthService {
       throw new BadRequestException('Không hợp lệ!');
     }
   }
-
-  // getInformationUserFromProvider(
-  //   provider: string,
-  //   data: any,
-  // ): Promise<AxiosResponse<any>> {
-  //   if (provider === 'facebook') {
-  //     return this.httpService.axiosRef.get(
-  //       `https://graph.facebook.com/debug_token?input_token=${data.access_token}&access_token=${process.env.APP_FACEBOOK_ID}`,
-  //     );
-  //   } else if (provider === 'google') {
-  //     return this.httpService.axiosRef.get(
-  //       `https://www.googleapis.com/oauth2/v3/userinfo?alt=json&access_token=${data.access_token}`,
-  //     );
-  //   }
-  // }
 }
