@@ -164,7 +164,7 @@ export class ComicController {
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
-        message: 'Tăng thành công!',
+        message: 'Lấy thể loại truyện thành công!',
         result: genres,
       });
     } catch (error) {
@@ -332,7 +332,7 @@ export class ComicController {
             id_user: user.id_user,
             title: 'Chương mới!',
             body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
-            redirect_url: `comic/${comic.slug}/${new_chapter.slug}`,
+            redirect_url: `/comic/${comic.slug}/${new_chapter.slug}`,
             thumb: comic.thumb,
           };
 

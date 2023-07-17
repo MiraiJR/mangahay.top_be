@@ -12,6 +12,7 @@ import * as moment from 'moment';
 import { UserRole } from './user.role';
 import { IHistory } from './user_history/history.interface';
 import { UserHistory } from './user_history/user_history.entity';
+import { SALT_HASH_PWD } from 'src/common/utils/salt';
 
 @Injectable()
 export class UserService {
@@ -77,7 +78,7 @@ export class UserService {
 
   async updatePassword(email: string, new_password: string) {
     // hash password
-    const salt = await bcrypt.genSalt(10);
+    const salt = await SALT_HASH_PWD;
     const hash_password = await bcrypt.hash(new_password, salt);
 
     return await this.userRepository
