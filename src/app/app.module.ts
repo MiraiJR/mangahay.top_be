@@ -17,8 +17,6 @@ import { MessageModule } from '../modules/message/message.module';
 import { AdminModule } from '../modules/admin/admin.module';
 import { ReportModule } from '../modules/report/report.module';
 
-const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
-
 @Module({
   imports: [
     AuthModule,
@@ -48,7 +46,7 @@ const is_ssl: boolean = process.env.NODE_ENV === 'production' ? true : false;
         database: configService.get('DATABASE_NAME'),
         synchronize: true,
         autoLoadEntities: true,
-        ssl: is_ssl,
+        ssl: true,
       }),
     }),
     ScheduleModule.forRoot(),
