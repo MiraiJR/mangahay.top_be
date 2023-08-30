@@ -17,30 +17,29 @@ export class User {
   password: string;
 
   @Column({
-    default:
-      'https://i.pinimg.com/originals/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg',
+    default: 'https://i.pinimg.com/originals/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg',
   })
   avatar: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   wallpaper: string;
 
-  @Column({default: false})
+  @Column({ default: false })
   active: boolean;
 
-  @Column({default: false})
+  @Column({ default: false })
   facebook: boolean;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   id_facebook: string;
 
-  @Column({default: false})
+  @Column({ default: false })
   google: boolean;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   id_google: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   phone: string;
 
   @Column({
@@ -50,7 +49,13 @@ export class User {
   })
   role: UserRole;
 
-  @Column({ type: 'timestamp', default: () => 'now()'})
+  @Column({ nullable: true, name: 'refresh_token' })
+  refreshToken: string;
+
+  @Column({ nullable: true, name: 'access_token' })
+  accessToken: string;
+
+  @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
