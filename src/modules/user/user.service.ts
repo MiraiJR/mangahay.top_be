@@ -236,10 +236,7 @@ export class UserService {
     const result = [];
 
     for (let i = number_day - 1; i >= 0; i--) {
-      const temp_date = moment()
-        .subtract(i, 'days')
-        .startOf('day')
-        .format('yyyy-MM-DD');
+      const temp_date = moment().subtract(i, 'days').startOf('day').format('yyyy-MM-DD');
 
       const check = analysis.filter(
         (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,
@@ -275,10 +272,7 @@ export class UserService {
     const result = [];
 
     for (let i = 1; i >= 0; i--) {
-      const temp_date = moment()
-        .subtract(i, 'days')
-        .startOf('day')
-        .format('yyyy-MM-DD');
+      const temp_date = moment().subtract(i, 'days').startOf('day').format('yyyy-MM-DD');
 
       const check = analysis.filter(
         (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,

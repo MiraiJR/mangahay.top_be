@@ -43,12 +43,9 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/credentials')
-  async getCredentialUserInformation(
-    @IdUser() id: any,
-    @Res() response: Response,
-  ) {
+  async getCredentialUserInformation(@IdUser() userId: any, @Res() response: Response) {
     try {
-      const user: User = await this.userService.getUserById(id);
+      const user: User = await this.userService.getUserById(userId);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -288,20 +285,11 @@ export class UserController {
         isEvaluate: false,
       };
 
-      const is_follow = await this.userService.isFollowComic(
-        id_user,
-        parseInt(id_comic),
-      );
+      const is_follow = await this.userService.isFollowComic(id_user, parseInt(id_comic));
       result.isFollow = is_follow ? true : false;
-      const is_like = await this.userService.isLikeComic(
-        id_user,
-        parseInt(id_comic),
-      );
+      const is_like = await this.userService.isLikeComic(id_user, parseInt(id_comic));
       result.isLike = is_like ? true : false;
-      const is_evaluate = await this.userService.isEvaluateComic(
-        id_user,
-        parseInt(id_comic),
-      );
+      const is_evaluate = await this.userService.isEvaluateComic(id_user, parseInt(id_comic));
       result.isEvaluate = is_evaluate ? true : false;
 
       return response.status(HttpStatus.OK).json({
@@ -330,11 +318,10 @@ export class UserController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      const response_file: any =
-        await this.cloudinaryService.uploadFileFromBuffer(
-          file.buffer,
-          'users/avatars',
-        );
+      const response_file: any = await this.cloudinaryService.uploadFileFromBuffer(
+        file.buffer,
+        'users/avatars',
+      );
 
       if (query.avatar == 1) {
         query.avatar = response_file.url;
@@ -360,16 +347,9 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/notifies')
-  async getNotifies(
-    @Query() query: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
+  async getNotifies(@Query() query: any, @IdUser() id_user: number, @Res() response: Response) {
     try {
-      const notifies = await this.notifyService.getNotifiesOfUser(
-        id_user,
-        query,
-      );
+      const notifies = await this.notifyService.getNotifiesOfUser(id_user, query);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -395,10 +375,7 @@ export class UserController {
     @Res() response: Response,
   ) {
     try {
-      const following_comic = await this.userService.getFollowingComic(
-        id_user,
-        query,
-      );
+      const following_comic = await this.userService.getFollowingComic(id_user, query);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -418,11 +395,7 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/comic/liked')
-  async getLikedComic(
-    @Query() query: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
+  async getLikedComic(@Query() query: any, @IdUser() id_user: number, @Res() response: Response) {
     try {
       const liked_comic = await this.userService.getLikedComic(id_user, query);
 

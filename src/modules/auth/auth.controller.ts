@@ -1,11 +1,9 @@
 import {
   Body,
-  CACHE_MANAGER,
   ConflictException,
   Controller,
   Get,
   HttpStatus,
-  Inject,
   Logger,
   Post,
   Query,
@@ -17,12 +15,11 @@ import { AuthService } from './auth.service';
 import { LoginUserDTO } from './DTO/login-dto';
 import { Response } from 'express';
 import { RegisterUserDTO } from './DTO/register-dto';
-import { Cache } from 'cache-manager';
 import { IdUser } from '../user/decorators/id-user';
 import { UserService } from '../user/user.service';
-import { JwtService } from '@nestjs/jwt';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { MailService } from '../../common/utils/mail-service';
+import { UserRole } from '../user/user.role';
+import { MailService } from '../mail/mail.service';
 
 @Controller('api/auth')
 export class AuthController {
@@ -30,27 +27,14 @@ export class AuthController {
     private logger: Logger = new Logger(AuthController.name),
     private authService: AuthService,
     private userService: UserService,
-    private jwtService: JwtService,
     private mailService: MailService,
-    @Inject(CACHE_MANAGER)
-    private redisCache: Cache,
   ) {}
 
   @Post('/register')
-  async register(
-    @Body(new ValidationPipe()) data: RegisterUserDTO,
-    @Res() response: Response,
-  ) {
+  async register(@Body(new ValidationPipe()) data: RegisterUserDTO, @Res() response: Response) {
     try {
-      const check_user = await this.userService.getUserByEmail(data.email);
-
-      // email đã tồn tại
-      if (check_user) {
-        throw new ConflictException(`Email ${data.email} đã được sử dụng`);
-      }
-
-      const mail_otp: string = await this.authService.signTokenVerifyMail(data);
-      await this.mailService.sendMail(data.email, 'Xác nhận email', mail_otp);
+      const mailOtp: string = this.authService.signTokenVerifyMail(data);
+      await this.mailService.sendMailVerifyEmail(data.email, 'Xác nhận email', mailOtp);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -68,31 +52,17 @@ export class AuthController {
   }
 
   @Post('/login')
-  async login(
-    @Body(new ValidationPipe()) data: LoginUserDTO,
-    @Res() response: Response,
-  ) {
+  async handleLogin(@Body(new ValidationPipe()) data: LoginUserDTO, @Res() response: Response) {
     try {
       const user = await this.authService.login(data);
-
-      const at = await this.authService.signAccessToken(user);
-      const rt = await this.authService.signRefreshToken(user);
-
-      // thêm rf token vào redis phục vụ cho việc lấy lại at khi at hết hạn
-      await this.redisCache.set(`USER:${user.id}:REFRESHTOKEN`, rt, {
-        ttl: 1000 * 60 * 60 * 24 * 7,
-      } as any);
-      await this.redisCache.set(`USER:${user.id}:ACCESSTOKEN`, at, {
-        ttl: 1000 * 60 * 60 * 2,
-      } as any);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Đăng nhập thành công!',
         result: {
-          access_token: at,
-          refresh_token: rt,
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken,
         },
       });
     } catch (error) {
@@ -106,10 +76,7 @@ export class AuthController {
   }
 
   @Post('/refresh-token')
-  async resignToken(
-    @Body('refresh-token') rftoken: string,
-    @Res() response: Response,
-  ) {
+  async resignToken(@Body('refresh-token') rftoken: string, @Res() response: Response) {
     try {
       const token = await this.authService.resignToken(rftoken);
 
@@ -131,11 +98,10 @@ export class AuthController {
 
   @Get('/logout')
   @UseGuards(JwtAuthorizationd)
-  async logout(@IdUser() id: any, @Res() response: Response) {
+  async logout(@IdUser() userId: number, @Res() response: Response) {
     try {
-      await this.authService.blockToken(id, 'ACCESSTOKEN');
-      await this.authService.blockToken(id, 'REFRESHTOKEN');
-      await this.authService.removeSocket(id);
+      await this.authService.logout(userId);
+      await this.authService.removeSocket(userId);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -153,15 +119,10 @@ export class AuthController {
   }
 
   @Get('/verify-email')
-  async verifyEmail(@Query() data: any, @Res() response: Response) {
+  async verifyEmail(@Query('token') token: string, @Res() response: Response) {
     try {
-      const payload: RegisterUserDTO = await this.jwtService.verify(
-        data.token,
-        {
-          secret: process.env.VERIFY_EMAIL_KEY,
-        },
-      );
-      await this.authService.register(payload, 'viewer');
+      await this.authService.verifyEmailToRegister(token, UserRole.VIEWER);
+
       return response.redirect(process.env.URL_SIGNIN);
     } catch (error) {
       return response.status(error.status).json({
@@ -173,27 +134,9 @@ export class AuthController {
   }
 
   @Post('/forget-password')
-  async forgetPassword(
-    @Body('email') email: string,
-    @Res() response: Response,
-  ) {
+  async handleForgetPassword(@Body('email') email: string, @Res() response: Response) {
     try {
-      const check_user = await this.userService.getUserByEmail(email);
-
-      // email đã tồn tại
-      if (!check_user) {
-        throw new ConflictException(
-          `Email ${email} không khớp với bất kỳ tài khoản nào!`,
-        );
-      }
-
-      const forgetpw_token: string =
-        await this.authService.signTokenForgetPassword(email);
-      await this.mailService.sendMailForgetPassword(
-        email,
-        'Quên mật khẩu',
-        forgetpw_token,
-      );
+      await this.authService.forgetPassword(email);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -212,16 +155,13 @@ export class AuthController {
 
   @Post('/change-password')
   async changePassword(
-    @Body('password') new_pwd: string,
-    @Query() data: any,
+    @Body('password') newPassword: string,
+    @Query('token') token: string,
     @Res() response: Response,
   ) {
     try {
-      const payload = await this.jwtService.verify(data.token, {
-        secret: process.env.FORGETPASSWORD_KEY,
-      });
+      await this.authService.changePassword(token, newPassword);
 
-      await this.userService.updatePassword(payload.email, new_pwd);
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
@@ -246,17 +186,12 @@ export class AuthController {
     try {
       const check_user = await this.userService.getUserByEmail(data.email);
 
-      // email đã tồn tại
       if (check_user) {
         throw new ConflictException(`Email ${data.email} đã được sử dụng`);
       }
 
       const mail_otp: string = await this.authService.signTokenVerifyMail(data);
-      await this.mailService.sendMailRegisterAdmin(
-        data.email,
-        'Xác nhận email',
-        mail_otp,
-      );
+      await this.mailService.sendMailRegisterAdmin(data.email, 'Xác nhận email', mail_otp);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
@@ -274,15 +209,10 @@ export class AuthController {
   }
 
   @Get('/admin/verify-email')
-  async adminVerifyEmail(@Query() data: any, @Res() response: Response) {
+  async adminVerifyEmail(@Query('token') data: string, @Res() response: Response) {
     try {
-      const payload: RegisterUserDTO = await this.jwtService.verify(
-        data.token,
-        {
-          secret: process.env.VERIFY_EMAIL_KEY,
-        },
-      );
-      await this.authService.register(payload, 'admin');
+      await this.authService.verifyEmailToRegister(data, UserRole.ADMIN);
+
       return response.redirect('http://localhost:3002/auth/login');
     } catch (error) {
       return response.status(error.status).json({

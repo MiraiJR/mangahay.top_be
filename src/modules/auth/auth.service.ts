@@ -1,98 +1,101 @@
-import {
-  BadRequestException,
-  CACHE_MANAGER,
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '../user/user.entity';
-import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterUserDTO } from './DTO/register-dto';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDTO } from './DTO/login-dto';
 import { ConfigService } from '@nestjs/config';
-import { Cache } from 'cache-manager';
-import { HttpService } from '@nestjs/axios';
 import { UserRole } from '../user/user.role';
 import { SALT_HASH_PWD } from 'src/common/utils/salt';
+import { RedisService } from '../redis/redis.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
     private jwtService: JwtService,
     private userService: UserService,
     private configService: ConfigService,
-    private httpService: HttpService,
-    @Inject(CACHE_MANAGER)
-    private redisCache: Cache,
+    private redisService: RedisService,
+    private mailService: MailService,
   ) {}
 
-  async register(new_user: RegisterUserDTO, role: string) {
-    try {
-      // hash password
-      const salt = await SALT_HASH_PWD;
-      console.log(salt);
-      const hash_password = await bcrypt.hash(new_user.password, salt);
+  async register(newUser: RegisterUserDTO, role: string): Promise<User> {
+    const checkUser = await this.userService.getUserByEmail(newUser.email);
 
-      const user = await this.userService.create({
-        ...new_user,
-        password: hash_password,
-        active: true,
-        role: role === 'admin' ? UserRole.ADMIN : UserRole.VIEWER,
-      });
-
-      return user;
-    } catch (error) {
-      if (error.status === HttpStatus.CONFLICT) {
-        throw error;
-      } else {
-        throw new HttpException(
-          error.message,
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
+    if (checkUser) {
+      throw new ConflictException(`Email ${newUser.email} đã được sử dụng`);
     }
+
+    const salt = await SALT_HASH_PWD;
+    const hash_password = await bcrypt.hash(newUser.password, salt);
+
+    const user = await this.userService.create({
+      ...newUser,
+      password: hash_password,
+      active: true,
+      role: role === 'admin' ? UserRole.ADMIN : UserRole.VIEWER,
+    });
+
+    return user;
   }
 
-  async login(user_login: LoginUserDTO) {
-    try {
-      const check_user = await this.userService.getUserByEmail(
-        user_login.email,
-      );
+  async logout(userId: number): Promise<void> {
+    let user = await this.userService.getUserById(userId);
 
-      if (check_user) {
-        if (check_user.active) {
-          const check_password = await bcrypt.compare(
-            user_login.password,
-            check_user.password,
-          );
-
-          if (check_password) {
-            return check_user;
-          }
-        }
-      }
-
-      throw new BadRequestException('Thông tin đăng nhập không chính xác!');
-    } catch (error) {
-      if (error.status === HttpStatus.BAD_REQUEST) {
-        throw error;
-      } else {
-        throw new HttpException(
-          error.message,
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
+    if (!user) {
+      throw new HttpException('Người dùng không tồn tại!', HttpStatus.BAD_REQUEST);
     }
+
+    user = {
+      ...user,
+      accessToken: null,
+      refreshToken: null,
+    };
+
+    await this.userService.update(userId, user);
   }
 
-  async signAccessToken(payload: any) {
+  async verifyEmailToRegister(token: string, accountRole: string): Promise<void> {
+    const newAccountInformation: RegisterUserDTO = await this.jwtService.verify(token, {
+      secret: process.env.VERIFY_EMAIL_KEY,
+    });
+
+    await this.register(newAccountInformation, accountRole);
+  }
+
+  async login(userLogin: LoginUserDTO): Promise<User> {
+    let user = await this.userService.getUserByEmail(userLogin.email);
+
+    if (!user) {
+      throw new HttpException('Thông tin đăng nhập không chính xác', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!user.active) {
+      throw new HttpException('Tài khoản chưa xác thực địa chỉ email!', HttpStatus.BAD_REQUEST);
+    }
+
+    const checkPassword = await bcrypt.compare(userLogin.password, user.password);
+
+    if (!checkPassword) {
+      throw new HttpException('Mật khẩu không chính xác!', HttpStatus.BAD_REQUEST);
+    }
+
+    const accessToken = this.signAccessToken(user);
+    const refreshToken = this.signRefreshToken(user);
+
+    user = {
+      ...user,
+      accessToken,
+      refreshToken,
+    };
+    await this.userService.update(user.id, user);
+
+    return user;
+  }
+
+  signAccessToken(payload: any): string {
     return this.jwtService.sign(
       {
         idUser: payload.id,
@@ -104,7 +107,7 @@ export class AuthService {
     );
   }
 
-  async signRefreshToken(payload: any) {
+  signRefreshToken(payload: any): string {
     return this.jwtService.sign(
       {
         idUser: payload.id,
@@ -116,14 +119,14 @@ export class AuthService {
     );
   }
 
-  async signTokenVerifyMail(data: RegisterUserDTO) {
+  signTokenVerifyMail(data: RegisterUserDTO): string {
     return this.jwtService.sign(data, {
       secret: this.configService.get('VERIFY_EMAIL_KEY'),
       expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
     });
   }
 
-  async signTokenForgetPassword(email: string) {
+  signTokenForgetPassword(email: string) {
     return this.jwtService.sign(
       {
         email: email,
@@ -135,66 +138,65 @@ export class AuthService {
     );
   }
 
-  async blockToken(id: any, type: string) {
-    try {
-      const token = await this.redisCache.get(`USER:${id}:${type}`);
+  async forgetPassword(email: string): Promise<void> {
+    const user = await this.userService.getUserByEmail(email);
 
-      await this.redisCache.set(`BLOCKLIST:${token}`, token, {
-        ttl: this.configService.get<number>(`${type}_TIME_BL`),
-      } as any);
-
-      await this.redisCache.del(`USER:${id}:${type}`);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    if (!user) {
+      throw new ConflictException(`Email ${email} không khớp với bất kỳ tài khoản nào!`);
     }
+
+    const forgetPasswordToken = this.signTokenForgetPassword(email);
+    await this.mailService.sendMailForgetPassword(email, 'Quên mật khẩu', forgetPasswordToken);
   }
 
   async removeSocket(id: number) {
-    await this.redisCache.del(`USER:${id}:SOCKET`);
+    await this.redisService.deleteObjectByKey(`USER:${id}:SOCKET`);
   }
 
-  async resignToken(token: string) {
-    // check token in block list token
-    const checking = await this.redisCache.get(`BLOCKLIST:${token}`);
-
-    if (checking) {
-      throw new BadRequestException('Không hợp lệ!');
-    }
-
+  async resignToken(token: string): Promise<PairToken> {
     // lấy thông tin rftoken
     const payload = await this.jwtService.verify(token, {
       secret: process.env.REFRESHTOKEN_KEY,
     });
 
-    if (payload) {
-      const id_user = payload.idUser;
-
-      // block token cuar phiển đăng nhập hiện tại
-      await this.blockToken(id_user, 'ACCESSTOKEN');
-      await this.blockToken(id_user, 'REFRESHTOKEN');
-
-      // tạo token mới
-      const at = await this.signAccessToken({
-        id: id_user,
-      });
-      const rt = await this.signRefreshToken({
-        id: id_user,
-      });
-
-      // thêm rf token vào redis phục vụ cho việc lấy lại at khi at hết hạn
-      await this.redisCache.set(`USER:${id_user}:REFRESHTOKEN`, rt, {
-        ttl: 1000 * 60 * 60 * 24 * 7,
-      } as any);
-      await this.redisCache.set(`USER:${id_user}:ACCESSTOKEN`, at, {
-        ttl: 1000 * 60 * 60 * 2,
-      } as any);
-
-      return {
-        access_token: at,
-        refresh_token: rt,
-      };
-    } else {
-      throw new BadRequestException('Không hợp lệ!');
+    if (!payload) {
+      throw new HttpException('Token không hợp lệ', HttpStatus.BAD_REQUEST);
     }
+
+    const userId = payload.idUser;
+    let user = await this.userService.getUserById(userId);
+
+    if (user.refreshToken !== token) {
+      throw new HttpException('Token không hợp lệ', HttpStatus.BAD_REQUEST);
+    }
+
+    // tạo token mới
+    const accessToken = this.signAccessToken({
+      id: userId,
+    });
+    const refreshToken = this.signRefreshToken({
+      id: userId,
+    });
+
+    user = {
+      ...user,
+      accessToken,
+      refreshToken,
+    };
+
+    await this.userService.update(userId, user);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async changePassword(token: string, newPassword: string): Promise<void> {
+    const payload = await this.jwtService.verify(token, {
+      secret: process.env.FORGETPASSWORD_KEY,
+    });
+
+    await this.userService.updatePassword(payload.email, newPassword);
   }
 }
