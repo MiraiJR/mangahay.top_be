@@ -21,8 +21,6 @@ import { NotificationModule } from '../notification/notification.module';
         store: redisStore,
         host: configService.get('REDIS_HOST'),
         port: configService.get('REDIS_PORT'),
-        // url: configService.get('REDIS_URL'),
-        password: configService.get('REDIS_PASSWORD'),
         ttl: 120,
         ssl: true,
       }),

@@ -295,7 +295,7 @@ export class ComicService {
     };
   }
 
-  @Interval(1000 * 60 * 60 * 2)
+  @Interval(1000 * 60 * 120)
   automaticUpdate() {
     const link_file_python: string =
       process.cwd() + '/src/common/pythons/update_chapter_auto.py';
@@ -312,7 +312,7 @@ export class ComicService {
     });
   }
 
-  @Interval(1000 * 60 * 10)
+  @Interval(1000 * 60 * 60)
   automaticUpdateComic() {
     const link_file_python: string =
       process.cwd() + '/src/common/pythons/update_new_comic.py';
