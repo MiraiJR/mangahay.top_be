@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  HttpStatus,
-  Logger,
-  Param,
-  ParseIntPipe,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, Res } from '@nestjs/common';
 import { ChapterService } from './chapter.service';
 import { Response } from 'express';
 
@@ -25,27 +17,13 @@ export class ChapterController {
   ) {
     try {
       const chapters = await this.chapterService.getAll(id_comic);
-      let pre = null;
-      let next = null;
-      let cur = null;
-
-      for (let i = 0; i < chapters.length; i++) {
-        if (chapters[i].id === id_chapter) {
-          next = chapters[i - 1] ? chapters[i - 1] : null;
-          cur = chapters[i];
-          pre = chapters[i + 1] ? chapters[i + 1] : null;
-        }
-      }
+      const chapter = this.chapterService.getNextAndPreChapter(id_chapter, chapters);
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
         message: 'Thao tác thành công!',
-        result: {
-          pre,
-          cur,
-          next,
-        },
+        result: chapter,
       });
     } catch (error) {
       this.logger.error(error);

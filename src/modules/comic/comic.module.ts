@@ -11,6 +11,7 @@ import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
 import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 import { ComicResolver } from './comic.resolver';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ComicResolver } from './comic.resolver';
     CloudinaryModule,
     UserModule,
     NotificationModule,
+    RedisModule,
     TypeOrmModule.forFeature([Comic, Genres, User_Evaluate_Comic]),
   ],
   controllers: [ComicController],

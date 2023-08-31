@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,11 +9,15 @@ import { spawn } from 'child_process';
 import { IComic } from './comic.interface';
 import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 import * as moment from 'moment';
+import { ChapterService } from '../chapter/chapter.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ComicService {
   constructor(
     private logger: Logger = new Logger(ComicService.name),
+    private chapterService: ChapterService,
+    private userService: UserService,
     @InjectRepository(Comic)
     private comicRepository: Repository<Comic>,
     @InjectRepository(Genres)
@@ -22,13 +26,30 @@ export class ComicService {
     private userEvaluateComicRepository: Repository<User_Evaluate_Comic>,
   ) {}
 
+  async getChapters(comicId: number) {
+    return await this.chapterService.getAll(comicId);
+  }
+
   async create(comic: IComic) {
     const new_comic = this.comicRepository.create(comic);
     return await this.comicRepository.save(new_comic);
   }
 
-  async delete(id_comic: number) {
-    return await this.comicRepository.delete(id_comic);
+  async delete(comicId: number) {
+    const comic = await this.getById(comicId);
+
+    if (!comic) {
+      throw new HttpException(`Truyên id [${comicId}] không tồn tại!`, HttpStatus.BAD_REQUEST);
+    }
+
+    await this.chapterService.deleteAllChapterOfComic(comicId);
+    await Promise.all([
+      this.userService.deleteComicFromEvaluate(comicId),
+      this.userService.deleteComicFromFollow(comicId),
+      this.userService.deleteComicFromLike(comicId),
+    ]);
+
+    return await this.comicRepository.delete(comicId);
   }
 
   async update(comic: IComic) {
@@ -65,21 +86,16 @@ export class ComicService {
       limit ${query.limit}
       `,
     );
-    // .createQueryBuilder('comic')
-    // .skip((page - 1) * query.limit)
-    // .take(query.limit)
-    // .orderBy('comic.updatedAt', 'DESC')
-    // .getMany();
   }
 
   async getTotal() {
     return await this.comicRepository.count();
   }
 
-  async getOne(name_comic: string) {
+  async getComicBySlug(slugComic: string) {
     return await this.comicRepository
       .createQueryBuilder('comic')
-      .where('comic.slug = :slug', { slug: name_comic })
+      .where('comic.slug = :slug', { slug: slugComic })
       .getOne();
   }
 
@@ -92,21 +108,27 @@ export class ComicService {
   }
 
   // tăng các field như view, follow, like
-  async increment(name_comic: string, field: string, jump: number) {
+  async increment(slugComic: string, field: string, jump: number) {
+    const comic = await this.getComicBySlug(slugComic);
+
+    if (!comic) {
+      throw new HttpException(`Truyên slug [${slugComic}] không tồn tại!`, HttpStatus.BAD_REQUEST);
+    }
+
     await this.comicRepository.increment(
       {
-        slug: name_comic,
+        slug: comic.slug,
       },
       `${field}`,
       jump,
     );
   }
 
-  async search(query: any) {
+  async search(query: QuerySearch) {
     let page = 1;
 
     if (query.page) {
-      page = parseInt(query.page);
+      page = query.page;
     }
 
     const result = await this.comicRepository.createQueryBuilder('comics');
@@ -156,13 +178,13 @@ export class ComicService {
     return {
       total: await result.getCount(),
       comics: await result
-        .skip((page - 1) * Number.parseInt(query.limit))
-        .take(Number.parseInt(query.limit))
+        .skip((page - 1) * query.limit)
+        .take(query.limit)
         .getMany(),
     };
   }
 
-  async ranking(query: any) {
+  async ranking(query: { field: string; limit: string }) {
     return await this.comicRepository
       .createQueryBuilder('comics')
       .orderBy(`comics.${query.field}`, 'DESC')
@@ -189,9 +211,7 @@ export class ComicService {
       },
     });
 
-    const new_rating =
-      (comic.star * (number_user_rating - 1) + number_rating) /
-      number_user_rating;
+    const new_rating = (comic.star * (number_user_rating - 1) + number_rating) / number_user_rating;
 
     return await this.comicRepository.save({
       id: id_comic,
@@ -213,10 +233,7 @@ export class ComicService {
     const result = [];
 
     for (let i = number_day - 1; i >= 0; i--) {
-      const temp_date = moment()
-        .subtract(i, 'days')
-        .startOf('day')
-        .format('yyyy-MM-DD');
+      const temp_date = moment().subtract(i, 'days').startOf('day').format('yyyy-MM-DD');
 
       const check = analysis.filter(
         (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,
@@ -252,10 +269,7 @@ export class ComicService {
     const result = [];
 
     for (let i = 1; i >= 0; i--) {
-      const temp_date = moment()
-        .subtract(i, 'days')
-        .startOf('day')
-        .format('yyyy-MM-DD');
+      const temp_date = moment().subtract(i, 'days').startOf('day').format('yyyy-MM-DD');
 
       const check = analysis.filter(
         (ele: any) => moment(ele.date).format('yyyy-MM-DD') === temp_date,
@@ -297,8 +311,7 @@ export class ComicService {
 
   @Interval(1000 * 60 * 120)
   automaticUpdate() {
-    const link_file_python: string =
-      process.cwd() + '/src/common/pythons/update_chapter_auto.py';
+    const link_file_python: string = process.cwd() + '/src/common/pythons/update_chapter_auto.py';
     const pyProg = spawn('python', [link_file_python]);
 
     this.logger.log('Cập nhật chapter mới cho truyện có sẵn!!!!!!!!!');
@@ -314,8 +327,7 @@ export class ComicService {
 
   @Interval(1000 * 60 * 60)
   automaticUpdateComic() {
-    const link_file_python: string =
-      process.cwd() + '/src/common/pythons/update_new_comic.py';
+    const link_file_python: string = process.cwd() + '/src/common/pythons/update_new_comic.py';
     const pyProg = spawn('python', [link_file_python]);
 
     this.logger.log('Cập nhật truyện mới!!!!!!!!!');
