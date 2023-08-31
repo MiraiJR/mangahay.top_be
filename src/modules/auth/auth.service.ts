@@ -154,7 +154,6 @@ export class AuthService {
   }
 
   async resignToken(token: string): Promise<PairToken> {
-    // lấy thông tin rftoken
     const payload = await this.jwtService.verify(token, {
       secret: process.env.REFRESHTOKEN_KEY,
     });

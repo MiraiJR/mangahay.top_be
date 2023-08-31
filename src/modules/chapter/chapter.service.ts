@@ -14,13 +14,7 @@ export class ChapterService {
   async getAll(id_comic: any) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
-      .select([
-        'chapter.id',
-        'chapter.name',
-        'chapter.slug',
-        'chapter.updatedAt',
-        'chapter.images',
-      ])
+      .select(['chapter.id', 'chapter.name', 'chapter.slug', 'chapter.updatedAt', 'chapter.images'])
       .where('chapter.id_comic = :id_comic', { id_comic })
       .orderBy('chapter.id', 'DESC')
       .getMany();
@@ -32,6 +26,26 @@ export class ChapterService {
       .where('chapter.id_comic = :id_comic', { id_comic })
       .orderBy('chapter.updatedAt', 'ASC')
       .getOne();
+  }
+
+  getNextAndPreChapter(chapterId: number, chapters: Array<Chapter>) {
+    let pre = null;
+    let next = null;
+    let cur = null;
+
+    for (let i = 0; i < chapters.length; i++) {
+      if (chapters[i].id === chapterId) {
+        next = chapters[i - 1] ? chapters[i - 1] : null;
+        cur = chapters[i];
+        pre = chapters[i + 1] ? chapters[i + 1] : null;
+      }
+    }
+
+    return {
+      pre,
+      cur,
+      next,
+    };
   }
 
   async create(chapter: IChapter) {
@@ -75,11 +89,7 @@ export class ChapterService {
     });
   }
 
-  async updateImagesAtSpecificPosition(
-    id_chapter: number,
-    positions: number[],
-    images: string[],
-  ) {
+  async updateImagesAtSpecificPosition(id_chapter: number, positions: number[], images: string[]) {
     const chapter = await this.getOne(id_chapter);
     const chapter_images = chapter.images;
 

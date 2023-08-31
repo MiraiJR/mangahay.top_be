@@ -15,12 +15,14 @@ import { ComicService } from '../comic/comic.service';
 import { Comic } from '../comic/comic.entity';
 import { Genres } from '../comic/genre/genre.entity';
 import { UserHistory } from './user_history/user_history.entity';
+import { ChapterModule } from '../chapter/chapter.module';
 
 @Module({
   imports: [
     CloudinaryModule,
     JwtModule,
     NotificationModule,
+    ChapterModule,
     forwardRef(() => ComicModule),
     TypeOrmModule.forFeature([
       User,

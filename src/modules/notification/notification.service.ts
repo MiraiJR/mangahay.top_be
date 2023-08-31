@@ -34,15 +34,10 @@ export class NotificationService {
   }
 
   async notifyToUser(notify: INotification) {
-    const user_socket = await this.socketService.checkUserOnline(
-      notify.id_user,
-    );
+    const user_socket = await this.socketService.checkUserOnline(notify.id_user);
 
     if (user_socket) {
-      this.socketService
-        .getSocket()
-        .to(user_socket)
-        .emit('notification_user', notify);
+      this.socketService.getSocket().to(user_socket).emit('notification_user', notify);
     }
   }
 
