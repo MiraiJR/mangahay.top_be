@@ -11,7 +11,6 @@ import { NotificationModule } from '../notification/notification.module';
 import { UserResolver } from './user.resolver';
 import { User_Evaluate_Comic } from './user_evaluate/user_evaluate.entity';
 import { ComicModule } from '../comic/comic.module';
-import { ComicService } from '../comic/comic.service';
 import { Comic } from '../comic/comic.entity';
 import { Genres } from '../comic/genre/genre.entity';
 import { UserHistory } from './user_history/user_history.entity';
@@ -35,7 +34,7 @@ import { ChapterModule } from '../chapter/chapter.module';
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserResolver, Logger, ComicService],
+  providers: [UserService, UserResolver, Logger],
   exports: [UserService],
 })
 export class UserModule {}

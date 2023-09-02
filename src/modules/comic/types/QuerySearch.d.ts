@@ -1,9 +1,9 @@
 type QuerySearch = {
-  comic_name?: string;
+  comicName?: string;
   page?: number;
   limit?: number;
-  filter_state?: string;
-  filter_sort?: string;
-  filter_author?: string;
-  filter_genre?: string;
+  filterState?: string;
+  filterSort?: string;
+  filterAuthor?: string;
+  filterGenres?: string;
 };

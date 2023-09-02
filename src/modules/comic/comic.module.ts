@@ -12,6 +12,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 import { ComicResolver } from './comic.resolver';
 import { RedisModule } from '../redis/redis.module';
+import { ComicRepository } from './comic.repository';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { RedisModule } from '../redis/redis.module';
     TypeOrmModule.forFeature([Comic, Genres, User_Evaluate_Comic]),
   ],
   controllers: [ComicController],
-  providers: [ComicService, Logger, ComicResolver],
+  providers: [ComicService, Logger, ComicResolver, ComicRepository],
   exports: [ComicService],
 })
 export class ComicModule {}
