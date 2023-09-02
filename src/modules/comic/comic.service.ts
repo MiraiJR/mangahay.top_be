@@ -1,5 +1,4 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import slugify from 'slugify';
@@ -11,15 +10,18 @@ import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity'
 import * as moment from 'moment';
 import { ChapterService } from '../chapter/chapter.service';
 import { UserService } from '../user/user.service';
+import { ComicRepository } from './comic.repository';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { Comic } from './comic.entity';
 
 @Injectable()
 export class ComicService {
   constructor(
+    private userService: UserService,
     private logger: Logger = new Logger(ComicService.name),
     private chapterService: ChapterService,
-    private userService: UserService,
-    @InjectRepository(Comic)
-    private comicRepository: Repository<Comic>,
+    private comicRepository: ComicRepository,
+    private cloudinaryService: CloudinaryService,
     @InjectRepository(Genres)
     private genresRepository: Repository<Genres>,
     @InjectRepository(User_Evaluate_Comic)
@@ -27,16 +29,11 @@ export class ComicService {
   ) {}
 
   async getChapters(comicId: number) {
-    return await this.chapterService.getAll(comicId);
-  }
-
-  async create(comic: IComic) {
-    const new_comic = this.comicRepository.create(comic);
-    return await this.comicRepository.save(new_comic);
+    return await this.chapterService.getChaptersOfComic(comicId);
   }
 
   async delete(comicId: number) {
-    const comic = await this.getById(comicId);
+    const comic = await this.getComicById(comicId);
 
     if (!comic) {
       throw new HttpException(`Truyên id [${comicId}] không tồn tại!`, HttpStatus.BAD_REQUEST);
@@ -59,36 +56,18 @@ export class ComicService {
     });
   }
 
-  async getAllComic() {
-    return await this.comicRepository.find({
-      order: {
-        id: 'ASC',
-      },
-    });
-  }
-
-  async getAll(query: any) {
+  async getComics(query: { page: number; limit: number }) {
     let page = 1;
 
     if (query.page) {
       page = query.page;
     }
 
-    return await this.comicRepository.manager.query(
-      `
-      select co_2.id, co_2.slug, co_2.name,co_2.another_name, co_2.genres,co_2.authors,co_2.state, co_2.thumb,co_2.brief_desc, co_2.view, co_2.like, co_2.follow, co_2.star, co_2.id_owner, co_2."createdAt", co_2."updatedAt", ch_2.name as "newest_chapter_name", ch_2.slug as "newest_chapter_slug", co_ch.id_chapter as "newest_chapter_id"
-      from (select co.id,max(ch.id) as id_chapter
-      from public.comic as co join public.chapter ch on co.id = ch.id_comic
-      group by co.id) as co_ch join public.comic co_2 on co_ch.id = co_2.id
-      join public.chapter as ch_2 on co_ch.id_chapter = ch_2.id
-      order by co_2."updatedAt" DESC
-      offset ${(page - 1) * query.limit}
-      limit ${query.limit}
-      `,
-    );
+    const comics = await this.comicRepository.getComicsAndNewtChapter(page, query.limit);
+    return comics;
   }
 
-  async getTotal() {
+  async countComics() {
     return await this.comicRepository.count();
   }
 
@@ -99,12 +78,54 @@ export class ComicService {
       .getOne();
   }
 
-  async getById(id_comic: number) {
+  async getComicById(id_comic: number): Promise<Comic> {
     return this.comicRepository.findOne({
       where: {
         id: id_comic,
       },
     });
+  }
+
+  async createComic(comic: IComic, file: Express.Multer.File): Promise<Comic> {
+    let newComic = await this.comicRepository.save(comic);
+
+    newComic = await this.cloudinaryService
+      .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
+      .then((data: any) => {
+        return this.updateThumb(newComic.id, data.url);
+      });
+
+    return newComic;
+  }
+
+  async updateComic(comic: IComic, file: Express.Multer.File): Promise<Comic> {
+    let updatedComic = await this.getComicById(comic.id);
+
+    if (!updatedComic) {
+      throw new HttpException(`Truyện id [${comic.id}] không tồn tại!`, HttpStatus.BAD_REQUEST);
+    }
+
+    updatedComic.name = comic.name;
+    updatedComic.another_name = comic.another_name;
+    updatedComic.genres = comic.genres;
+    updatedComic.authors = comic.authors;
+    updatedComic.brief_desc = comic.brief_desc;
+    updatedComic.generateSlug();
+    updatedComic.updateTimeStamp();
+
+    updatedComic = await this.comicRepository.save(updatedComic);
+
+    if (!file) {
+      return updatedComic;
+    }
+
+    updatedComic = await this.cloudinaryService
+      .uploadFileFromBuffer(file.buffer, `comics/${updatedComic.id}/thumb`)
+      .then((data: any) => {
+        return this.updateThumb(updatedComic.id, data.url);
+      });
+
+    return updatedComic;
   }
 
   // tăng các field như view, follow, like
@@ -133,8 +154,8 @@ export class ComicService {
 
     const result = await this.comicRepository.createQueryBuilder('comics');
 
-    if (query.comic_name != '') {
-      const data_search_slug = slugify(query.comic_name, {
+    if (query.comicName != '') {
+      const data_search_slug = slugify(query.comicName, {
         replacement: '-',
         remove: undefined,
         lower: true,
@@ -148,26 +169,30 @@ export class ComicService {
       });
     }
 
-    if (query.filter_state != '') {
-      result.andWhere('comics.state = :state', { state: query.filter_state });
+    if (query.filterState != '') {
+      result.andWhere('comics.state = :state', { state: query.filterState });
     }
 
-    if (query.filter_sort == 'az') {
-      result.orderBy('comics.name', 'ASC');
-    } else if (query.filter_sort == 'za') {
-      result.orderBy('comics.name', 'DESC');
-    } else {
-      result.orderBy(`comics.${query.filter_sort}`, 'DESC');
+    switch (query.filterSort) {
+      case 'az':
+        result.orderBy('comics.name', 'ASC');
+        break;
+      case 'za':
+        result.orderBy('comics.name', 'DESC');
+        break;
+      default:
+        result.orderBy(`comics.name`, 'DESC');
+        break;
     }
 
-    if (query.filter_author != '') {
+    if (query.filterAuthor != '') {
       result.andWhere(':author = any(comics.authors)', {
-        author: query.filter_author,
+        author: query.filterAuthor,
       });
     }
 
-    if (query.filter_genre != '') {
-      let query_filter: any = `genres @> ARRAY[${query.filter_genre}]`
+    if (query.filterGenres != '') {
+      let query_filter: any = `genres @> ARRAY[${query.filterGenres}]`
         .replace('[', "['")
         .replace(']', "']");
 
@@ -196,15 +221,25 @@ export class ComicService {
     return await this.genresRepository.find();
   }
 
-  async updateThumb(id_comic: number, thumb: string) {
-    return await this.comicRepository.save({
-      id: id_comic,
+  async updateThumb(comicId: number, thumb: string) {
+    const comic = await this.getComicById(comicId);
+    if (!comic) {
+      throw new HttpException(`Truyên id [${comic.id}] không tồn tại!`, HttpStatus.BAD_REQUEST);
+    }
+
+    const newInformation = await this.comicRepository.save({
+      id: comicId,
       thumb: thumb,
     });
+
+    return {
+      ...comic,
+      thumb: newInformation.thumb,
+    };
   }
 
   async updateRatingStar(id_comic: number, number_rating: number) {
-    const comic = await this.getById(id_comic);
+    const comic = await this.getComicById(id_comic);
     const number_user_rating = await this.userEvaluateComicRepository.count({
       where: {
         id_comic: id_comic,

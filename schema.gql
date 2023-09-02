@@ -49,25 +49,6 @@ type NotifyDTO {
   updatedAt: DateTime!
 }
 
-type ComicDTO {
-  id: Int!
-  slug: String!
-  name: String!
-  another_name: String!
-  genres: [String!]!
-  authors: [String!]!
-  state: String!
-  thumb: String!
-  brief_desc: String!
-  view: Int!
-  like: Int!
-  follow: Int!
-  star: Float!
-  id_owner: Int!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-
 type SlideImageDTO {
   id: Int!
   link_image: String!
@@ -91,7 +72,6 @@ type Query {
   getLikedComic(page: Int!, limit: Int!): [UserFollowComicDTO!]!
   getNotifiesOfUser(page: Int!, limit: Int!): [NotifyDTO!]!
   getAllUser: [UserDTO!]!
-  getAllComic: [ComicDTO!]!
   getSlideImages: [SlideImageDTO!]!
   getReports(type: String!): [ReportDTO!]!
 }

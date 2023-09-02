@@ -11,7 +11,7 @@ export class ChapterService {
     private chapterRepository: Repository<Chapter>,
   ) {}
 
-  async getAll(id_comic: any) {
+  async getChaptersOfComic(id_comic: any) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .select(['chapter.id', 'chapter.name', 'chapter.slug', 'chapter.updatedAt', 'chapter.images'])
