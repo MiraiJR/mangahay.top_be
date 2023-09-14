@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { ExecutionContext, SetMetadata } from '@nestjs/common';
 import { UserRole } from 'src/modules/user/user.role';
 import { Injectable, Dependencies } from '@nestjs/common';
@@ -9,7 +8,6 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 @Dependencies(Reflector)
-// kiểm tra role tài khoản
 export class RolesGuard {
   reflector: any;
 

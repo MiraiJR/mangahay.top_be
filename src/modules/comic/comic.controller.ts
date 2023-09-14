@@ -127,9 +127,7 @@ export class ComicController {
       };
 
       data_update_comic.genres = data_update_comic.genres.toString().split(',');
-      data_update_comic.authors = data_update_comic.authors
-        .toString()
-        .split(',');
+      data_update_comic.authors = data_update_comic.authors.toString().split(',');
 
       const update_comic = await this.comicService.update(data_update_comic);
 
@@ -164,7 +162,7 @@ export class ComicController {
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         success: true,
-        message: 'Tăng thành công!',
+        message: 'Lấy thể loại truyện thành công!',
         result: genres,
       });
     } catch (error) {
@@ -317,22 +315,18 @@ export class ComicController {
       const new_chapter = await this.chapterService.create({ ...chapter });
 
       this.cloudinaryService
-        .uploadMultipleFile(
-          files,
-          `comics/${new_chapter.id_comic}/${new_chapter.id}`,
-        )
+        .uploadMultipleFile(files, `comics/${new_chapter.id_comic}/${new_chapter.id}`)
         .then((data) => this.chapterService.updateImages(new_chapter.id, data));
 
       this.comicService.getById(new_chapter.id_comic).then(async (comic) => {
-        const users_following =
-          await this.userService.getListUserFollowingComic(comic.id);
+        const users_following = await this.userService.getListUserFollowingComic(comic.id);
 
         for (const user of users_following) {
           const notify: INotification = {
             id_user: user.id_user,
             title: 'Chương mới!',
             body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
-            redirect_url: `comic/${comic.slug}/${new_chapter.slug}`,
+            redirect_url: `/comic/${comic.slug}/${new_chapter.slug}`,
             thumb: comic.thumb,
           };
 
@@ -382,9 +376,7 @@ export class ComicController {
         .then((data) =>
           this.chapterService.updateImagesAtSpecificPosition(
             chapter.id,
-            chapter_information.change_image_at
-              .split(',')
-              .map((ele: string) => parseInt(ele)),
+            chapter_information.change_image_at.split(',').map((ele: string) => parseInt(ele)),
             data,
           ),
         );
@@ -400,13 +392,11 @@ export class ComicController {
 
         this.notifyService.create(notify);
 
-        this.userService
-          .checkFollowing(id_user, chapter.id_comic)
-          .then((data) => {
-            if (data) {
-              this.notifyService.notifyToUser(notify);
-            }
-          });
+        this.userService.checkFollowing(id_user, chapter.id_comic).then((data) => {
+          if (data) {
+            this.notifyService.notifyToUser(notify);
+          }
+        });
       });
 
       return response.status(HttpStatus.OK).json({
@@ -432,11 +422,7 @@ export class ComicController {
     @Res() response: Response,
   ) {
     try {
-      await this.comicService.increment(
-        slug_comic,
-        query.field,
-        parseInt(query.jump),
-      );
+      await this.comicService.increment(slug_comic, query.field, parseInt(query.jump));
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,

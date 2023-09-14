@@ -37,13 +37,11 @@ export class SocketGateway
   }
 
   handleDisconnect(client: Socket) {
-    // client disconnected
     this.logger.log(`Client disconnected: ${client.id}`);
     this.socketService.removeClientFromList(client);
   }
 
   handleConnection(client: Socket) {
-    // client connected
     this.logger.log(`Client connected: ${client.id}`);
     this.socketService.addClientToList(client);
   }

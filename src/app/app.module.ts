@@ -16,6 +16,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { MessageModule } from '../modules/message/message.module';
 import { AdminModule } from '../modules/admin/admin.module';
 import { ReportModule } from '../modules/report/report.module';
+import { MailModule } from 'src/modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ReportModule } from '../modules/report/report.module';
     MessageModule,
     AdminModule,
     ReportModule,
+    MailModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
@@ -46,7 +48,6 @@ import { ReportModule } from '../modules/report/report.module';
         database: configService.get('DATABASE_NAME'),
         synchronize: true,
         autoLoadEntities: true,
-        ssl: true,
       }),
     }),
     ScheduleModule.forRoot(),
