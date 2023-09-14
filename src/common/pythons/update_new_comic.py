@@ -2,21 +2,23 @@ import requests
 from bs4 import BeautifulSoup
 import psycopg2
 from slugify import slugify
+import os
 
 conn = psycopg2.connect(
-    # database="COMIC", user='postgres', password='1234', host='127.0.0.1', port='5432'
-    database="mangahay_comic", user='mangahay_admin', password='9TRrkD1nkgtrpGx6PfLqDejOXOBJ5QK6', host='dpg-cibg21h5rnuk9q8q0rbg-a.singapore-postgres.render.com', port='5432'
-    # database="comic", user='mangahay', password='7TkYqFQb1znlJ0lPYcsiUsCbl6zgr3DF', host='dpg-cgttjv02qv2fdeacb4l0-a.singapore-postgres.render.com', port='5432'
+    database=os.environ.get('DATABASE_NAME'), 
+    user=os.environ.get('DATABASE_USERNAME'), 
+    password=os.environ.get('DATABASE_PASSWORD'), 
+    host=os.environ.get('DATABASE_HOST'), 
+    port=os.environ.get('DATABASE_PORT')
 )
 
 cursor = conn.cursor()
-
 
 def getListLinkComic():
     origin_url = 'https://truyentranhlh.net/danh-sach?sort=update&page='
     array_page = []
     link_comics = []
-    for i in range(100, 0, -1):
+    for i in range(6, 0, -1):
         array_page.append(origin_url + str(i))
 
     for page in array_page:
