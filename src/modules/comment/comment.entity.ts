@@ -1,33 +1,27 @@
-/* eslint-disable prettier/prettier */
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Comic } from '../comic/comic.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class Comment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Exclude()
+  @Column({ name: 'user_id' })
   @ManyToOne(() => User, (user) => user.id)
-  @JoinColumn({ name: 'id_user' })
-  id_user: number;
+  @JoinColumn({ name: 'user_id' })
+  userId: number;
 
-  @Column()
+  @Exclude()
+  @Column({ name: 'comic_id' })
   @ManyToOne(() => Comic, (comic) => comic.id)
-  @JoinColumn({ name: 'id_comic' })
-  id_comic: number;
+  @JoinColumn({ name: 'comic_id' })
+  comicId: number;
 
   @Column({ nullable: false })
   content: string;
-
-  answer: any[];
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;

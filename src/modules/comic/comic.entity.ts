@@ -1,6 +1,13 @@
-/* eslint-disable prettier/prettier */
 import slugify from 'slugify';
-import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from '../user/user.entity';
 
 @Entity()
 export class Comic {
@@ -13,8 +20,8 @@ export class Comic {
   @Column({ nullable: false })
   name: string;
 
-  @Column()
-  another_name: string;
+  @Column({ name: 'another_name' })
+  anotherName: string;
 
   @Column('text', { array: true })
   genres: string[];
@@ -31,8 +38,8 @@ export class Comic {
   })
   thumb: string;
 
-  @Column()
-  brief_desc: string;
+  @Column({ name: 'brief_description' })
+  briefDescription: string;
 
   @Column({ default: 0 })
   view: number;
@@ -46,8 +53,9 @@ export class Comic {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   star: number;
 
-  @Column({ default: 0 })
-  id_owner: number;
+  @ManyToOne(() => User, (user) => user.id)
+  @Column({ nullable: true })
+  creator: number;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
@@ -63,6 +71,7 @@ export class Comic {
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = slugify(this.name, { lower: true });
+    const slug = slugify(this.name, { lower: true });
+    this.slug = `${slug}-${this.id}`;
   }
 }

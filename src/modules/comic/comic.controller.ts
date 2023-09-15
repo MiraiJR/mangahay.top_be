@@ -10,29 +10,41 @@ import {
   Post,
   Put,
   Query,
-  Res,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
 import { ComicService } from './comic.service';
-import { Response } from 'express';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { IdUser } from '../user/decorators/id-user';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { UserRole } from '../user/user.role';
-import { CreateComicDTO } from './DTO/create-comic';
+import { CreateComicDTO } from './dtos/create-comic';
 import { RedisService } from '../redis/redis.service';
+import UserId from '../user/decorators/userId';
+import { GetComicsDTO } from './dtos/getComics';
+import { ScoreDTO } from './dtos/evaluateComic';
+import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
+import { CreateCommentDTO } from '../comment/dtos/create-comment';
+import { CommentService } from '../comment/comment.service';
+import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
 
-@Controller('api/comic')
+@Controller('api/comics')
 export class ComicController {
-  constructor(private comicService: ComicService, private redisService: RedisService) {}
+  constructor(
+    private comicService: ComicService,
+    private redisService: RedisService,
+    private commentService: CommentService,
+  ) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async handleGetComics(@Query() query: { page: number; limit: number }) {
+  async handleGetComics(
+    @Query(new ValidationPipe())
+    query: GetComicsDTO,
+  ) {
     const comics = await this.comicService.getComics(query);
     const total = await this.comicService.countComics();
 
@@ -43,29 +55,34 @@ export class ComicController {
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @UseInterceptors(FileInterceptor('file'))
   @Post()
   async handleCreateComic(
     @Body(new ValidationPipe()) comic: CreateComicDTO,
-    @IdUser() userId: number,
+    @UserId() creatorId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const newComic = await this.comicService.createComic(comic, file);
+    const newComic = await this.comicService.createComic(creatorId, comic, file);
 
     return newComic;
   }
 
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Put('/:comicId')
   @UseInterceptors(FileInterceptor('file'))
   async handleUpdateComic(
     @Body(new ValidationPipe()) comic: CreateComicDTO,
-    @IdUser() useId: number,
+    @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
-    @Res() response: Response,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const updatedComic = await this.comicService.updateComic({ ...comic, id: comicId }, file);
+    const updatedComic = await this.comicService.updateComic(
+      userId,
+      { ...comic, id: comicId },
+      file,
+    );
 
     return updatedComic;
   }
@@ -86,7 +103,7 @@ export class ComicController {
 
   @Get('/search')
   async handleSearch(@Query() query: QuerySearch) {
-    const comics = await this.comicService.search(query);
+    const comics = await this.comicService.searchComic(query);
 
     return comics;
   }
@@ -94,15 +111,14 @@ export class ComicController {
   @Get(':slug')
   async handleGetComic(@Param('slug') slugComic: string) {
     const comic = await this.comicService.getComicBySlug(slugComic);
+    const chapters = await this.comicService.getChapters(comic.id);
+    const comments = await this.commentService.getCommentsOfComic(comic.id);
 
-    return comic;
-  }
-
-  @Get('chapter/:comicId')
-  async handleGetChaptersOfComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
-    const chapters = await this.comicService.getChapters(comicId);
-
-    return chapters;
+    return {
+      comic,
+      chapters,
+      comments,
+    };
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
@@ -114,13 +130,84 @@ export class ComicController {
     return `Xóa truyện với id ${comicId} thành công!`;
   }
 
-  @Get(':slugComic/increment')
+  @Get(':comicId/increment')
   async handleIncreament(
     @Query() query: { field: string; jump: number },
-    @Param('slugComic') slugComic: string,
+    @Param('comicId') comicId: number,
   ) {
-    await this.comicService.increment(slugComic, query.field, query.jump);
+    await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, query.field, query.jump);
 
     return `Tăng [${query.field}] cho truyện thành công!`;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Put(':comicId/evaluate')
+  async handleEvaluateComic(
+    @Body(new ValidationPipe()) data: ScoreDTO,
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    const { score } = data;
+    await this.comicService.evaluateComic(userId, comicId, score);
+
+    return `Đánh giá truyện thành công!`;
+  }
+
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @UseInterceptors(FilesInterceptor('files'))
+  @Post(':comicId/chapters')
+  async handleCreateChapterForComic(
+    @Body(new ValidationPipe()) data: CreateChapterDTO,
+    @UserId() userId: number,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    const { nameChapter } = data;
+    await this.comicService.addNewChapterForComic(userId, comicId, nameChapter, files);
+    return `Tạo chapter với cho truyện id [${comicId}] thành công!`;
+  }
+
+  @Get(':comicId/chapters/:chapterId')
+  async getOneChapter(
+    @Param('chapterId', new ParseIntPipe()) chapterId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    const chapter = await this.comicService.getASpecificChapterOfComic(comicId, chapterId);
+
+    return chapter;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Post(':comicId/comments')
+  async handleCommentComic(
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CreateCommentDTO,
+  ) {
+    const { content } = data;
+    const newComment = await this.comicService.commentOnComic(userId, comicId, content);
+
+    return newComment;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Post(':comicId/comments/:commentId/answer')
+  async handleReplyComment(
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @Param('commentId', new ParseIntPipe()) commentId: number,
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CreateAnswerDTO,
+  ) {
+    const { content, mentionedPerson } = data;
+    await this.comicService.addAnswerToCommentOfComic(
+      userId,
+      comicId,
+      commentId,
+      mentionedPerson,
+      content,
+    );
+
+    return `Trả lời bình luận thành công!`;
   }
 }

@@ -1,10 +1,10 @@
 export interface INotification {
   id?: number;
-  id_user?: number;
+  userId?: number;
   title?: string;
   body?: string;
-  is_read?: boolean;
-  redirect_url?: string;
+  isRead?: boolean;
+  redirectUrl?: string;
   thumb?: string;
   createdAt?: Date;
   updatedAt?: Date;

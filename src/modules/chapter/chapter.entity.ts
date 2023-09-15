@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import {
   BeforeInsert,
   BeforeUpdate,
@@ -10,6 +9,7 @@ import {
 } from 'typeorm';
 import { Comic } from '../comic/comic.entity';
 import slugify from 'slugify';
+import { User } from '../user/user.entity';
 
 @Entity()
 export class Chapter {
@@ -22,19 +22,24 @@ export class Chapter {
   @Column('text', { array: true, nullable: true })
   images: string[];
 
-  @Column()
+  @Column({ name: 'comic_id' })
   @ManyToOne(() => Comic, (comic) => comic.id)
-  @JoinColumn({ name: 'id_comic' })
-  id_comic: number;
+  @JoinColumn({ name: 'comic_id' })
+  comicId: number;
 
   @Column({ nullable: false })
   slug: string;
-  
+
   @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
-  updatedAt:  Date;
+  updatedAt: Date;
+
+  @ManyToOne(() => User, (user) => user.id)
+  @JoinColumn({ name: 'creator_id' })
+  @Column({ name: 'create_id', nullable: true })
+  creator: number;
 
   @BeforeInsert()
   @BeforeUpdate()

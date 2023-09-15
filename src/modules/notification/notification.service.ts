@@ -22,7 +22,7 @@ export class NotificationService {
   async changeState(id_notify: number) {
     return await this.notificationRepository.save({
       id: id_notify,
-      is_read: true,
+      isRead: true,
     });
   }
 
@@ -34,7 +34,7 @@ export class NotificationService {
   }
 
   async notifyToUser(notify: INotification) {
-    const user_socket = await this.socketService.checkUserOnline(notify.id_user);
+    const user_socket = await this.socketService.checkUserOnline(notify.userId);
 
     if (user_socket) {
       this.socketService.getSocket().to(user_socket).emit('notification_user', notify);
@@ -49,24 +49,25 @@ export class NotificationService {
       .getCount();
   }
 
-  async getNotifiesOfUser(id_user: number, query: any) {
+  async getNotifiesOfUser(userId: number, query: Paging) {
     return await this.notificationRepository.find({
       where: {
-        id_user: id_user,
+        userId,
       },
       order: {
         createdAt: 'DESC',
+        isRead: 'ASC',
       },
-      take: parseInt(query.limit),
-      skip: (parseInt(query.page) - 1) * parseInt(query.limit),
+      take: query.limit,
+      skip: (query.page - 1) * query.limit,
     });
   }
 
-  async checkOwner(id_user: number, id_notify: number) {
+  async checkOwner(userId: number, notifyId: number) {
     const check = await this.notificationRepository.findOne({
       where: {
-        id_user: id_user,
-        id: id_notify,
+        userId,
+        id: notifyId,
       },
     });
 

@@ -2,6 +2,7 @@ export interface IChapter {
   id?: number;
   name?: string;
   images?: string[];
-  id_comic?: number;
+  comicId?: number;
   slug?: string;
+  creator?: number;
 }

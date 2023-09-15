@@ -17,8 +17,8 @@ import { Response } from 'express';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { CreateReportDTO } from './DTO/create-report';
-import { IdUser } from '../user/decorators/id-user';
 import { UserRole } from '../user/user.role';
+import UserId from '../user/decorators/userId';
 
 @Controller('api/report')
 export class ReportController {
@@ -30,7 +30,7 @@ export class ReportController {
   @UseGuards(JwtAuthorizationd)
   @Post('create')
   async createReport(
-    @IdUser() id_user: number,
+    @UserId() id_user: number,
     @Body(new ValidationPipe()) body: CreateReportDTO,
     @Res() response: Response,
   ) {

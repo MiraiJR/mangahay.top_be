@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { IdUser } from '../user/decorators/id-user';
 import { Response } from 'express';
+import UserId from '../user/decorators/userId';
 
 @Controller('api/notify')
 export class NotificationController {
@@ -22,16 +22,14 @@ export class NotificationController {
   @Put('/change-state/:id_notify')
   async changeState(
     @Param('id_notify', new ParseIntPipe()) id_notify: number,
-    @IdUser() id_user: number,
+    @UserId() id_user: number,
     @Res() response: Response,
   ) {
     try {
       if (await this.notifyService.checkOwner(id_user, id_notify)) {
         this.notifyService.changeState(id_notify);
       } else {
-        throw new ForbiddenException(
-          'Bạn không có quyền thực hiện thao tác này!',
-        );
+        throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này!');
       }
 
       return response.status(HttpStatus.OK).json({
@@ -51,7 +49,7 @@ export class NotificationController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/unread-notifies/count')
-  async countUnread(@IdUser() id_user: number, @Res() response: Response) {
+  async countUnread(@UserId() id_user: number, @Res() response: Response) {
     try {
       const result = await this.notifyService.countUnread(id_user);
 
@@ -72,10 +70,7 @@ export class NotificationController {
 
   @UseGuards(JwtAuthorizationd)
   @Put('/change-state/all/unread')
-  async changeStateUnread(
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
+  async changeStateUnread(@UserId() id_user: number, @Res() response: Response) {
     try {
       console.log(id_user);
       this.notifyService.changeAllStateOfUser(id_user);
