@@ -23,9 +23,9 @@ export class SocketService {
   }
 
   async addClientToList(socket: Socket): Promise<void> {
-    const id_user = await this.extractId(socket);
+    const userId = await this.extractId(socket);
 
-    await this.redisCache.set(`USER:${id_user}:SOCKET`, socket.id, {
+    await this.redisCache.set(`USER:${userId}:SOCKET`, socket.id, {
       ttl: 1000 * 60 * 60 * 24 * 1000,
     });
   }

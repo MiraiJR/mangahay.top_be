@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateComicDTO {
@@ -8,7 +7,7 @@ export class CreateComicDTO {
 
   @IsString()
   @IsNotEmpty()
-  another_name: string;
+  anotherName: string;
 
   @IsArray()
   @IsNotEmpty()
@@ -20,5 +19,5 @@ export class CreateComicDTO {
 
   @IsString()
   @IsNotEmpty()
-  brief_desc: string;
+  briefDescription: string;
 }

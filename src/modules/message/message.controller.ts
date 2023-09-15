@@ -9,9 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { MessageService } from './message.service';
-import { IdUser } from '../user/decorators/id-user';
 import { Response } from 'express';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import UserId from '../user/decorators/userId';
 
 @Controller('api/message')
 export class MessageController {
@@ -22,7 +22,7 @@ export class MessageController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/conservation')
-  async getConservation(@IdUser() id_user: number, @Res() response: Response) {
+  async getConservation(@UserId() id_user: number, @Res() response: Response) {
     try {
       const conservation = await this.messageService.getConservation(id_user);
 
@@ -45,13 +45,15 @@ export class MessageController {
   @UseGuards(JwtAuthorizationd)
   @Get('/conservation/:id')
   async getSpecificConservation(
-    @IdUser() id_user: number,
+    @UserId() id_user: number,
     @Param('id', new ParseIntPipe()) object: number,
     @Res() response: Response,
   ) {
     try {
-      const specific_conservation =
-        await this.messageService.getSpecificConservation(id_user, object);
+      const specific_conservation = await this.messageService.getSpecificConservation(
+        id_user,
+        object,
+      );
 
       return response.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,

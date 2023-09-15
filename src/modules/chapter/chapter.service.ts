@@ -1,29 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IChapter } from './chapter.interface';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ChapterService {
   constructor(
+    private cloudinaryService: CloudinaryService,
     @InjectRepository(Chapter)
     private chapterRepository: Repository<Chapter>,
   ) {}
 
-  async getChaptersOfComic(id_comic: any) {
+  async getChaptersOfComic(comicId: number) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .select(['chapter.id', 'chapter.name', 'chapter.slug', 'chapter.updatedAt', 'chapter.images'])
-      .where('chapter.id_comic = :id_comic', { id_comic })
+      .where('chapter.comicId = :comicId', { comicId })
       .orderBy('chapter.id', 'DESC')
       .getMany();
   }
 
-  async getNewestChapter(id_comic: any) {
+  async getNewestChapter(comicId: any) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
-      .where('chapter.id_comic = :id_comic', { id_comic })
+      .where('chapter.comicId = :comicId', { comicId })
       .orderBy('chapter.updatedAt', 'ASC')
       .getOne();
   }
@@ -41,6 +43,10 @@ export class ChapterService {
       }
     }
 
+    if (cur === null) {
+      throw new HttpException('Chapter không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
     return {
       pre,
       cur,
@@ -48,9 +54,19 @@ export class ChapterService {
     };
   }
 
-  async create(chapter: IChapter) {
-    const new_chapter = this.chapterRepository.create(chapter);
-    return await this.chapterRepository.save(new_chapter);
+  async createNewChapter(chapter: IChapter, files: Express.Multer.File[]) {
+    let newChapter = this.chapterRepository.create(chapter);
+    newChapter = await this.chapterRepository.save(newChapter);
+    newChapter = await this.chapterRepository.save({
+      ...newChapter,
+      slug: `${newChapter}-${newChapter.id}`,
+    });
+
+    this.cloudinaryService
+      .uploadMultipleFile(files, `comics/${newChapter.comicId}/${newChapter.id}`)
+      .then((data) => this.updateImages(newChapter.id, data));
+
+    return newChapter;
   }
 
   async update(chapter: IChapter) {
@@ -65,12 +81,12 @@ export class ChapterService {
     });
   }
 
-  async deleteAllChapterOfComic(id_comic: number) {
+  async deleteAllChapterOfComic(comicId: number) {
     return await this.chapterRepository
       .createQueryBuilder('chapters')
       .delete()
       .from(Chapter)
-      .where('id_comic = :id_comic', { id_comic })
+      .where('comicId = :comicId', { comicId })
       .execute();
   }
 

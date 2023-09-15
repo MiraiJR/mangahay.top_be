@@ -1,8 +1,8 @@
 export interface IAnswer {
   id?: number;
-  id_comment?: number;
-  id_user?: number;
-  answer_user?: string;
+  commentId?: number;
+  userId?: number;
+  mentionedPerson?: string;
   content?: string;
   createdAt?: Date;
   updatedAt?: Date;

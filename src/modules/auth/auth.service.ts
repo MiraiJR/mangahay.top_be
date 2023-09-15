@@ -120,10 +120,13 @@ export class AuthService {
   }
 
   signTokenVerifyMail(data: RegisterUserDTO): string {
-    return this.jwtService.sign(data, {
-      secret: this.configService.get('VERIFY_EMAIL_KEY'),
-      expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
-    });
+    return this.jwtService.sign(
+      { ...data },
+      {
+        secret: this.configService.get('VERIFY_EMAIL_KEY'),
+        expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
+      },
+    );
   }
 
   signTokenForgetPassword(email: string) {

@@ -15,7 +15,7 @@ export class ComicRepository extends Repository<Comic> {
 
   async getComicsAndNewtChapter(page: number, limit: number) {
     const queryBuilder = this.createQueryBuilder('comic')
-      .leftJoinAndMapOne('comic.newestChapter', Chapter, 'chapter', 'chapter.id_comic = comic.id')
+      .leftJoinAndMapOne('comic.newestChapter', Chapter, 'chapter', 'chapter.comicId = comic.id')
       .select(['comic'])
       .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
 

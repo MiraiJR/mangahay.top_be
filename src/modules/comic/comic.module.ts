@@ -9,10 +9,11 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
-import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 import { ComicResolver } from './comic.resolver';
 import { RedisModule } from '../redis/redis.module';
 import { ComicRepository } from './comic.repository';
+import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
+import { CommentModule } from '../comment/comment.module';
 
 @Module({
   imports: [
@@ -21,8 +22,10 @@ import { ComicRepository } from './comic.repository';
     CloudinaryModule,
     UserModule,
     NotificationModule,
+    ComicInteractionModule,
     RedisModule,
-    TypeOrmModule.forFeature([Comic, Genres, User_Evaluate_Comic]),
+    CommentModule,
+    TypeOrmModule.forFeature([Comic, Genres]),
   ],
   controllers: [ComicController],
   providers: [ComicService, Logger, ComicResolver, ComicRepository],

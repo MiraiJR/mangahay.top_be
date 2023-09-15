@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Query, Resolver } from '@nestjs/graphql';
 import { ComicService } from './comic.service';
-import { ComicDTO } from './DTO/comic-dto';
+import { ComicDTO } from './dtos/comic-dto';
 
 @Resolver()
 export class ComicResolver {
