@@ -34,10 +34,16 @@ export class CommentRepository extends Repository<Comment> {
       .leftJoinAndMapOne('answer.user', User, 'user_answer', 'user_answer.id = answer.userId')
       .select(['comment'])
       .addSelect(['user.id', 'user.fullname', 'user.avatar'])
-      .addSelect(['answer.id', 'answer.content', 'answer.createdAt', 'answer.updatedAt'])
+      .addSelect([
+        'answer.id',
+        'answer.content',
+        'answer.createdAt',
+        'answer.updatedAt',
+        'answer.mentionedPerson',
+      ])
       .addSelect(['user_answer.id', 'user_answer.fullname', 'user_answer.avatar']);
 
-    const comments = await queryBuilder.getMany();
+    const comments = await queryBuilder.orderBy('comment.updatedAt', 'DESC').getMany();
     return comments;
   }
 }

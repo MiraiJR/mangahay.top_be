@@ -119,7 +119,13 @@ export class AuthService {
     );
   }
 
-  signTokenVerifyMail(data: RegisterUserDTO): string {
+  async signTokenVerifyMail(data: RegisterUserDTO): Promise<string> {
+    const user = await this.userService.getUserByEmail(data.email);
+
+    if (user) {
+      throw new ConflictException(`Email ${user.email} đã được sử dụng`);
+    }
+
     return this.jwtService.sign(
       { ...data },
       {

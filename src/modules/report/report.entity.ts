@@ -1,11 +1,4 @@
-/* eslint-disable prettier/prettier */
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 
 @Entity()
@@ -33,9 +26,9 @@ export class Report {
   @Column({ nullable: false })
   id_object: number;
 
-  @Column({nullable: false})
+  @Column({ nullable: false })
   link: string;
 
-  @Column({default: false})
+  @Column({ default: false })
   is_resolve: boolean;
 }

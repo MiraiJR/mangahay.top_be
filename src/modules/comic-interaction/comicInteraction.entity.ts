@@ -23,6 +23,7 @@ export class ComicInteraction {
   @Column({ default: false, name: 'is_followed' })
   isFollowed: boolean;
 
+  @Exclude()
   @Column({ nullable: true })
   score: number;
 }

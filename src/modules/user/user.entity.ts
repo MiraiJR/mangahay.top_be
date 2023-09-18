@@ -25,20 +25,25 @@ export class User {
   @Column({ nullable: true })
   wallpaper: string;
 
+  @Exclude()
   @Column({ default: false })
   active: boolean;
 
+  @Exclude()
   @Column({ default: false })
   facebook: boolean;
 
+  @Exclude()
   @Column({ nullable: true })
-  id_facebook: string;
+  facebookId: string;
 
+  @Exclude()
   @Column({ default: false })
   google: boolean;
 
+  @Exclude()
   @Column({ nullable: true })
-  id_google: string;
+  googleId: string;
 
   @Column({ nullable: true })
   phone: string;
@@ -50,9 +55,11 @@ export class User {
   })
   role: UserRole;
 
+  @Exclude()
   @Column({ nullable: true, name: 'refresh_token' })
   refreshToken: string;
 
+  @Exclude()
   @Column({ nullable: true, name: 'access_token' })
   accessToken: string;
 

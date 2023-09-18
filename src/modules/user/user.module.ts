@@ -7,13 +7,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationModule } from '../notification/notification.module';
 import { UserResolver } from './user.resolver';
-import { ComicModule } from '../comic/comic.module';
-import { Comic } from '../comic/comic.entity';
-import { Genres } from '../comic/genre/genre.entity';
-import { ChapterModule } from '../chapter/chapter.module';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
 import { RedisModule } from '../redis/redis.module';
+import { ComicModule } from '../comic/comic.module';
 
 @Module({
   imports: [
@@ -24,7 +21,7 @@ import { RedisModule } from '../redis/redis.module';
     ReadingHistoryModule,
     RedisModule,
     forwardRef(() => ComicModule),
-    TypeOrmModule.forFeature([User, Comic, Genres]),
+    TypeOrmModule.forFeature([User]),
   ],
   controllers: [UserController],
   providers: [UserService, UserResolver, Logger],

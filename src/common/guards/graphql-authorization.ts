@@ -29,7 +29,6 @@ export class GraphqlJwtAuthGuard implements CanActivate {
 
       return curUser ? true : false;
     } catch (error) {
-      console.log('expired');
       // trường hợp jwt token hết hạn
       return false;
     }

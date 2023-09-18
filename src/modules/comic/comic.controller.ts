@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -30,6 +31,8 @@ import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
 import { CommentService } from '../comment/comment.service';
 import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
+import { IncreaseFieldDTO } from './dtos/increaseField';
+import { CrawlChapterDTO } from './dtos/crawlChapter';
 
 @Controller('api/comics')
 export class ComicController {
@@ -68,6 +71,18 @@ export class ComicController {
     return newComic;
   }
 
+  @UseGuards(JwtAuthorizationd)
+  @Post(':comicId/crawl-comic')
+  async handleCrawlComicOnFacebook(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CrawlChapterDTO,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    await this.comicService.crawlComicOnFacebook(userId, comicId, data.nameChapter, data.urlPost);
+
+    return 'Cào dữ liệu thành công!';
+  }
+
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Put('/:comicId')
@@ -87,15 +102,8 @@ export class ComicController {
     return updatedComic;
   }
 
-  @Get('/genres')
-  async handleGetGenres() {
-    const genres = await this.comicService.getGenres();
-
-    return genres;
-  }
-
   @Get('/ranking')
-  async handleGetRanking(@Query() query: { field: string; limit: string }) {
+  async handleGetRanking(@Query() query: { field: string; limit: number }) {
     const comics = await this.comicService.ranking(query);
 
     return comics;
@@ -130,9 +138,9 @@ export class ComicController {
     return `Xóa truyện với id ${comicId} thành công!`;
   }
 
-  @Get(':comicId/increment')
+  @Patch(':comicId/increment')
   async handleIncreament(
-    @Query() query: { field: string; jump: number },
+    @Query(new ValidationPipe()) query: IncreaseFieldDTO,
     @Param('comicId') comicId: number,
   ) {
     await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, query.field, query.jump);
@@ -141,7 +149,7 @@ export class ComicController {
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Put(':comicId/evaluate')
+  @Patch(':comicId/evaluate')
   async handleEvaluateComic(
     @Body(new ValidationPipe()) data: ScoreDTO,
     @UserId() userId: number,
@@ -204,8 +212,8 @@ export class ComicController {
       userId,
       comicId,
       commentId,
-      mentionedPerson,
       content,
+      mentionedPerson,
     );
 
     return `Trả lời bình luận thành công!`;

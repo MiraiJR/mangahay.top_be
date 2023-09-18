@@ -90,78 +90,26 @@ export class UserController {
     return `Xoá truyện ra khỏi lịch sử thành công!`;
   }
 
-  // @UseGuards(JwtAuthorizationd, RolesGuard)
-  // @Roles(UserRole.ADMIN)
-  // @Put('/management/:id_user')
-  // async banOrUnbanUser(
-  //   @Param('id_user', new ParseIntPipe()) id_user: number,
-  //   @Query() query: any,
-  //   @Res() response: Response,
-  // ) {
-  //   try {
-  //     let message_response = '';
-
-  //     if (query.ban) {
-  //       if (query.ban === 'true') {
-  //         this.userService.updateActive(id_user, false);
-  //         message_response = `Ban user với id ${id_user} thành công!`;
-  //       } else {
-  //         this.userService.updateActive(id_user, true);
-  //         message_response = `Unban user với id ${id_user} thành công!`;
-  //       }
-  //     }
-
-  //     return response.status(HttpStatus.OK).json({
-  //       statusCode: HttpStatus.OK,
-  //       success: true,
-  //       message: message_response,
-  //       result: {},
-  //     });
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     return response.status(error.status | 500).json({
-  //       statusCode: error.status,
-  //       success: false,
-  //       message: error.message,
-  //     });
-  //   }
-  // }
-
   @UseGuards(JwtAuthorizationd)
   @UseInterceptors(FileInterceptor('file'))
   @Put('/me/profile/update')
   async updateInformation(
     @Query() query: any,
-    @UserId() id_user: number,
-    @Res() response: Response,
+    @UserId() userId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    try {
-      const response_file: any = await this.cloudinaryService.uploadFileFromBuffer(
-        file.buffer,
-        'users/avatars',
-      );
+    const responseFile: any = await this.cloudinaryService.uploadFileFromBuffer(
+      file.buffer,
+      'users/avatars',
+    );
 
-      if (query.avatar == 1) {
-        query.avatar = response_file.url;
-      }
-
-      this.userService.update(id_user, query);
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Cập nhật avatar thành công!',
-        result: response_file.url,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Cập nhật avatar thấy bại!',
-      });
+    if (query.avatar == 1) {
+      query.avatar = responseFile.url;
     }
+
+    this.userService.update(userId, query);
+
+    return responseFile.url;
   }
 
   @UseGuards(JwtAuthorizationd)
@@ -179,9 +127,14 @@ export class UserController {
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    const message = await this.userService.interactWithComic(userId, comicId, interactionType);
+    const interaction = await this.userService.interactWithComic(userId, comicId, interactionType);
+    const status: StatusInteractWithComicResponse = {
+      isLiked: interaction.isLiked,
+      isFollowed: interaction.isFollowed,
+      isEvaluated: interaction.score === null ? false : true,
+    };
 
-    return message;
+    return status;
   }
 
   @UseGuards(JwtAuthorizationd)
@@ -189,10 +142,15 @@ export class UserController {
   async checkFollowAndLikeComic(
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
+  ): Promise<StatusInteractWithComicResponse> {
     const interaction = await this.userService.checkInteractionWithComic(userId, comicId);
+    const status: StatusInteractWithComicResponse = {
+      isLiked: interaction.isLiked,
+      isFollowed: interaction.isFollowed,
+      isEvaluated: interaction.score === null ? false : true,
+    };
 
-    return interaction;
+    return status;
   }
 
   @UseGuards(JwtAuthorizationd)

@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()

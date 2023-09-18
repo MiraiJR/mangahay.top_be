@@ -1,11 +1,4 @@
-/* eslint-disable prettier/prettier */
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 
 @Entity()
@@ -23,12 +16,12 @@ export class Message {
   @JoinColumn({ name: 'sender' })
   sender: number;
 
-  @Column({nullable: false})
+  @Column({ nullable: false })
   content: string;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   sentAt: Date;
 
-  @Column({default: false})
+  @Column({ default: false })
   is_read: boolean;
 }

@@ -65,13 +65,14 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = slugify(this.name, { lower: true });
+    const slugTemp = `${slugify(this.name, { lower: true })}-${new Date().getTime()}`;
+    this.slug = slugTemp;
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    const slug = slugify(this.name, { lower: true });
-    this.slug = `${slug}-${this.id}`;
+    const slugTemp = `${slugify(this.name, { lower: true })}-${new Date().getTime()}`;
+    this.slug = slugTemp;
   }
 }

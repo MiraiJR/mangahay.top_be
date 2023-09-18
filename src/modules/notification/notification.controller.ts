@@ -72,7 +72,6 @@ export class NotificationController {
   @Put('/change-state/all/unread')
   async changeStateUnread(@UserId() id_user: number, @Res() response: Response) {
     try {
-      console.log(id_user);
       this.notifyService.changeAllStateOfUser(id_user);
 
       return response.status(HttpStatus.OK).json({
@@ -82,7 +81,6 @@ export class NotificationController {
         result: {},
       });
     } catch (error) {
-      console.log(error);
       return response.status(error.status | 500).json({
         statusCode: error.status,
         success: false,

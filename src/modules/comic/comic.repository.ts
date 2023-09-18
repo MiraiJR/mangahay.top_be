@@ -13,14 +13,14 @@ export class ComicRepository extends Repository<Comic> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
-  async getComicsAndNewtChapter(page: number, limit: number) {
+  async getComicsAndNewtChapter(page: number, limit: number, field: string) {
     const queryBuilder = this.createQueryBuilder('comic')
       .leftJoinAndMapOne('comic.newestChapter', Chapter, 'chapter', 'chapter.comicId = comic.id')
       .select(['comic'])
       .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
 
     const comics = await queryBuilder
-      .addOrderBy('comic.updatedAt', 'DESC')
+      .addOrderBy(`comic.${field}`, 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();

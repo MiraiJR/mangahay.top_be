@@ -2,7 +2,7 @@ type ComicPreview = {
   id: number;
   slug: string;
   name: string;
-  another_name: string;
+  anotherName: string;
   genres: Array<string>;
   authors: Array<string>;
   state: string;
