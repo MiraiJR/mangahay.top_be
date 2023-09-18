@@ -30,19 +30,18 @@ export class Chapter {
   @Column({ nullable: false })
   slug: string;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'created_at' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'updated_at' })
   updatedAt: Date;
 
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'creator_id' })
-  @Column({ name: 'create_id', nullable: true })
+  @Column({ name: 'creator_id', nullable: true })
   creator: number;
 
   @BeforeInsert()
-  @BeforeUpdate()
   generateSlug() {
     this.slug = slugify(this.name, { lower: true });
   }

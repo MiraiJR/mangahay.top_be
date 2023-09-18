@@ -5,11 +5,11 @@ import psycopg2
 from slugify import slugify
 
 conn = psycopg2.connect(
-    database=os.environ.get('DATABASE_NAME'), 
-    user=os.environ.get('DATABASE_USERNAME'), 
-    password=os.environ.get('DATABASE_PASSWORD'), 
-    host=os.environ.get('DATABASE_HOST'), 
-    port=os.environ.get('DATABASE_PORT')
+    database='MANGAHAY', 
+    user='postgres', 
+    password='1234', 
+    host='localhost', 
+    port=5432
 )
 
 cursor = conn.cursor()

@@ -59,8 +59,6 @@ export class ComicInteractionService {
   async likeComic(userId: number, comicId: number) {
     const interaction = await this.getInteractionOfWithComic(userId, comicId);
 
-    console.log(interaction);
-
     if (!interaction) {
       return await this.comicInteractionRepository.save({
         userId,

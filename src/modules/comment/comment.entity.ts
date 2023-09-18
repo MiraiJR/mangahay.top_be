@@ -14,7 +14,6 @@ export class Comment {
   @JoinColumn({ name: 'user_id' })
   userId: number;
 
-  @Exclude()
   @Column({ name: 'comic_id' })
   @ManyToOne(() => Comic, (comic) => comic.id)
   @JoinColumn({ name: 'comic_id' })

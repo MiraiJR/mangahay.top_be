@@ -1,11 +1,10 @@
-/* eslint-disable prettier/prettier */
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
-export class Genres {
+export class Genre {
   @PrimaryColumn()
   slug: string;
 
   @Column()
-  genre: string;
+  name: string;
 }

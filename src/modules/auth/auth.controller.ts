@@ -2,8 +2,11 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   Logger,
   Post,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -28,8 +31,12 @@ export class AuthController {
 
   @Post('/register')
   async register(@Body(new ValidationPipe()) data: RegisterUserDTO) {
-    const mailOtp: string = this.authService.signTokenVerifyMail(data);
-    await this.mailService.sendMailVerifyEmail(data.email, 'Xác nhận email', mailOtp);
+    const mailOtp: string = await this.authService.signTokenVerifyMail(data);
+    try {
+      await this.mailService.sendMailVerifyEmail(data.email, 'Xác nhận email', mailOtp);
+    } catch (error) {
+      throw new HttpException('Gửi mail không thành công', HttpStatus.BAD_REQUEST);
+    }
 
     return `Vui lòng kiểm tra email để xác nhận đăng ký!`;
   }
@@ -39,19 +46,19 @@ export class AuthController {
     const user = await this.authService.login(data);
 
     return {
-      access_token: user.accessToken,
-      refresh_token: user.refreshToken,
+      accessToken: user.accessToken,
+      refreshToken: user.refreshToken,
     };
   }
 
   @Post('/refresh-token')
-  async resignToken(@Body('refresh-token') rftoken: string) {
-    const token = await this.authService.resignToken(rftoken);
+  async handleResignToken(@Body('refreshToken') refreshToken: string) {
+    const token = await this.authService.resignToken(refreshToken);
 
     return token;
   }
 
-  @Get('/logout')
+  @Put('/logout')
   @UseGuards(JwtAuthorizationd)
   async logout(@UserId() userId: number) {
     await this.authService.logout(userId);

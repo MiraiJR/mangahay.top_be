@@ -9,10 +9,12 @@ import { SALT_HASH_PWD } from 'src/common/utils/salt';
 import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { RedisService } from '../redis/redis.service';
+import { ComicService } from '../comic/comic.service';
 
 @Injectable()
 export class UserService {
   constructor(
+    private comicService: ComicService,
     private redisService: RedisService,
     private comicInteractionService: ComicInteractionService,
     @InjectRepository(User)
@@ -89,27 +91,41 @@ export class UserService {
     userId: number,
     comicId: number,
     interactionType: string,
-  ): Promise<string> {
+  ): Promise<ComicInteraction> {
     switch (interactionType) {
       case 'like':
-        await this.comicInteractionService.likeComic(userId, comicId);
+        await Promise.all([
+          await this.comicInteractionService.likeComic(userId, comicId),
+          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'like', 1),
+        ]);
 
-        return 'Đã thêm vào danh sách yêu thích!';
+        break;
       case 'unlike':
-        await this.comicInteractionService.unlikeComic(userId, comicId);
+        await Promise.all([
+          await this.comicInteractionService.unlikeComic(userId, comicId),
+          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'like', -1),
+        ]);
 
-        return 'Đã loại khỏi danh sách yêu thích!';
+        break;
       case 'follow':
-        await this.comicInteractionService.followComic(userId, comicId);
+        await Promise.all([
+          await this.comicInteractionService.followComic(userId, comicId),
+          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'follow', 1),
+        ]);
 
-        return 'Đã thêm vào danh sách theo dõi!';
+        break;
       case 'unfollow':
-        await this.comicInteractionService.unfollowComic(userId, comicId);
+        await Promise.all([
+          await this.comicInteractionService.unfollowComic(userId, comicId),
+          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'follow', -1),
+        ]);
 
-        return 'Đã loại khỏi danh sách theo dõi!';
+        break;
       default:
         throw new HttpException('Hành vi không hợp lệ!', HttpStatus.BAD_REQUEST);
     }
+
+    return this.checkInteractionWithComic(userId, comicId);
   }
 
   async checkInteractionWithComic(userId: number, comicId: number): Promise<ComicInteraction> {

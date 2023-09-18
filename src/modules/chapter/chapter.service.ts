@@ -31,27 +31,38 @@ export class ChapterService {
   }
 
   getNextAndPreChapter(chapterId: number, chapters: Array<Chapter>) {
-    let pre = null;
-    let next = null;
-    let cur = null;
+    let previousChapter = null;
+    let nextChapter = null;
+    let currentChapter = null;
 
     for (let i = 0; i < chapters.length; i++) {
       if (chapters[i].id === chapterId) {
-        next = chapters[i - 1] ? chapters[i - 1] : null;
-        cur = chapters[i];
-        pre = chapters[i + 1] ? chapters[i + 1] : null;
+        nextChapter = chapters[i - 1] ? chapters[i - 1] : null;
+        currentChapter = chapters[i];
+        previousChapter = chapters[i + 1] ? chapters[i + 1] : null;
       }
     }
 
-    if (cur === null) {
+    if (currentChapter === null) {
       throw new HttpException('Chapter không tồn tại!', HttpStatus.NOT_FOUND);
     }
 
     return {
-      pre,
-      cur,
-      next,
+      previousChapter,
+      nextChapter,
+      currentChapter,
     };
+  }
+
+  async createNewChapterWithoutFiles(chapter: IChapter) {
+    let newChapter = this.chapterRepository.create(chapter);
+    newChapter = await this.chapterRepository.save(newChapter);
+    newChapter = await this.chapterRepository.save({
+      ...newChapter,
+      slug: `${newChapter.slug}-${newChapter.id}`,
+    });
+
+    return newChapter;
   }
 
   async createNewChapter(chapter: IChapter, files: Express.Multer.File[]) {
@@ -59,7 +70,7 @@ export class ChapterService {
     newChapter = await this.chapterRepository.save(newChapter);
     newChapter = await this.chapterRepository.save({
       ...newChapter,
-      slug: `${newChapter}-${newChapter.id}`,
+      slug: `${newChapter.slug}-${newChapter.id}`,
     });
 
     this.cloudinaryService

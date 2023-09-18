@@ -28,7 +28,7 @@ export class MailService {
       },
       function (error: any) {
         if (error) {
-          throw new BadRequestException(`${email} khÔng hợp lệ vui lòng thử lại`);
+          throw new Error(`${email} khÔng hợp lệ vui lòng thử lại`);
         }
       },
     );

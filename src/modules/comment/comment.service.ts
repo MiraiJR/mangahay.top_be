@@ -21,7 +21,10 @@ export class CommentService {
     const newComment = await this.commentRepository.save({ ...comment });
     const newDetailComment = await this.getCommentById(newComment.id);
 
-    return newDetailComment;
+    return {
+      ...newDetailComment,
+      answers: [],
+    };
   }
 
   async getCommentsOfComic(comicId: number) {

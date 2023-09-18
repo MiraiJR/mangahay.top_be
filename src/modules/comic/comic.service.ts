@@ -1,8 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import slugify from 'slugify';
-import { Genres } from './genre/genre.entity';
 import { Interval } from '@nestjs/schedule';
 import { spawn } from 'child_process';
 import { IComic } from './comic.interface';
@@ -14,6 +11,8 @@ import { ComicInteractionService } from '../comic-interaction/comicInteraction.s
 import { NotificationService } from '../notification/notification.service';
 import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
+import { Chapter } from '../chapter/chapter.entity';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class ComicService {
@@ -25,9 +24,58 @@ export class ComicService {
     private cloudinaryService: CloudinaryService,
     private comicInteractionService: ComicInteractionService,
     private commentService: CommentService,
-    @InjectRepository(Genres)
-    private genresRepository: Repository<Genres>,
+    private httpService: HttpService,
   ) {}
+
+  async crawlComicOnFacebook(
+    userId: number,
+    comicId: number,
+    nameChapter: string,
+    urlPost: string,
+  ) {
+    const comic = await this.getComicById(comicId);
+
+    if (!comic) {
+      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
+    const convertedURL = new URL(urlPost);
+    const pageId = convertedURL.searchParams.get('id');
+    const postId = convertedURL.searchParams.get('story_fbid');
+    const accessToken = `EAARBx6evemkBOZCF8EjDh5XolKDTqmVbl5ZCXcebulyReGLB2s8MSgOFU66PlZAPuY014pjXFpO693GbIjLiCmeGmWpF1rAPHMsyWqrOEtZCSh8wRnXfOrGYF4INQnBw4D8GAOeKUIWbz8yBYCy8PZCrgh3q4bi65kPZC25Tbysasjvarzyvzutdn0`;
+
+    const { data } = await this.httpService
+      .get(
+        `https://graph.facebook.com/v18.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
+      )
+      .toPromise();
+    const images: string[] = [];
+    data.attachments.data[0].subattachments.data.map((ele: any) => {
+      images.push(ele.media.image.src);
+    });
+
+    const newChapter = await this.chapterService.createNewChapterWithoutFiles({
+      name: nameChapter,
+      comicId,
+      creator: userId,
+      images,
+    });
+
+    const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
+    for (const userId of listUserId) {
+      const notify: INotification = {
+        userId: userId,
+        title: 'Chương mới!',
+        body: `${comic.name} vừa cập nhật thêm chapter mới - ${newChapter.name}.`,
+        redirectUrl: `/truyen/${comic.slug}/${newChapter.slug}`,
+        thumb: comic.thumb,
+      };
+
+      this.notifyService.create(notify);
+    }
+
+    return newChapter;
+  }
 
   async getChapters(comicId: number) {
     return await this.chapterService.getChaptersOfComic(comicId);
@@ -60,7 +108,11 @@ export class ComicService {
       page = query.page;
     }
 
-    const comics = await this.comicRepository.getComicsAndNewtChapter(page, query.limit);
+    const comics = await this.comicRepository.getComicsAndNewtChapter(
+      page,
+      query.limit,
+      'updatedAt',
+    );
     return comics;
   }
 
@@ -159,9 +211,9 @@ export class ComicService {
       page = query.page;
     }
 
-    const result = await this.comicRepository.createQueryBuilder('comics');
+    const result = this.comicRepository.createQueryBuilder('comics');
 
-    if (query.comicName != '') {
+    if (query.comicName) {
       const data_search_slug = slugify(query.comicName, {
         replacement: '-',
         remove: undefined,
@@ -176,29 +228,31 @@ export class ComicService {
       });
     }
 
-    if (query.filterState != '') {
+    if (query.filterState) {
       result.andWhere('comics.state = :state', { state: query.filterState });
     }
 
-    switch (query.filterSort) {
-      case 'az':
-        result.orderBy('comics.name', 'ASC');
-        break;
-      case 'za':
-        result.orderBy('comics.name', 'DESC');
-        break;
-      default:
-        result.orderBy(`comics.name`, 'DESC');
-        break;
+    if (query.filterSort) {
+      switch (query.filterSort) {
+        case 'az':
+          result.orderBy('comics.name', 'ASC');
+          break;
+        case 'za':
+          result.orderBy('comics.name', 'DESC');
+          break;
+        default:
+          result.orderBy(`comics.${query.filterSort}`, 'DESC');
+          break;
+      }
     }
 
-    if (query.filterAuthor != '') {
+    if (query.filterAuthor) {
       result.andWhere(':author = any(comics.authors)', {
         author: query.filterAuthor,
       });
     }
 
-    if (query.filterGenres != '') {
+    if (query.filterGenres) {
       let query_filter: any = `genres @> ARRAY[${query.filterGenres}]`
         .replace('[', "['")
         .replace(']', "']");
@@ -207,25 +261,33 @@ export class ComicService {
       result.andWhere(query_filter);
     }
 
-    return {
-      total: await result.getCount(),
-      comics: await result
+    result
+      .addOrderBy('comics.updatedAt', 'DESC')
+      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comicId = comics.id')
+      .select(['comics'])
+      .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
+
+    const total = await result.getCount();
+
+    let comics = await result.getMany();
+
+    if (query.limit) {
+      comics = await result
         .skip((page - 1) * query.limit)
         .take(query.limit)
-        .getMany(),
+        .getMany();
+    }
+
+    return {
+      total,
+      comics,
     };
   }
 
-  async ranking(query: { field: string; limit: string }) {
-    return await this.comicRepository
-      .createQueryBuilder('comics')
-      .orderBy(`comics.${query.field}`, 'DESC')
-      .limit(parseInt(query.limit))
-      .getMany();
-  }
+  async ranking(query: { field: string; limit: number }) {
+    const comics = await this.comicRepository.getComicsAndNewtChapter(1, query.limit, query.field);
 
-  async getGenres() {
-    return await this.genresRepository.find();
+    return comics;
   }
 
   async updateThumb(comicId: number, thumb: string) {
@@ -290,7 +352,7 @@ export class ComicService {
         userId: userId,
         title: 'Chương mới!',
         body: `${comic.name} vừa cập nhật thêm chapter mới - ${newChapter.name}.`,
-        redirectUrl: `/comic/${comic.slug}/${newChapter.slug}`,
+        redirectUrl: `/truyen/${comic.slug}/${newChapter.slug}`,
         thumb: comic.thumb,
       };
 
@@ -351,38 +413,6 @@ export class ComicService {
       commentId,
       mentionedPerson,
       content,
-    });
-  }
-
-  @Interval(1000 * 60 * 120)
-  automaticUpdate() {
-    const link_file_python: string = process.cwd() + '/src/common/pythons/update_chapter_auto.py';
-    const pyProg = spawn('python', [link_file_python]);
-
-    this.logger.log('Cập nhật chapter mới cho truyện có sẵn!!!!!!!!!');
-
-    pyProg.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
-
-    pyProg.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
-    });
-  }
-
-  @Interval(1000 * 60 * 60)
-  automaticUpdateComic() {
-    const link_file_python: string = process.cwd() + '/src/common/pythons/update_new_comic.py';
-    const pyProg = spawn('python', [link_file_python]);
-
-    this.logger.log('Cập nhật truyện mới!!!!!!!!!');
-
-    pyProg.stdout.on('data', (data) => {
-      this.logger.log(`stdout: ${data}`);
-    });
-
-    pyProg.stderr.on('data', (data) => {
-      this.logger.log(`stderr: ${data}`);
     });
   }
 }

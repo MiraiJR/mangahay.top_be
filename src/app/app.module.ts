@@ -20,6 +20,7 @@ import { MailModule } from 'src/modules/mail/mail.module';
 import { ComicInteractionModule } from 'src/modules/comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
 import { AnswerModule } from 'src/modules/answer-comment/answer.module';
+import { GenreModule } from 'src/modules/genre/genre.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AnswerModule } from 'src/modules/answer-comment/answer.module';
     ComicInteractionModule,
     ReadingHistoryModule,
     AnswerModule,
+    GenreModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
