@@ -1,23 +1,27 @@
 import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateComicDTO {
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   name: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   anotherName: string;
 
-  @IsArray()
   @IsNotEmpty()
+  @IsArray()
   genres: string[];
 
-  @IsArray()
   @IsNotEmpty()
+  @IsArray()
   authors: string[];
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   briefDescription: string;
+
+  @IsNotEmpty()
+  @IsArray()
+  translators: string[];
 }

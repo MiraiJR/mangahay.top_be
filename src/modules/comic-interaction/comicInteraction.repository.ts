@@ -29,16 +29,13 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
       .getMany();
   }
 
-  async listFollowingComicsOfUser(userId: number, page: number, limit: number) {
+  async listFollowingComicsOfUser(userId: number) {
     const queryBuilder = await this.createQueryBuilder('interaction')
       .where('interaction.userId = :userId', { userId })
       .andWhere('interaction.isFollowed = true')
       .leftJoinAndMapOne('interaction.comic', Comic, 'comic', 'interaction.comicId = comic.id')
-      .select(['interaction'])
-      .addSelect(['comic.id', 'comic.slug', 'comic.name', 'comic.thumb', 'comic.briefDescription'])
-      .orderBy('comic.updatedAt', 'DESC')
-      .skip(limit * (page - 1))
-      .limit(limit);
+      .select(['interaction', 'comic'])
+      .orderBy('comic.updatedAt', 'DESC');
 
     const interaction = queryBuilder.getMany();
     return interaction;

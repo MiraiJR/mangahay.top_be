@@ -170,11 +170,7 @@ export class ComicInteractionService {
     return arrayUserId;
   }
 
-  async getFollowingComicOfUser(userId: number, query: Paging) {
-    return this.comicInteractionRepository.listFollowingComicsOfUser(
-      userId,
-      query.page,
-      query.limit,
-    );
+  async getFollowingComicOfUser(userId: number) {
+    return this.comicInteractionRepository.listFollowingComicsOfUser(userId);
   }
 }

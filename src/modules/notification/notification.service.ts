@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
@@ -19,9 +19,26 @@ export class NotificationService {
     });
   }
 
-  async changeState(id_notify: number) {
-    return await this.notificationRepository.save({
-      id: id_notify,
+  async changeStateNotify(userId: number, notifyId: number) {
+    const notify = await this.notificationRepository.findOne({
+      where: {
+        id: notifyId,
+      },
+    });
+
+    if (!notify) {
+      throw new HttpException(
+        `Thông báo với id [${notifyId}] không tồn tại!`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (notify.userId !== userId) {
+      throw new HttpException(`Không có quyền!`, HttpStatus.FORBIDDEN);
+    }
+
+    return this.notificationRepository.save({
+      ...notify,
       isRead: true,
     });
   }
@@ -49,8 +66,8 @@ export class NotificationService {
       .getCount();
   }
 
-  async getNotifiesOfUser(userId: number, query: Paging) {
-    return await this.notificationRepository.find({
+  async getNotifiesOfUser(userId: number) {
+    return this.notificationRepository.find({
       where: {
         userId,
       },
@@ -58,20 +75,7 @@ export class NotificationService {
         createdAt: 'DESC',
         isRead: 'ASC',
       },
-      take: query.limit,
-      skip: (query.page - 1) * query.limit,
     });
-  }
-
-  async checkOwner(userId: number, notifyId: number) {
-    const check = await this.notificationRepository.findOne({
-      where: {
-        userId,
-        id: notifyId,
-      },
-    });
-
-    return check ? true : false;
   }
 
   async changeAllStateOfUser(id_user: number) {

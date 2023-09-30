@@ -5,4 +5,5 @@ export interface IChapter {
   comicId?: number;
   slug?: string;
   creator?: number;
+  order?: number;
 }

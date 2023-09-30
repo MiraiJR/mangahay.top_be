@@ -5,6 +5,7 @@ import {
   Column,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
@@ -62,6 +63,9 @@ export class Comic {
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   updatedAt: Date;
+
+  @Column('text', { array: true, default: [] })
+  translators: string[];
 
   @BeforeUpdate()
   updateTimeStamp() {

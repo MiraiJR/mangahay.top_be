@@ -13,21 +13,45 @@ export class ChapterService {
     private chapterRepository: Repository<Chapter>,
   ) {}
 
+  async getChapters() {
+    return this.chapterRepository.find({
+      select: {
+        slug: true,
+      },
+    });
+  }
+
+  async reorderChapters() {
+    const chapters = await this.chapterRepository.find();
+
+    chapters.forEach(async (chapter) => {
+      let order = 1;
+
+      if (chapter.name.match(/[+-]?\d+(\.\d+)?/g)) {
+        order = parseFloat(chapter.name.match(/[+-]?\d+(\.\d+)?/g)[0]);
+      }
+
+      await this.chapterRepository.save({
+        ...chapter,
+        order,
+      });
+    });
+  }
+
   async getChaptersOfComic(comicId: number) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
-      .select(['chapter.id', 'chapter.name', 'chapter.slug', 'chapter.updatedAt', 'chapter.images'])
+      .select([
+        'chapter.id',
+        'chapter.name',
+        'chapter.slug',
+        'chapter.updatedAt',
+        'chapter.images',
+        'chapter.order',
+      ])
       .where('chapter.comicId = :comicId', { comicId })
-      .orderBy('chapter.id', 'DESC')
+      .orderBy('chapter.order', 'DESC')
       .getMany();
-  }
-
-  async getNewestChapter(comicId: any) {
-    return await this.chapterRepository
-      .createQueryBuilder('chapter')
-      .where('chapter.comicId = :comicId', { comicId })
-      .orderBy('chapter.updatedAt', 'ASC')
-      .getOne();
   }
 
   getNextAndPreChapter(chapterId: number, chapters: Array<Chapter>) {

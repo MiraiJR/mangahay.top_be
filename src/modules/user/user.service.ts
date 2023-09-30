@@ -10,6 +10,7 @@ import { ComicInteractionService } from '../comic-interaction/comicInteraction.s
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { RedisService } from '../redis/redis.service';
 import { ComicService } from '../comic/comic.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,7 @@ export class UserService {
     private comicService: ComicService,
     private redisService: RedisService,
     private comicInteractionService: ComicInteractionService,
+    private cloudinaryService: CloudinaryService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -144,13 +146,58 @@ export class UserService {
     return interaction;
   }
 
-  async getFollowingComicOfUser(userId: number, query: Paging) {
-    const followingComics = await this.comicInteractionService.getFollowingComicOfUser(
-      userId,
-      query,
-    );
+  async getFollowingComicOfUser(userId: number) {
+    const followingComics = await this.comicInteractionService.getFollowingComicOfUser(userId);
     const comics = followingComics.map((followingComic: any) => followingComic.comic);
 
     return comics;
+  }
+
+  async updateAvatar(userId: number, file: Express.Multer.File) {
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    const responseFile: any = await this.cloudinaryService.uploadFileFromBuffer(
+      file.buffer,
+      `users/avatars/${userId}`,
+    );
+
+    return this.userRepository.save({
+      ...user,
+      avatar: responseFile.url,
+    });
+  }
+
+  async updateProfile(userId: number, fullname: string, phone: string) {
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (fullname.length <= 2) {
+      throw new HttpException('Tên quá ngắn tối thiểu 3 ký tự!', HttpStatus.BAD_REQUEST);
+    }
+
+    if (phone.trim() === '') {
+      return this.userRepository.save({
+        ...user,
+        fullname,
+      });
+    }
+
+    const regex = /^0\d{9}$/;
+    if (!regex.test(phone)) {
+      throw new HttpException('Số điện thoại không hợp lệ!', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.userRepository.save({
+      ...user,
+      fullname: fullname,
+      phone: phone,
+    });
   }
 }

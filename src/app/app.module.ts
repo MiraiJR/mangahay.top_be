@@ -21,6 +21,8 @@ import { ComicInteractionModule } from 'src/modules/comic-interaction/comicInter
 import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
 import { AnswerModule } from 'src/modules/answer-comment/answer.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -62,6 +64,9 @@ import { GenreModule } from 'src/modules/genre/genre.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'static'),
     }),
   ],
   controllers: [AppController],

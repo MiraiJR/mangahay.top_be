@@ -9,6 +9,7 @@ import {
   Logger,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -28,6 +29,7 @@ import UserId from './decorators/userId';
 import { ReadingHistoryService } from '../reading-history/readingHistory.service';
 import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
 import { PagingDTO } from 'src/common/dtos/PagingDTO';
+import { UpdateProfileDTO } from './dtos/updateProfile.dto';
 
 @Controller('api/users')
 export class UserController {
@@ -92,30 +94,29 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @UseInterceptors(FileInterceptor('file'))
-  @Put('/me/profile/update')
-  async updateInformation(
-    @Query() query: any,
+  @Put('/me/profile/avatar')
+  async handleUpdateAvatar(@UserId() userId: number, @UploadedFile() file: Express.Multer.File) {
+    const user = await this.userService.updateAvatar(userId, file);
+
+    return user;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Patch('/me/profile')
+  async handleUpdateProfile(
     @UserId() userId: number,
-    @UploadedFile() file: Express.Multer.File,
+    @Body(new ValidationPipe()) changedProfile: UpdateProfileDTO,
   ) {
-    const responseFile: any = await this.cloudinaryService.uploadFileFromBuffer(
-      file.buffer,
-      'users/avatars',
-    );
+    const { fullname, phone } = changedProfile;
+    const user = await this.userService.updateProfile(userId, fullname, phone);
 
-    if (query.avatar == 1) {
-      query.avatar = responseFile.url;
-    }
-
-    this.userService.update(userId, query);
-
-    return responseFile.url;
+    return user;
   }
 
   @UseGuards(JwtAuthorizationd)
   @Get('/me/notifies')
-  async getNotifies(@Query(new ValidationPipe()) query: PagingDTO, @UserId() userId: number) {
-    const notifies = await this.notifyService.getNotifiesOfUser(userId, query);
+  async getNotifies(@UserId() userId: number) {
+    const notifies = await this.notifyService.getNotifiesOfUser(userId);
 
     return notifies;
   }
@@ -155,11 +156,8 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/me/comics/following')
-  async handleGetFollowingComics(
-    @Query(new ValidationPipe()) query: PagingDTO,
-    @UserId() userId: number,
-  ) {
-    const comics = await this.userService.getFollowingComicOfUser(userId, query);
+  async handleGetFollowingComics(@UserId() userId: number) {
+    const comics = await this.userService.getFollowingComicOfUser(userId);
 
     return comics;
   }

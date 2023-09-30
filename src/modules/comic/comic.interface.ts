@@ -13,6 +13,7 @@ export interface IComic {
   like?: number;
   follow?: number;
   star?: number;
+  translators?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
