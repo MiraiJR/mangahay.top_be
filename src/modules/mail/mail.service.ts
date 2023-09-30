@@ -41,7 +41,7 @@ export class MailService {
         to: `${email}`,
         subject: `${title.toUpperCase()}`,
         text: `${content}`,
-        html: ` 
+        html: `
         <div>Hello bạn,</div>
         <div>Đổi mật khẩu theo link: </div>
           <a href='${process.env.URL_CHANGEPASSWORD}?token=${content}' style='font-size: 30px; margin-left: 10px; color: red; text-align: center; padding: 10px;'>Nhấn vào link này để xác nhận đổi mật khẩu</a>

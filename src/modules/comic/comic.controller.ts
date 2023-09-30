@@ -57,6 +57,14 @@ export class ComicController {
     };
   }
 
+  @UseGuards(JwtAuthorizationd)
+  @Get('/created-by-me')
+  async handleGetComicsCreatedByMe(@UserId() userId: number) {
+    const comics = await this.comicService.getComicsCreatedByCreator(userId);
+
+    return comics;
+  }
+
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @UseInterceptors(FileInterceptor('file'))
@@ -72,13 +80,21 @@ export class ComicController {
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Post(':comicId/crawl-comic')
-  async handleCrawlComicOnFacebook(
+  @Post(':comicId/crawl-chapter')
+  async handleCrawlChapterForComic(
     @UserId() userId: number,
     @Body(new ValidationPipe()) data: CrawlChapterDTO,
     @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    await this.comicService.crawlComicOnFacebook(userId, comicId, data.nameChapter, data.urlPost);
+    const { nameChapter, urlPost, querySelector, attribute } = data;
+    await this.comicService.crawlChapterForComic(
+      userId,
+      comicId,
+      nameChapter,
+      urlPost,
+      querySelector,
+      attribute,
+    );
 
     return 'Cào dữ liệu thành công!';
   }
@@ -114,6 +130,13 @@ export class ComicController {
     const comics = await this.comicService.searchComic(query);
 
     return comics;
+  }
+
+  @Get('/chapters')
+  async getComicsWithChapters() {
+    const comicsWithChapters = await this.comicService.getComicsWithChapters();
+
+    return comicsWithChapters;
   }
 
   @Get(':slug')

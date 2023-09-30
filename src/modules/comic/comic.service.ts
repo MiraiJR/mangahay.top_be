@@ -13,6 +13,11 @@ import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
 import { Chapter } from '../chapter/chapter.entity';
 import { HttpService } from '@nestjs/axios';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import * as fs from 'fs';
+import { join } from 'path';
+import Helper from 'src/common/utils/helper';
 
 @Injectable()
 export class ComicService {
@@ -27,18 +32,26 @@ export class ComicService {
     private httpService: HttpService,
   ) {}
 
-  async crawlComicOnFacebook(
-    userId: number,
-    comicId: number,
-    nameChapter: string,
-    urlPost: string,
-  ) {
-    const comic = await this.getComicById(comicId);
+  async getComicsWithChapters() {
+    return this.comicRepository.findComicsWithChapters();
+  }
 
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
+  async crawlImagesFromLinkWebsite(urlPost: string, querySelector: string, attribute: string) {
+    const response = await axios.get(urlPost);
+    const $ = cheerio.load(response.data);
+    const imgElements = $(querySelector);
+
+    const srcAttributes = imgElements.map((index, element) => $(element).attr(attribute)).get();
+
+    if (urlPost.includes('blogtruyen')) {
+      srcAttributes.shift();
+      srcAttributes.pop();
     }
 
+    return srcAttributes;
+  }
+
+  async crawlImagesFromFacebookPost(urlPost: string) {
     const convertedURL = new URL(urlPost);
     const pageId = convertedURL.searchParams.get('id');
     const postId = convertedURL.searchParams.get('story_fbid');
@@ -54,11 +67,82 @@ export class ComicService {
       images.push(ele.media.image.src);
     });
 
+    return images;
+  }
+
+  async downloadAndUploadImageToStaicServer(urlImage: string, folder: string, imageName: string) {
+    const destination = join(__dirname, '..', '..', 'static/upload');
+    const response = await axios({
+      method: 'get',
+      url: urlImage,
+      responseType: 'stream',
+    });
+
+    fs.mkdirSync(`${destination}/${folder}`, { recursive: true });
+    const writer = fs.createWriteStream(`${destination}/${folder}/${imageName}`);
+    response.data.pipe(writer);
+
+    new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    }).catch((error) => {
+      console.log(error);
+      throw new HttpException('Không thể tải ảnh thành công!', HttpStatus.BAD_REQUEST);
+    });
+
+    return `${process.env.HOST_BE}/upload/${folder}/${imageName}`;
+  }
+
+  async crawlChapterForComic(
+    userId: number,
+    comicId: number,
+    nameChapter: string,
+    urlPost: string,
+    querySelector: string,
+    attribute: string,
+  ) {
+    const comic = await this.getComicById(comicId);
+
+    if (!comic) {
+      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
+    let crawledImages = [];
+
+    if (urlPost.includes('facebook')) {
+      crawledImages = await this.crawlImagesFromFacebookPost(urlPost);
+    } else {
+      crawledImages = await this.crawlImagesFromLinkWebsite(urlPost, querySelector, attribute);
+    }
+
+    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0];
+
     const newChapter = await this.chapterService.createNewChapterWithoutFiles({
       name: nameChapter,
       comicId,
       creator: userId,
-      images,
+      order: parseFloat(order),
+    });
+
+    let imagesChapter = [];
+    crawledImages.forEach(async (image, _index) => {
+      const folder = `${comic.id}/${newChapter.id}`;
+      const imageName = `${_index}.jpg`;
+      const linkImage = await this.downloadAndUploadImageToStaicServer(image, folder, imageName);
+
+      imagesChapter.push(linkImage);
+
+      if (imagesChapter.length === crawledImages.length) {
+        await this.chapterService.update({
+          ...newChapter,
+          images: imagesChapter.sort(),
+        });
+      }
+    });
+
+    await this.update({
+      ...comic,
+      updatedAt: new Date(),
     });
 
     const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
@@ -108,7 +192,7 @@ export class ComicService {
       page = query.page;
     }
 
-    const comics = await this.comicRepository.getComicsAndNewtChapter(
+    const comics = await this.comicRepository.getComicsAndNewesttChapter(
       page,
       query.limit,
       'updatedAt',
@@ -214,7 +298,7 @@ export class ComicService {
     const result = this.comicRepository.createQueryBuilder('comics');
 
     if (query.comicName) {
-      const data_search_slug = slugify(query.comicName, {
+      const dataSearchSlug = slugify(query.comicName, {
         replacement: '-',
         remove: undefined,
         lower: true,
@@ -224,7 +308,7 @@ export class ComicService {
       });
 
       result.where('comics.slug like :search', {
-        search: `%${data_search_slug}%`,
+        search: `%${dataSearchSlug}%`,
       });
     }
 
@@ -285,7 +369,11 @@ export class ComicService {
   }
 
   async ranking(query: { field: string; limit: number }) {
-    const comics = await this.comicRepository.getComicsAndNewtChapter(1, query.limit, query.field);
+    const comics = await this.comicRepository.getComicsAndNewesttChapter(
+      1,
+      query.limit,
+      query.field,
+    );
 
     return comics;
   }
@@ -337,14 +425,21 @@ export class ComicService {
       );
     }
 
+    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0];
     const newChapter = await this.chapterService.createNewChapter(
       {
         name: nameChapter,
         comicId,
         creator: userId,
+        order: parseFloat(order),
       },
       files,
     );
+
+    await this.update({
+      ...comic,
+      updatedAt: new Date(),
+    });
 
     const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
     for (const userId of listUserId) {
@@ -414,5 +509,15 @@ export class ComicService {
       mentionedPerson,
       content,
     });
+  }
+
+  async getComicsCreatedByCreator(userId: number) {
+    const comics = await this.comicRepository.find({
+      where: {
+        creator: userId,
+      },
+    });
+
+    return comics;
   }
 }

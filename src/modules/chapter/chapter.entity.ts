@@ -36,6 +36,9 @@ export class Chapter {
   @Column({ type: 'timestamp', default: () => 'now()', name: 'updated_at' })
   updatedAt: Date;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  order: number;
+
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'creator_id' })
   @Column({ name: 'creator_id', nullable: true })

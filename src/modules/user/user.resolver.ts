@@ -70,10 +70,10 @@ export class UserResolver {
     @Context() context: { req: { idUser: number } },
   ) {
     try {
-      return await this.notifyService.getNotifiesOfUser(context.req.idUser, {
-        page,
-        limit,
-      });
+      // return await this.notifyService.getNotifiesOfUser(context.req.idUser, {
+      //   page,
+      //   limit,
+      // });
     } catch (error) {
       this.logger.error(error);
     }
