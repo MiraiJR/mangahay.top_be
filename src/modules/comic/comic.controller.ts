@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -33,6 +34,7 @@ import { CommentService } from '../comment/comment.service';
 import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
 import { IncreaseFieldDTO } from './dtos/increaseField';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
+import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 
 @Controller('api/comics')
 export class ComicController {
@@ -80,6 +82,7 @@ export class ComicController {
   }
 
   @UseGuards(JwtAuthorizationd)
+  @Roles(UserRole.ADMIN)
   @Post(':comicId/crawl-chapter')
   async handleCrawlChapterForComic(
     @UserId() userId: number,
@@ -92,6 +95,26 @@ export class ComicController {
       comicId,
       nameChapter,
       urlPost,
+      querySelector,
+      attribute,
+    );
+
+    return 'Cào dữ liệu thành công!';
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Roles(UserRole.ADMIN)
+  @Post(':comicId/crawl-all-chapters')
+  async handleCrawlAllChaptersForComic(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CrawlAllChaptersDTO,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    const { querySelector, attribute, urls } = data;
+    await this.comicService.crawlChaptersFromWebsite(
+      userId,
+      comicId,
+      urls,
       querySelector,
       attribute,
     );

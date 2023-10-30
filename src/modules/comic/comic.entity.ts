@@ -5,7 +5,6 @@ import {
   Column,
   Entity,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
@@ -69,14 +68,12 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    const slugTemp = `${slugify(this.name, { lower: true })}-${new Date().getTime()}`;
-    this.slug = slugTemp;
+    this.slug = `${slugify(this.name, { lower: true })}`;
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    const slugTemp = `${slugify(this.name, { lower: true })}-${new Date().getTime()}`;
-    this.slug = slugTemp;
+    this.slug = `${slugify(this.name, { lower: true })}`;
   }
 }

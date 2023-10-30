@@ -36,6 +36,33 @@ export class ComicService {
     return this.comicRepository.findComicsWithChapters();
   }
 
+  async crawlChaptersFromWebsite(
+    userId: number,
+    comicId: number,
+    urls: string,
+    querySelector: string,
+    attribute: string,
+  ) {
+    const arrayUrl = urls.split(',');
+    for (let _index = 0; _index < arrayUrl.length; _index++) {
+      const nameChapter = arrayUrl[_index].split('/').reverse()[0].split('-').join(' ');
+
+      console.log(nameChapter);
+      try {
+        await this.crawlChapterForComic(
+          userId,
+          comicId,
+          nameChapter,
+          arrayUrl[_index],
+          querySelector,
+          attribute,
+        );
+      } catch (error) {
+        continue;
+      }
+    }
+  }
+
   async crawlImagesFromLinkWebsite(urlPost: string, querySelector: string, attribute: string) {
     const response = await axios.get(urlPost);
     const $ = cheerio.load(response.data);
@@ -86,7 +113,6 @@ export class ComicService {
       writer.on('finish', resolve);
       writer.on('error', reject);
     }).catch((error) => {
-      console.log(error);
       throw new HttpException('Không thể tải ảnh thành công!', HttpStatus.BAD_REQUEST);
     });
 
@@ -125,20 +151,30 @@ export class ComicService {
     });
 
     let imagesChapter = [];
-    crawledImages.forEach(async (image, _index) => {
+
+    for (let _index = 0; _index < crawledImages.length; _index++) {
       const folder = `${comic.id}/${newChapter.id}`;
       const imageName = `${_index}.jpg`;
-      const linkImage = await this.downloadAndUploadImageToStaicServer(image, folder, imageName);
 
-      imagesChapter.push(linkImage);
+      try {
+        const linkImage = await this.downloadAndUploadImageToStaicServer(
+          crawledImages[_index],
+          folder,
+          imageName,
+        );
+        imagesChapter.push(linkImage);
+      } catch (error) {
+        await this.chapterService.delete(newChapter.id);
+        throw new HttpException('Lỗi không crawl được dữ liệu!', HttpStatus.BAD_REQUEST);
+      }
 
       if (imagesChapter.length === crawledImages.length) {
         await this.chapterService.update({
           ...newChapter,
-          images: imagesChapter.sort(),
+          images: Helper.shortArrayImages(imagesChapter),
         });
       }
-    });
+    }
 
     await this.update({
       ...comic,
