@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,6 +14,15 @@ export class ComicRepository extends Repository<Comic> {
   }
 
   async getComicsAndNewesttChapter(page: number, limit: number, field: string) {
+    if (Number.isNaN(limit)) {
+      throw new Error('Không hợp lệ');
+    }
+
+    const arrayField = ['view', 'follow', 'star', 'createdAt', 'updatedAt'];
+    if (!arrayField.includes(field)) {
+      throw new Error('Không hợp lệ');
+    }
+
     let comics: any[] = await this.manager.query(
       `
       select 
