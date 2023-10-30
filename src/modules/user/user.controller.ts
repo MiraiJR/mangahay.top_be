@@ -1,13 +1,15 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
+  HttpException,
   HttpStatus,
   Logger,
   Param,
-  ParseBoolPipe,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -19,444 +21,144 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { Roles, RolesGuard } from '../../common/guards/check-role';
-import { IdUser } from './decorators/id-user';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
-import { User } from './user.entity';
-import { ComicService } from '../comic/comic.service';
-import { UserRole } from './user.role';
-import { HistoryDTO } from './user_history/history.dto';
-import { ActionComicDTO } from './DTO/action-comic-dto';
+import UserId from './decorators/userId';
+import { ReadingHistoryService } from '../reading-history/readingHistory.service';
+import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
+import { PagingDTO } from 'src/common/dtos/PagingDTO';
+import { UpdateProfileDTO } from './dtos/updateProfile.dto';
 
-@Controller('api/user')
+@Controller('api/users')
 export class UserController {
   constructor(
     private logger: Logger = new Logger(UserController.name),
     private userService: UserService,
     private cloudinaryService: CloudinaryService,
     private notifyService: NotificationService,
-    private comicService: ComicService,
+    private readingHistoryService: ReadingHistoryService,
   ) {}
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/credentials')
-  async getCredentialUserInformation(@IdUser() userId: any, @Res() response: Response) {
-    try {
-      const user: User = await this.userService.getUserById(userId);
+  @Get('/me')
+  async handleGetUserInformation(@UserId() userId: number) {
+    const user = await this.userService.getUserById(userId);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy thông tin thành công!',
-        result: {
-          ...user,
-          password: null,
-        },
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
+    if (!user) {
+      throw new HttpException('Người dùng không tồn tại!', HttpStatus.NOT_FOUND);
     }
+
+    return user;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Post('/comic')
-  async actionComic(
-    @Query('action') action: string,
-    @Body('id_comic', new ParseIntPipe()) id_comic: number,
-    @Body('rating_star') rating_star: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
-    try {
-      let message_response = '';
-      if (action === 'follow') {
-        await this.userService.followComic(id_user, id_comic);
-        message_response = 'Theo dõi truyện thành công!';
-      } else if (action === 'like') {
-        await this.userService.likeComic(id_user, id_comic);
-        message_response = 'Cảm ơn bạn đã thích truyện! <3';
-      } else if (action === 'evaluate') {
-        await this.userService.evaluateComic(id_user, id_comic);
-        const update_comic = await this.comicService.updateRatingStar(
-          id_comic,
-          parseInt(rating_star),
-        );
+  @Get('/me/reading-history')
+  async handleGetHistory(@UserId() userId: number) {
+    const comics = await this.readingHistoryService.getReadingHistoryOfUser(userId);
 
-        message_response = 'Cảm ơn bạn đã đánh giá truyện <3!';
-
-        return response.status(HttpStatus.OK).json({
-          statusCode: HttpStatus.OK,
-          success: true,
-          message: message_response,
-          result: update_comic,
-        });
-      }
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: message_response,
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
-    }
+    return comics;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Delete('/comic')
-  async removeActionComic(
-    @Query(new ValidationPipe()) query: ActionComicDTO,
-    @IdUser() id_user: number,
-    @Res() response: Response,
+  @Post('/me/reading-history')
+  async handleAddToHistory(
+    @Body(new ValidationPipe()) data: ReadingHistoryDTO,
+    @UserId() userId: number,
   ) {
-    try {
-      if (query.action === 'follow') {
-        await this.userService.unfollowComic(id_user, parseInt(query.id_comic));
-      } else if (query.action === 'like') {
-        await this.userService.unlikeComic(id_user, parseInt(query.id_comic));
-      }
+    const { chapterId, comicId } = data;
+    await this.readingHistoryService.recordNewHistory(userId, comicId, chapterId);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Hủy theo dõi truyện thành công!',
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
-    }
+    return `Thêm vào lịch sử thành công!`;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/history')
-  async getHistory(@IdUser() id_user: number, @Res() response: Response) {
-    try {
-      const history = await this.userService.getHistory(id_user);
+  @Delete('/me/reading-history')
+  async handleDeleteAllHistory(@UserId() userId: number) {
+    await this.readingHistoryService.deleteAllReadingHistoryOfUser(userId);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy lịch sử thành công!',
-        result: history,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return `Xoá toàn bộ lịch sử thành công!`;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Post('/history')
-  async addToHistory(
-    @Body(new ValidationPipe()) history: HistoryDTO,
-    @IdUser() id_user: number,
-    @Res() response: Response,
+  @Delete('/me/reading-history/:comicId')
+  async handleDeleteOneRecordRedingHistory(
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @UserId() userId: number,
   ) {
-    try {
-      history = {
-        id_user: id_user,
-        id_comic: parseInt(history.id_comic.toString()),
-        id_chapter: parseInt(history.id_chapter.toString()),
-      };
+    await this.readingHistoryService.deleteOneReadingHistory(userId, comicId);
 
-      await this.userService.addToHistory(history);
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thêm vào lịch sử thành công!',
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
-  }
-
-  @UseGuards(JwtAuthorizationd)
-  @Delete('/history')
-  async deleteHistory(
-    @Query('delete_all', new ParseBoolPipe()) delete_all: boolean,
-    @Body('id_comic') id_comic: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
-    try {
-      if (id_comic) {
-        id_comic = parseInt(id_comic);
-      }
-
-      await this.userService.deleteHistory(delete_all, id_user, id_comic);
-
-      const history = await this.userService.getHistory(id_user);
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: delete_all
-          ? `Xóa toàn bộ lịch sử thành công!`
-          : `Xóa truyện khỏi lịch sử thành công thành công!`,
-        result: history,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
-  }
-
-  @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Put('/management/:id_user')
-  async banOrUnbanUser(
-    @Param('id_user', new ParseIntPipe()) id_user: number,
-    @Query() query: any,
-    @Res() response: Response,
-  ) {
-    try {
-      let message_response = '';
-
-      if (query.ban) {
-        if (query.ban === 'true') {
-          this.userService.updateActive(id_user, false);
-          message_response = `Ban user với id ${id_user} thành công!`;
-        } else {
-          this.userService.updateActive(id_user, true);
-          message_response = `Unban user với id ${id_user} thành công!`;
-        }
-      }
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: message_response,
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
-    }
-  }
-
-  @UseGuards(JwtAuthorizationd)
-  @Get('/comic/check')
-  async checkFollowAndLikeComic(
-    @Query('id_comic') id_comic: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
-    try {
-      const result = {
-        isFollow: false,
-        isLike: false,
-        isEvaluate: false,
-      };
-
-      const is_follow = await this.userService.isFollowComic(id_user, parseInt(id_comic));
-      result.isFollow = is_follow ? true : false;
-      const is_like = await this.userService.isLikeComic(id_user, parseInt(id_comic));
-      result.isLike = is_like ? true : false;
-      const is_evaluate = await this.userService.isEvaluateComic(id_user, parseInt(id_comic));
-      result.isEvaluate = is_evaluate ? true : false;
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy thông tin thành công!',
-        result: result,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: error.message,
-      });
-    }
+    return `Xoá truyện ra khỏi lịch sử thành công!`;
   }
 
   @UseGuards(JwtAuthorizationd)
   @UseInterceptors(FileInterceptor('file'))
-  @Put('/update')
-  async updateInformation(
-    @Query() query: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    try {
-      const response_file: any = await this.cloudinaryService.uploadFileFromBuffer(
-        file.buffer,
-        'users/avatars',
-      );
+  @Put('/me/profile/avatar')
+  async handleUpdateAvatar(@UserId() userId: number, @UploadedFile() file: Express.Multer.File) {
+    const user = await this.userService.updateAvatar(userId, file);
 
-      if (query.avatar == 1) {
-        query.avatar = response_file.url;
-      }
-
-      this.userService.update(id_user, query);
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Cập nhật avatar thành công!',
-        result: response_file.url,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Cập nhật avatar thấy bại!',
-      });
-    }
+    return user;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/notifies')
-  async getNotifies(@Query() query: any, @IdUser() id_user: number, @Res() response: Response) {
-    try {
-      const notifies = await this.notifyService.getNotifiesOfUser(id_user, query);
+  @Patch('/me/profile')
+  async handleUpdateProfile(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) changedProfile: UpdateProfileDTO,
+  ) {
+    const { fullname, phone } = changedProfile;
+    const user = await this.userService.updateProfile(userId, fullname, phone);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: notifies,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return user;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/comic/following')
-  async getFollowingComic(
-    @Query() query: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-  ) {
-    try {
-      const following_comic = await this.userService.getFollowingComic(id_user, query);
+  @Get('/me/notifies')
+  async getNotifies(@UserId() userId: number) {
+    const notifies = await this.notifyService.getNotifiesOfUser(userId);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: following_comic,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return notifies;
   }
 
   @UseGuards(JwtAuthorizationd)
-  @Get('/comic/liked')
-  async getLikedComic(@Query() query: any, @IdUser() id_user: number, @Res() response: Response) {
-    try {
-      const liked_comic = await this.userService.getLikedComic(id_user, query);
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: liked_comic,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
-  }
-  // lấy thống kê theo ngày
-  @Get('/analysis/new-user')
-  async analysisByDay(
-    @Query('number_day', new ParseIntPipe()) number_day: number,
-    @Res() response: Response,
+  @Put('/me/interact/:comicId')
+  async handleIntractWithComic(
+    @Query('action') interactionType: string,
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    try {
-      const result = await this.userService.analysisDayAgo(number_day);
+    const interaction = await this.userService.interactWithComic(userId, comicId, interactionType);
+    const status: StatusInteractWithComicResponse = {
+      isLiked: interaction.isLiked,
+      isFollowed: interaction.isFollowed,
+      isEvaluated: interaction.score === null ? false : true,
+    };
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: result,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return status;
   }
 
-  @Get('analysis/grow-past-current')
-  async analysisGrow(@Res() response: Response) {
-    try {
-      const result = await this.userService.compareCurDateAndPreDate();
+  @UseGuards(JwtAuthorizationd)
+  @Get('/me/check-interaction/:comicId')
+  async checkFollowAndLikeComic(
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ): Promise<StatusInteractWithComicResponse> {
+    const interaction = await this.userService.checkInteractionWithComic(userId, comicId);
+    const status: StatusInteractWithComicResponse = {
+      isLiked: interaction.isLiked,
+      isFollowed: interaction.isFollowed,
+      isEvaluated: interaction.score === null ? false : true,
+    };
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: result,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return status;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/me/comics/following')
+  async handleGetFollowingComics(@UserId() userId: number) {
+    const comics = await this.userService.getFollowingComicOfUser(userId);
+
+    return comics;
   }
 }

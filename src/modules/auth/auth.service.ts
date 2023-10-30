@@ -119,11 +119,20 @@ export class AuthService {
     );
   }
 
-  signTokenVerifyMail(data: RegisterUserDTO): string {
-    return this.jwtService.sign(data, {
-      secret: this.configService.get('VERIFY_EMAIL_KEY'),
-      expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
-    });
+  async signTokenVerifyMail(data: RegisterUserDTO): Promise<string> {
+    const user = await this.userService.getUserByEmail(data.email);
+
+    if (user) {
+      throw new ConflictException(`Email ${user.email} đã được sử dụng`);
+    }
+
+    return this.jwtService.sign(
+      { ...data },
+      {
+        secret: this.configService.get('VERIFY_EMAIL_KEY'),
+        expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
+      },
+    );
   }
 
   signTokenForgetPassword(email: string) {
@@ -154,7 +163,6 @@ export class AuthService {
   }
 
   async resignToken(token: string): Promise<PairToken> {
-    // lấy thông tin rftoken
     const payload = await this.jwtService.verify(token, {
       secret: process.env.REFRESHTOKEN_KEY,
     });

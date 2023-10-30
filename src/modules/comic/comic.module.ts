@@ -4,13 +4,16 @@ import { ComicService } from './comic.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Comic } from './comic.entity';
 import { ChapterModule } from '../chapter/chapter.module';
-import { Genres } from './genre/genre.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
-import { User_Evaluate_Comic } from '../user/user_evaluate/user_evaluate.entity';
 import { ComicResolver } from './comic.resolver';
+import { RedisModule } from '../redis/redis.module';
+import { ComicRepository } from './comic.repository';
+import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
+import { CommentModule } from '../comment/comment.module';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -19,10 +22,14 @@ import { ComicResolver } from './comic.resolver';
     CloudinaryModule,
     UserModule,
     NotificationModule,
-    TypeOrmModule.forFeature([Comic, Genres, User_Evaluate_Comic]),
+    ComicInteractionModule,
+    RedisModule,
+    CommentModule,
+    HttpModule,
+    TypeOrmModule.forFeature([Comic]),
   ],
   controllers: [ComicController],
-  providers: [ComicService, Logger, ComicResolver],
+  providers: [ComicService, Logger, ComicResolver, ComicRepository],
   exports: [ComicService],
 })
 export class ComicModule {}

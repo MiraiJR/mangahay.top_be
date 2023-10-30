@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
@@ -19,10 +19,27 @@ export class NotificationService {
     });
   }
 
-  async changeState(id_notify: number) {
-    return await this.notificationRepository.save({
-      id: id_notify,
-      is_read: true,
+  async changeStateNotify(userId: number, notifyId: number) {
+    const notify = await this.notificationRepository.findOne({
+      where: {
+        id: notifyId,
+      },
+    });
+
+    if (!notify) {
+      throw new HttpException(
+        `Thông báo với id [${notifyId}] không tồn tại!`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (notify.userId !== userId) {
+      throw new HttpException(`Không có quyền!`, HttpStatus.FORBIDDEN);
+    }
+
+    return this.notificationRepository.save({
+      ...notify,
+      isRead: true,
     });
   }
 
@@ -34,15 +51,10 @@ export class NotificationService {
   }
 
   async notifyToUser(notify: INotification) {
-    const user_socket = await this.socketService.checkUserOnline(
-      notify.id_user,
-    );
+    const user_socket = await this.socketService.checkUserOnline(notify.userId);
 
     if (user_socket) {
-      this.socketService
-        .getSocket()
-        .to(user_socket)
-        .emit('notification_user', notify);
+      this.socketService.getSocket().to(user_socket).emit('notification_user', notify);
     }
   }
 
@@ -54,28 +66,16 @@ export class NotificationService {
       .getCount();
   }
 
-  async getNotifiesOfUser(id_user: number, query: any) {
-    return await this.notificationRepository.find({
+  async getNotifiesOfUser(userId: number) {
+    return this.notificationRepository.find({
       where: {
-        id_user: id_user,
+        userId,
       },
       order: {
         createdAt: 'DESC',
-      },
-      take: parseInt(query.limit),
-      skip: (parseInt(query.page) - 1) * parseInt(query.limit),
-    });
-  }
-
-  async checkOwner(id_user: number, id_notify: number) {
-    const check = await this.notificationRepository.findOne({
-      where: {
-        id_user: id_user,
-        id: id_notify,
+        isRead: 'ASC',
       },
     });
-
-    return check ? true : false;
   }
 
   async changeAllStateOfUser(id_user: number) {

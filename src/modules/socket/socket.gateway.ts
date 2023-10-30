@@ -19,9 +19,7 @@ import { UserService } from '../user/user.service';
 import { NotificationService } from '../notification/notification.service';
 
 @WebSocketGateway({ cors: '*:*' })
-export class SocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private socketService: SocketService,
     private messageService: MessageService,
@@ -37,23 +35,18 @@ export class SocketGateway
   }
 
   handleDisconnect(client: Socket) {
-    // client disconnected
     this.logger.log(`Client disconnected: ${client.id}`);
     this.socketService.removeClientFromList(client);
   }
 
   handleConnection(client: Socket) {
-    // client connected
     this.logger.log(`Client connected: ${client.id}`);
     this.socketService.addClientToList(client);
   }
 
   @UseGuards()
   @SubscribeMessage('receive_coming_message')
-  async getAndForwardMessage(
-    @MessageBody() content: any,
-    @ConnectedSocket() socket: Socket,
-  ) {
+  async getAndForwardMessage(@MessageBody() content: any, @ConnectedSocket() socket: Socket) {
     try {
       const sender: number = await this.socketService.extractId(socket);
       const new_message: IMessage = {
@@ -62,12 +55,10 @@ export class SocketGateway
         sender: sender,
       };
 
-      const receiver: User = await this.userService.getUserById(
-        parseInt(content.receiver),
-      );
+      const receiver: User = await this.userService.getUserById(parseInt(content.receiver));
 
       const new_notify: INotification = {
-        id_user: parseInt(content.receiver),
+        userId: parseInt(content.receiver),
         title: 'Tin nhắn mới!',
         body: `Người dùng: "<strong>${receiver.fullname}</strong>" đã gửi tin nhắn mới đến cho bạn!`,
         thumb:
