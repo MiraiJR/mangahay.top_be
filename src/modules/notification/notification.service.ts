@@ -4,6 +4,7 @@ import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
 import { SocketService } from '../socket/socket.service';
+import { NotificationType } from '../user/types/NotificationType';
 
 @Injectable()
 export class NotificationService {
@@ -66,14 +67,29 @@ export class NotificationService {
       .getCount();
   }
 
-  async getNotifiesOfUser(userId: number) {
+  async getNotifiesOfUser(
+    userId: number,
+    typeNotification: NotificationType = NotificationType.BOTH,
+  ) {
+    if (typeNotification !== NotificationType.BOTH) {
+      return this.notificationRepository.find({
+        where: {
+          isRead: typeNotification === NotificationType.READ,
+        },
+        order: {
+          isRead: 'ASC',
+          createdAt: 'DESC',
+        },
+      });
+    }
+
     return this.notificationRepository.find({
       where: {
         userId,
       },
       order: {
-        createdAt: 'DESC',
         isRead: 'ASC',
+        createdAt: 'DESC',
       },
     });
   }
