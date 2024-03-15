@@ -16,13 +16,13 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { MessageModule } from '../modules/message/message.module';
 import { AdminModule } from '../modules/admin/admin.module';
 import { ReportModule } from '../modules/report/report.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { MailModule } from 'src/modules/mail/mail.module';
 import { ComicInteractionModule } from 'src/modules/comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
 import { AnswerModule } from 'src/modules/answer-comment/answer.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 
 @Module({
   imports: [

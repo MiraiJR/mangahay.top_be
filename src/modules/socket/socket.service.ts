@@ -60,4 +60,7 @@ export class SocketService {
       this.socket.to(receiver_socket).emit('forward_message', message);
     }
   }
+
+  async broadcastMessage() {
+  }
 }
