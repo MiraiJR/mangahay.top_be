@@ -30,6 +30,7 @@ import { ReadingHistoryService } from '../reading-history/readingHistory.service
 import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
 import { PagingDTO } from 'src/common/dtos/PagingDTO';
 import { UpdateProfileDTO } from './dtos/updateProfile.dto';
+import { NotificationType, toNotificationType } from './types/NotificationType';
 
 @Controller('api/users')
 export class UserController {
@@ -115,8 +116,8 @@ export class UserController {
 
   @UseGuards(JwtAuthorizationd)
   @Get('/me/notifies')
-  async getNotifies(@UserId() userId: number) {
-    const notifies = await this.notifyService.getNotifiesOfUser(userId);
+  async getNotifies(@Query('type') type: string = '2', @UserId() userId: number) {
+    const notifies = await this.notifyService.getNotifiesOfUser(userId, toNotificationType(type));
 
     return notifies;
   }
