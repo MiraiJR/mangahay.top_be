@@ -1,22 +1,16 @@
 import { Module } from '@nestjs/common';
-import { CommentController } from './comment.controller';
 import { CommentService } from './comment.service';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Comment } from './comment.entity';
-import { ComicModule } from '../comic/comic.module';
 import { UserModule } from '../user/user.module';
-import { Answer } from './answer/answer.entity';
+import { AnswerModule } from '../answer-comment/answer.module';
+import { CommentRepository } from './comment.repository';
 
 @Module({
-  imports: [
-    ComicModule,
-    UserModule,
-    JwtModule,
-    TypeOrmModule.forFeature([Comment, Answer]),
-  ],
-  controllers: [CommentController],
-  providers: [CommentService],
+  imports: [UserModule, JwtModule, AnswerModule, TypeOrmModule.forFeature([Comment])],
+  controllers: [],
+  providers: [CommentService, CommentRepository],
   exports: [CommentService],
 })
 export class CommentModule {}

@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Query, Resolver } from '@nestjs/graphql';
 import { ComicService } from './comic.service';
-import { ComicDTO } from './DTO/comic-dto';
+import { ComicDTO } from './dtos/comic-dto';
 
 @Resolver()
 export class ComicResolver {
@@ -10,14 +10,14 @@ export class ComicResolver {
     private comicService: ComicService,
   ) {}
 
-  @Query(() => [ComicDTO])
-  async getAllComic() {
-    try {
-      const result = await this.comicService.getAllComic();
+  // @Query(() => [ComicDTO])
+  // async getAllComic() {
+  //   try {
+  //     // const result = await this.comicService.getComics();
 
-      return result;
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
+  //     return result;
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //   }
+  // }
 }

@@ -3,15 +3,15 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpException,
   HttpStatus,
-  Logger,
-  NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
-  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -19,470 +19,249 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ComicService } from './comic.service';
-import { Response } from 'express';
-import { ChapterService } from '../chapter/chapter.service';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { IComic } from './comic.interface';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { CreateChapterDTO } from '../chapter/DTO/create-chapter';
-import { INotification } from '../notification/notification.interface';
-import { IdUser } from '../user/decorators/id-user';
-import { NotificationService } from '../notification/notification.service';
-import { UserService } from '../user/user.service';
 import { Roles, RolesGuard } from '../../common/guards/check-role';
 import { UserRole } from '../user/user.role';
-import { IChapter } from '../chapter/chapter.interface';
-import { UpdateChapterDTO } from '../chapter/DTO/update-chapter';
+import { CreateComicDTO } from './dtos/create-comic';
+import { RedisService } from '../redis/redis.service';
+import UserId from '../user/decorators/userId';
+import { GetComicsDTO } from './dtos/getComics';
+import { ScoreDTO } from './dtos/evaluateComic';
+import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
+import { CreateCommentDTO } from '../comment/dtos/create-comment';
+import { CommentService } from '../comment/comment.service';
+import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
+import { IncreaseFieldDTO } from './dtos/increaseField';
+import { CrawlChapterDTO } from './dtos/crawlChapter';
+import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 
-@Controller('api/comic')
+@Controller('api/comics')
 export class ComicController {
   constructor(
-    private logger: Logger = new Logger(ComicController.name),
     private comicService: ComicService,
-    private chapterService: ChapterService,
-    private cloudinaryService: CloudinaryService,
-    private notifyService: NotificationService,
-    private userService: UserService,
+    private redisService: RedisService,
+    private commentService: CommentService,
   ) {}
 
   @Get()
-  async getAllComic(@Query() query: any, @Res() response: Response) {
-    try {
-      const comics = await this.comicService.getAll(query);
+  @HttpCode(HttpStatus.OK)
+  async handleGetComics(
+    @Query(new ValidationPipe())
+    query: GetComicsDTO,
+  ) {
+    const comics = await this.comicService.getComics(query);
+    const total = await this.comicService.countComics();
 
-      const total = await this.comicService.getTotal();
+    return {
+      comics,
+      total,
+    };
+  }
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'get all comic successfully!',
-        result: comics,
-        total: total,
-      });
-    } catch (error) {
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+  @UseGuards(JwtAuthorizationd)
+  @Get('/created-by-me')
+  async handleGetComicsCreatedByMe(@UserId() userId: number) {
+    const comics = await this.comicService.getComicsCreatedByCreator(userId);
+
+    return comics;
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @Post()
+  async handleCreateComic(
+    @Body(new ValidationPipe()) comic: CreateComicDTO,
+    @UserId() creatorId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const newComic = await this.comicService.createComic(creatorId, comic, file);
+
+    return newComic;
+  }
+
+  @UseGuards(JwtAuthorizationd)
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
-  @Post('/create')
-  async createComic(
-    @Body() comic: any,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-    @UploadedFile() file: Express.Multer.File,
+  @Post(':comicId/crawl-chapter')
+  async handleCrawlChapterForComic(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CrawlChapterDTO,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    try {
-      const data_new_comic: IComic = {
-        ...comic,
-      };
+    const { nameChapter, urlPost, querySelector, attribute } = data;
+    await this.comicService.crawlChapterForComic(
+      userId,
+      comicId,
+      nameChapter,
+      urlPost,
+      querySelector,
+      attribute,
+    );
 
-      data_new_comic.genres = data_new_comic.genres.toString().split(',');
-      data_new_comic.authors = data_new_comic.authors.toString().split(',');
-
-      const new_comic = await this.comicService.create(data_new_comic);
-
-      this.cloudinaryService
-        .uploadFileFromBuffer(file.buffer, `comics/${new_comic.id}/thumb`)
-        .then((data: any) => {
-          this.comicService.updateThumb(new_comic.id, data.url);
-        });
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Tạo truyện mới thành công!',
-        result: new_comic,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return 'Cào dữ liệu thành công!';
   }
 
-  @Put('/update/:id_comic')
-  @UseInterceptors(FileInterceptor('file'))
-  async updateComic(
-    @Body() comic: any,
-    @IdUser() id_user: number,
-    @Param('id_comic', new ParseIntPipe()) id_comic: number,
-    @Res() response: Response,
-    @UploadedFile() file: Express.Multer.File,
+  @UseGuards(JwtAuthorizationd)
+  @Roles(UserRole.ADMIN)
+  @Post(':comicId/crawl-all-chapters')
+  async handleCrawlAllChaptersForComic(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CrawlAllChaptersDTO,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    try {
-      const data_update_comic: IComic = {
-        ...comic,
-        id: id_comic,
-      };
+    const { querySelector, attribute, urls } = data;
+    await this.comicService.crawlChaptersFromWebsite(
+      userId,
+      comicId,
+      urls,
+      querySelector,
+      attribute,
+    );
 
-      data_update_comic.genres = data_update_comic.genres.toString().split(',');
-      data_update_comic.authors = data_update_comic.authors.toString().split(',');
-
-      const update_comic = await this.comicService.update(data_update_comic);
-
-      if (comic.file !== 'undefined') {
-        this.cloudinaryService
-          .uploadFileFromBuffer(file.buffer, `comics/${update_comic.id}/thumb`)
-          .then((data: any) => {
-            this.comicService.updateThumb(id_comic, data.url);
-          });
-      }
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: `Cập nhật truyện ${comic.name} thành công!`,
-        result: update_comic,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return 'Cào dữ liệu thành công!';
   }
 
-  @Get('/genres')
-  async getGenres(@Res() response: Response) {
-    try {
-      const genres = await this.comicService.getGenres();
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy thể loại truyện thành công!',
-        result: genres,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Put('/:comicId')
+  @UseInterceptors(FileInterceptor('file'))
+  async handleUpdateComic(
+    @Body(new ValidationPipe()) comic: CreateComicDTO,
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const updatedComic = await this.comicService.updateComic(
+      userId,
+      { ...comic, id: comicId },
+      file,
+    );
+
+    return updatedComic;
   }
 
   @Get('/ranking')
-  async getRanking(@Query() query: any, @Res() response: Response) {
-    try {
-      const comics = await this.comicService.ranking(query);
+  async handleGetRanking(@Query() query: { field: string; limit: number }) {
+    const comics = await this.comicService.ranking(query);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'get all comic successfully!',
-        result: comics,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return comics;
   }
 
   @Get('/search')
-  async search(@Query() query: any, @Res() response: Response) {
-    try {
-      const result = await this.comicService.search(query);
+  async handleSearch(@Query() query: QuerySearch) {
+    const comics = await this.comicService.searchComic(query);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Tìm kiếm thành công!',
-        result: result.comics,
-        total: result.total,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return comics;
   }
 
-  @Get(':name')
-  async getComic(@Param('name') name_comic: string, @Res() response: Response) {
-    try {
-      const comic = await this.comicService.getOne(name_comic);
+  @Get('/chapters')
+  async getComicsWithChapters() {
+    const comicsWithChapters = await this.comicService.getComicsWithChapters();
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy thông tin của truyện thành công!',
-        result: comic,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return comicsWithChapters;
   }
 
-  @Get('chapter/:id_comic')
-  async getChapterOfComic(
-    @Param('id_comic', new ParseIntPipe()) id_comic: number,
-    @Res() response: Response,
-  ) {
-    try {
-      const chapters = await this.chapterService.getAll(id_comic);
+  @Get(':slug')
+  async handleGetComic(@Param('slug') slugComic: string) {
+    const comic = await this.comicService.getComicBySlug(slugComic);
+    const chapters = await this.comicService.getChapters(comic.id);
+    const comments = await this.commentService.getCommentsOfComic(comic.id);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Lấy chapter của truyện thành công!',
-        result: chapters,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return {
+      comic,
+      chapters,
+      comments,
+    };
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @Delete('delete/:id_comic')
-  async deleteComic(
-    @Param('id_comic', new ParseIntPipe()) id_comic: number,
-    @Res() response: Response,
+  @Delete('delete/:comicId')
+  async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
+    await this.comicService.delete(comicId);
+
+    return `Xóa truyện với id ${comicId} thành công!`;
+  }
+
+  @Patch(':comicId/increment')
+  async handleIncreament(
+    @Query(new ValidationPipe()) query: IncreaseFieldDTO,
+    @Param('comicId') comicId: number,
   ) {
-    try {
-      const is_exist = await this.comicService.getById(id_comic);
+    await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, query.field, query.jump);
 
-      if (is_exist) {
-        await this.chapterService.deleteAllChapterOfComic(id_comic).then(() => {
-          this.userService.deleteComicFromEvaluate(id_comic);
-          this.userService.deleteComicFromFollow(id_comic);
-          this.userService.deleteComicFromLike(id_comic);
-        });
+    return `Tăng [${query.field}] cho truyện thành công!`;
+  }
 
-        this.comicService.delete(id_comic);
-      } else {
-        throw new NotFoundException('Truyện không tồn tại');
-      }
+  @UseGuards(JwtAuthorizationd)
+  @Patch(':comicId/evaluate')
+  async handleEvaluateComic(
+    @Body(new ValidationPipe()) data: ScoreDTO,
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    const { score } = data;
+    await this.comicService.evaluateComic(userId, comicId, score);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: `Xóa truyện với id ${id_comic} thành công!`,
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return `Đánh giá truyện thành công!`;
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @UseInterceptors(FilesInterceptor('files'))
-  @Post('/chapter/create')
-  async createChapterForComic(
-    @Body(new ValidationPipe()) chapter: CreateChapterDTO,
-    @IdUser() id_user: number,
-    @Res() response: Response,
+  @Post(':comicId/chapters')
+  async handleCreateChapterForComic(
+    @Body(new ValidationPipe()) data: CreateChapterDTO,
+    @UserId() userId: number,
     @UploadedFiles() files: Express.Multer.File[],
+    @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    try {
-      const new_chapter = await this.chapterService.create({ ...chapter });
-
-      this.cloudinaryService
-        .uploadMultipleFile(files, `comics/${new_chapter.id_comic}/${new_chapter.id}`)
-        .then((data) => this.chapterService.updateImages(new_chapter.id, data));
-
-      this.comicService.getById(new_chapter.id_comic).then(async (comic) => {
-        const users_following = await this.userService.getListUserFollowingComic(comic.id);
-
-        for (const user of users_following) {
-          const notify: INotification = {
-            id_user: user.id_user,
-            title: 'Chương mới!',
-            body: `${comic.name} vừa cập nhật thêm chapter mới - ${new_chapter.name}.`,
-            redirect_url: `/comic/${comic.slug}/${new_chapter.slug}`,
-            thumb: comic.thumb,
-          };
-
-          this.notifyService.create(notify);
-          this.notifyService.notifyToUser(notify);
-        }
-      });
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Tạo chapter mới cho truyện thành công!',
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    const { nameChapter } = data;
+    await this.comicService.addNewChapterForComic(userId, comicId, nameChapter, files);
+    return `Tạo chapter với cho truyện id [${comicId}] thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @UseInterceptors(FilesInterceptor('files'))
-  @Post('/chapter/update/:id_chapter')
-  async updateChapterForComic(
-    @Body(new ValidationPipe()) chapter_information: UpdateChapterDTO,
-    @Param('id_chapter', new ParseIntPipe()) id_chapter: number,
-    @IdUser() id_user: number,
-    @Res() response: Response,
-    @UploadedFiles() files: Express.Multer.File[],
+  @Get(':comicId/chapters/:chapterId')
+  async getOneChapter(
+    @Param('chapterId', new ParseIntPipe()) chapterId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
-    try {
-      const update_chapter: IChapter = {
-        ...chapter_information,
-        id_comic: parseInt(chapter_information.id_comic.toString()),
-        id: id_chapter,
-      };
+    const chapter = await this.comicService.getASpecificChapterOfComic(comicId, chapterId);
 
-      const chapter = await this.chapterService.update({ ...update_chapter });
-
-      this.cloudinaryService
-        .uploadMultipleFile(files, `comics/${chapter.id_comic}/${chapter.id}`)
-        .then((data) =>
-          this.chapterService.updateImagesAtSpecificPosition(
-            chapter.id,
-            chapter_information.change_image_at.split(',').map((ele: string) => parseInt(ele)),
-            data,
-          ),
-        );
-
-      this.comicService.getById(chapter.id_comic).then((comic) => {
-        const notify: INotification = {
-          id_user,
-          title: 'Chương mới!',
-          body: `${comic.name} vừa cập nhật lại chapter - ${chapter.name}.`,
-          redirect_url: `http://localhost:3001/comic/${comic.slug}/${chapter.slug}`,
-          thumb: comic.thumb,
-        };
-
-        this.notifyService.create(notify);
-
-        this.userService.checkFollowing(id_user, chapter.id_comic).then((data) => {
-          if (data) {
-            this.notifyService.notifyToUser(notify);
-          }
-        });
-      });
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: `Cập nhật chapter ${chapter_information.name} truyện thành công!`,
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return chapter;
   }
 
-  @Get(':name/increment')
-  async increament(
-    @Query() query: any,
-    @Param('name') slug_comic: string,
-    @Res() response: Response,
+  @UseGuards(JwtAuthorizationd)
+  @Post(':comicId/comments')
+  async handleCommentComic(
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CreateCommentDTO,
   ) {
-    try {
-      await this.comicService.increment(slug_comic, query.field, parseInt(query.jump));
+    const { content } = data;
+    const newComment = await this.comicService.commentOnComic(userId, comicId, content);
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Tăng thành công!',
-        result: {},
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status | 500,
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-      });
-    }
+    return newComment;
   }
 
-  // lấy thống kê theo ngày
-  @Get('/analysis/new-comic')
-  async analysisByDay(
-    @Query('number_day', new ParseIntPipe()) number_day: number,
-    @Res() response: Response,
+  @UseGuards(JwtAuthorizationd)
+  @Post(':comicId/comments/:commentId/answer')
+  async handleReplyComment(
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @Param('commentId', new ParseIntPipe()) commentId: number,
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CreateAnswerDTO,
   ) {
-    try {
-      const result = await this.comicService.analysisDayAgo(number_day);
+    const { content, mentionedPerson } = data;
+    await this.comicService.addAnswerToCommentOfComic(
+      userId,
+      comicId,
+      commentId,
+      content,
+      mentionedPerson,
+    );
 
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: result,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
-  }
-
-  @Get('/analysis/grow-past-current')
-  async analysisGrow(@Res() response: Response) {
-    try {
-      const result = await this.comicService.compareCurDateAndPreDate();
-
-      return response.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        success: true,
-        message: 'Thao tác thành công!',
-        result: result,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return response.status(error.status | 500).json({
-        statusCode: error.status,
-        success: false,
-        message: 'Lỗi!',
-      });
-    }
+    return `Trả lời bình luận thành công!`;
   }
 }

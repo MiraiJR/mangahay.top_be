@@ -1,11 +1,4 @@
-/* eslint-disable prettier/prettier */
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 
 @Entity()
@@ -13,10 +6,10 @@ export class Notification {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ name: 'user_id' })
   @ManyToOne(() => User, (user) => user.id)
-  @JoinColumn({ name: 'id_user' })
-  id_user: number;
+  @JoinColumn({ name: 'user_id' })
+  userId: number;
 
   @Column({ nullable: false })
   title: string;
@@ -24,13 +17,13 @@ export class Notification {
   @Column({ nullable: false })
   body: string;
 
-  @Column({ default: false })
-  is_read: boolean;
+  @Column({ default: false, name: 'is_read' })
+  isRead: boolean;
 
-  @Column({nullable: true})
-  redirect_url: string;
+  @Column({ nullable: true, name: 'redirect_url' })
+  redirectUrl: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   thumb: string;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
