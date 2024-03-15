@@ -1,8 +1,17 @@
-FROM python:3.9
+# FROM python:3.9
 
-RUN apt update && apt install -y nodejs npm
+# RUN apt update && apt install -y nodejs npm
+
+# WORKDIR /mangahay_be
+
+# COPY ./package.json ./package-lock.json ./
+# COPY ./requirements.txt /mangahay_be/
+
+# RUN pip install --no-cache-dir -r requirements.txt
+FROM node:18 as backend
 
 WORKDIR /mangahay_be
+COPY ./package.json ./package-lock.json ./
 
 COPY ./package.json ./package-lock.json ./
 COPY ./requirements.txt /mangahay_be/

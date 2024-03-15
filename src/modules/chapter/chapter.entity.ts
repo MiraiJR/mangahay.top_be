@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import {
   BeforeInsert,
   BeforeUpdate,
@@ -10,6 +9,7 @@ import {
 } from 'typeorm';
 import { Comic } from '../comic/comic.entity';
 import slugify from 'slugify';
+import { User } from '../user/user.entity';
 
 @Entity()
 export class Chapter {
@@ -22,22 +22,29 @@ export class Chapter {
   @Column('text', { array: true, nullable: true })
   images: string[];
 
-  @Column()
+  @Column({ name: 'comic_id' })
   @ManyToOne(() => Comic, (comic) => comic.id)
-  @JoinColumn({ name: 'id_comic' })
-  id_comic: number;
+  @JoinColumn({ name: 'comic_id' })
+  comicId: number;
 
   @Column({ nullable: false })
   slug: string;
-  
-  @Column({ type: 'timestamp', default: () => 'now()' })
+
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'created_at' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
-  updatedAt:  Date;
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'updated_at' })
+  updatedAt: Date;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  order: number;
+
+  @ManyToOne(() => User, (user) => user.id)
+  @JoinColumn({ name: 'creator_id' })
+  @Column({ name: 'creator_id', nullable: true })
+  creator: number;
 
   @BeforeInsert()
-  @BeforeUpdate()
   generateSlug() {
     this.slug = slugify(this.name, { lower: true });
   }

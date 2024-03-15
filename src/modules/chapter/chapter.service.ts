@@ -1,17 +1,44 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IChapter } from './chapter.interface';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ChapterService {
   constructor(
+    private cloudinaryService: CloudinaryService,
     @InjectRepository(Chapter)
     private chapterRepository: Repository<Chapter>,
   ) {}
 
-  async getAll(id_comic: any) {
+  async getChapters() {
+    return this.chapterRepository.find({
+      select: {
+        slug: true,
+      },
+    });
+  }
+
+  async reorderChapters() {
+    const chapters = await this.chapterRepository.find();
+
+    chapters.forEach(async (chapter) => {
+      let order = 1;
+
+      if (chapter.name.match(/[+-]?\d+(\.\d+)?/g)) {
+        order = parseFloat(chapter.name.match(/[+-]?\d+(\.\d+)?/g)[0]);
+      }
+
+      await this.chapterRepository.save({
+        ...chapter,
+        order,
+      });
+    });
+  }
+
+  async getChaptersOfComic(comicId: number) {
     return await this.chapterRepository
       .createQueryBuilder('chapter')
       .select([
@@ -20,23 +47,61 @@ export class ChapterService {
         'chapter.slug',
         'chapter.updatedAt',
         'chapter.images',
+        'chapter.order',
       ])
-      .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.id', 'DESC')
+      .where('chapter.comicId = :comicId', { comicId })
+      .orderBy('chapter.order', 'DESC')
       .getMany();
   }
 
-  async getNewestChapter(id_comic: any) {
-    return await this.chapterRepository
-      .createQueryBuilder('chapter')
-      .where('chapter.id_comic = :id_comic', { id_comic })
-      .orderBy('chapter.updatedAt', 'ASC')
-      .getOne();
+  getNextAndPreChapter(chapterId: number, chapters: Array<Chapter>) {
+    let previousChapter = null;
+    let nextChapter = null;
+    let currentChapter = null;
+
+    for (let i = 0; i < chapters.length; i++) {
+      if (chapters[i].id === chapterId) {
+        nextChapter = chapters[i - 1] ? chapters[i - 1] : null;
+        currentChapter = chapters[i];
+        previousChapter = chapters[i + 1] ? chapters[i + 1] : null;
+      }
+    }
+
+    if (currentChapter === null) {
+      throw new HttpException('Chapter không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      previousChapter,
+      nextChapter,
+      currentChapter,
+    };
   }
 
-  async create(chapter: IChapter) {
-    const new_chapter = this.chapterRepository.create(chapter);
-    return await this.chapterRepository.save(new_chapter);
+  async createNewChapterWithoutFiles(chapter: IChapter) {
+    let newChapter = this.chapterRepository.create(chapter);
+    newChapter = await this.chapterRepository.save(newChapter);
+    newChapter = await this.chapterRepository.save({
+      ...newChapter,
+      slug: `${newChapter.slug}-${newChapter.id}`,
+    });
+
+    return newChapter;
+  }
+
+  async createNewChapter(chapter: IChapter, files: Express.Multer.File[]) {
+    let newChapter = this.chapterRepository.create(chapter);
+    newChapter = await this.chapterRepository.save(newChapter);
+    newChapter = await this.chapterRepository.save({
+      ...newChapter,
+      slug: `${newChapter.slug}-${newChapter.id}`,
+    });
+
+    this.cloudinaryService
+      .uploadMultipleFile(files, `comics/${newChapter.comicId}/${newChapter.id}`)
+      .then((data) => this.updateImages(newChapter.id, data));
+
+    return newChapter;
   }
 
   async update(chapter: IChapter) {
@@ -51,12 +116,12 @@ export class ChapterService {
     });
   }
 
-  async deleteAllChapterOfComic(id_comic: number) {
+  async deleteAllChapterOfComic(comicId: number) {
     return await this.chapterRepository
       .createQueryBuilder('chapters')
       .delete()
       .from(Chapter)
-      .where('id_comic = :id_comic', { id_comic })
+      .where('comicId = :comicId', { comicId })
       .execute();
   }
 
@@ -75,11 +140,7 @@ export class ChapterService {
     });
   }
 
-  async updateImagesAtSpecificPosition(
-    id_chapter: number,
-    positions: number[],
-    images: string[],
-  ) {
+  async updateImagesAtSpecificPosition(id_chapter: number, positions: number[], images: string[]) {
     const chapter = await this.getOne(id_chapter);
     const chapter_images = chapter.images;
 
