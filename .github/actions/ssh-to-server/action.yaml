@@ -1,0 +1,31 @@
+name: SSH to server deploy
+description: SSH to server deploy and install docker
+
+inputs:
+  ssh-private-key: 
+    description: SSH private key to access
+    required: true
+  ssh-username: 
+    description: Username for SSH connection
+    required: true
+  ssh-host: 
+    description: IPv4 address of server
+    required: true
+  ssh-port:
+    description: Port for SSH connection
+    required: true
+    default: "22"
+
+runs:
+ using: composite
+ steps:
+  - name: SSH to server ubuntu and install docker
+    uses: appleboy/ssh-action@v1.0.3
+    with:
+      host: ${{ inputs.ssh-host }}
+      username: ${{ inputs.ssh-username }}
+      key: ${{ inputs.ssh-private-key }}
+      port: ${{ inputs.ssh-port }}
+      script: |
+        sudo apt update
+        sudo apt install -y docker.io
