@@ -13,10 +13,6 @@ FROM node:18 as backend
 WORKDIR /mangahay_be
 COPY ./package.json ./package-lock.json ./
 
-COPY ./package.json ./package-lock.json ./
-COPY ./requirements.txt /mangahay_be/
-
-RUN pip install --no-cache-dir -r requirements.txt
 RUN npm install 
 
 COPY . ./
