@@ -1,0 +1,32 @@
+name: pull images from docker hub and deploy
+description: pull images from docker hub and deploy
+
+inputs:
+  docker-image: 
+    description: docker image name need to pull
+    required: true
+
+runs:
+ using: composite
+ steps:
+  - name: Login to docker hub
+    shell: bash
+    run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
+  - name: Pull Docker images
+    shell: bash
+    run: |
+      docker pull ${{ inputs.docker-image }}
+      docker pull redis
+      docker pull postgres
+  - name: Docker run redis
+    shell: bash
+    run: docker run --name redis_cache_mangahay -d -p 6379:6379 -v redis:/data redis
+  - name: Docker run postgres
+    shell: bash
+    run: docker run --name postgres_mangahay -d -e POSTGRES_DB=MANGAHAY -e POSTGRES_USER=tvhao021102 -e POSTGRES_PASSWORD=raicy0222* -p 5432:5432 postgres
+  - name: Docker run back-end
+    shell: bash
+    run: docker run -d --name comic_mangahay_be --env-file .docker.env -p 3000:3000 --link redis:redis --link postgres:postgres ${{ inputs.docker-image }}
+  - name: Restart nginx
+    shell: bash
+    run: systemctl restart nginx
