@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
 import { SocketService } from '../socket/socket.service';
 import { NotificationType } from '../user/types/NotificationType';
+import { NotificationStatus } from './enum/NotificationStatus';
 
 @Injectable()
 export class NotificationService {
@@ -94,13 +95,22 @@ export class NotificationService {
     });
   }
 
-  async changeAllStateOfUser(id_user: number) {
+  async changeAllStateOfUser(id_user: number, status: boolean) {
     return await this.notificationRepository
-      .createQueryBuilder('notification')
-      .update('notification')
-      .set({ is_read: true })
-      .where('notification.id_user = :id_user', { id_user: id_user })
-      .andWhere('notification.is_read = false')
+      .createQueryBuilder()
+      .update(Notification)
+      .set({ isRead: status })
+      .where('userId = :id_user', { id_user: id_user })
+      .andWhere('isRead = false')
+      .execute();
+  }
+
+  async removeAllNotificationsOfUser(userId: number) {
+    return await this.notificationRepository
+      .createQueryBuilder()
+      .delete()
+      .from(Notification)
+      .where('userId = :id', { id: userId })
       .execute();
   }
 }
