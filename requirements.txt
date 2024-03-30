@@ -1,6 +1,0 @@
-requests
-BeautifulSoup4
-psycopg2
-python-slugify
-load_dotenv
-slugify
