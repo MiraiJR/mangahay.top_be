@@ -13,9 +13,8 @@ import { Chapter } from '../chapter/chapter.entity';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { join } from 'path';
 import Helper from 'src/common/utils/helper';
-const cloudinary = require('cloudinary').v2;
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ComicService {
@@ -28,6 +27,7 @@ export class ComicService {
     private comicInteractionService: ComicInteractionService,
     private commentService: CommentService,
     private httpService: HttpService,
+    private configService: ConfigService,
   ) {}
 
   async getComicsWithChapters() {
@@ -79,7 +79,7 @@ export class ComicService {
     const convertedURL = new URL(urlPost);
     const pageId = convertedURL.searchParams.get('id');
     const postId = convertedURL.searchParams.get('story_fbid');
-    const accessToken = `EAAZAZC5kNtxwMBO0HxRKBV4YbyT0edaoM51EppKfitSFXa576XzeIdFgZC3m8IbBSBDQh3HvR74ZBEWxtwfqFHTXOOmv3yRxCfOPkCEEvASZA714CVBYAogEa7k7RBPooZCGD85eKGgC7aBorWddZC61H4kyM4JfUpDw84fY9ArX0RGJ7h7q0o56bvv29S7jzzZBrZAad7eaPmjlN1gpEdgZDZD`;
+    const accessToken = this.configService.get<string>('FACEBOOK_TOKEN');
 
     const { data } = await this.httpService
       .get(
