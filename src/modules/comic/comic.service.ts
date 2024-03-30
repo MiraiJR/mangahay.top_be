@@ -1,7 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import slugify from 'slugify';
-import { Interval } from '@nestjs/schedule';
-import { spawn } from 'child_process';
 import { IComic } from './comic.interface';
 import { ChapterService } from '../chapter/chapter.service';
 import { ComicRepository } from './comic.repository';
@@ -15,9 +13,9 @@ import { Chapter } from '../chapter/chapter.entity';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import * as fs from 'fs';
 import { join } from 'path';
 import Helper from 'src/common/utils/helper';
+const cloudinary = require('cloudinary').v2;
 
 @Injectable()
 export class ComicService {
@@ -47,7 +45,6 @@ export class ComicService {
     for (let _index = 0; _index < arrayUrl.length; _index++) {
       const nameChapter = arrayUrl[_index].split('/').reverse()[0].split('-').join(' ');
 
-      console.log(nameChapter);
       try {
         await this.crawlChapterForComic(
           userId,
@@ -82,7 +79,7 @@ export class ComicService {
     const convertedURL = new URL(urlPost);
     const pageId = convertedURL.searchParams.get('id');
     const postId = convertedURL.searchParams.get('story_fbid');
-    const accessToken = `EAAZAZC5kNtxwMBO4kLwyaU7HdvEayvoC2DJLBdS1P2sCeHCeLl5K5bxijIeSlSFzR9KWo1dMYblEz26VffZCZBTqbg2AZBXdzlCp5BROrcRCvNZBiEadDiZCc5mrdPu6fUEQoewjwuuCvtZBbmrP4sGOx97r9mz7uSJMxMuE78OKUuEys8BbpWyxP2lz1K0ZAL98GvFXheEbROa2wtpQDIJL8SsDz8j9MjbibTp2VgeJstkCS89plGGPbLsVGkdzCjygZD`;
+    const accessToken = `EAAZAZC5kNtxwMBO0HxRKBV4YbyT0edaoM51EppKfitSFXa576XzeIdFgZC3m8IbBSBDQh3HvR74ZBEWxtwfqFHTXOOmv3yRxCfOPkCEEvASZA714CVBYAogEa7k7RBPooZCGD85eKGgC7aBorWddZC61H4kyM4JfUpDw84fY9ArX0RGJ7h7q0o56bvv29S7jzzZBrZAad7eaPmjlN1gpEdgZDZD`;
 
     const { data } = await this.httpService
       .get(
@@ -95,28 +92,6 @@ export class ComicService {
     });
 
     return images;
-  }
-
-  async downloadAndUploadImageToStaicServer(urlImage: string, folder: string, imageName: string) {
-    const destination = join(__dirname, '..', '..', 'static/upload');
-    const response = await axios({
-      method: 'get',
-      url: urlImage,
-      responseType: 'stream',
-    });
-
-    fs.mkdirSync(`${destination}/${folder}`, { recursive: true });
-    const writer = fs.createWriteStream(`${destination}/${folder}/${imageName}`);
-    response.data.pipe(writer);
-
-    new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    }).catch((error) => {
-      throw new HttpException('Không thể tải ảnh thành công!', HttpStatus.BAD_REQUEST);
-    });
-
-    return `${process.env.HOST_BE}/upload/${folder}/${imageName}`;
   }
 
   async crawlChapterForComic(
@@ -157,7 +132,7 @@ export class ComicService {
       const imageName = `${_index}.jpg`;
 
       try {
-        const linkImage = await this.downloadAndUploadImageToStaicServer(
+        const linkImage = await this.cloudinaryService.uploadImageFromUrl(
           crawledImages[_index],
           folder,
           imageName,
