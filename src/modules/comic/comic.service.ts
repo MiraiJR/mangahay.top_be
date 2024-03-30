@@ -65,7 +65,7 @@ export class ComicService {
     const $ = cheerio.load(response.data);
     const imgElements = $(querySelector);
 
-    const srcAttributes = imgElements.map((index, element) => $(element).attr(attribute)).get();
+    const srcAttributes = imgElements.map((_index, element) => $(element).attr(attribute)).get();
 
     if (urlPost.includes('blogtruyen')) {
       srcAttributes.shift();
@@ -129,7 +129,7 @@ export class ComicService {
 
     for (let _index = 0; _index < crawledImages.length; _index++) {
       const folder = `${comic.id}/${newChapter.id}`;
-      const imageName = `${_index}.jpg`;
+      const imageName = `${_index}`;
 
       try {
         const linkImage = await this.cloudinaryService.uploadImageFromUrl(
@@ -137,6 +137,7 @@ export class ComicService {
           folder,
           imageName,
         );
+
         imagesChapter.push(linkImage);
       } catch (error) {
         await this.chapterService.delete(newChapter.id);
