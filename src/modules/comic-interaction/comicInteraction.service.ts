@@ -49,10 +49,15 @@ export class ComicInteractionService {
       throw new HttpException('Bạn đã đánh giá truyện này rồi!', HttpStatus.BAD_REQUEST);
     }
 
-    return await this.comicInteractionRepository.save({
-      ...interaction,
-      score,
-    });
+    return await this.comicInteractionRepository
+      .createQueryBuilder()
+      .update(ComicInteraction)
+      .set({
+        score,
+      })
+      .where('userId = :userId', { userId })
+      .andWhere('comicId = :comicId', { comicId })
+      .execute();
   }
 
   //------------> like comic

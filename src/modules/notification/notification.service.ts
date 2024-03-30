@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
 import { SocketService } from '../socket/socket.service';
 import { NotificationType } from '../user/types/NotificationType';
-import { NotificationStatus } from './enum/NotificationStatus';
 
 @Injectable()
 export class NotificationService {
