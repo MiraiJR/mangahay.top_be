@@ -82,7 +82,7 @@ export class ComicService {
     const convertedURL = new URL(urlPost);
     const pageId = convertedURL.searchParams.get('id');
     const postId = convertedURL.searchParams.get('story_fbid');
-    const accessToken = `EAARBx6evemkBOZCF8EjDh5XolKDTqmVbl5ZCXcebulyReGLB2s8MSgOFU66PlZAPuY014pjXFpO693GbIjLiCmeGmWpF1rAPHMsyWqrOEtZCSh8wRnXfOrGYF4INQnBw4D8GAOeKUIWbz8yBYCy8PZCrgh3q4bi65kPZC25Tbysasjvarzyvzutdn0`;
+    const accessToken = `EAAZAZC5kNtxwMBO4kLwyaU7HdvEayvoC2DJLBdS1P2sCeHCeLl5K5bxijIeSlSFzR9KWo1dMYblEz26VffZCZBTqbg2AZBXdzlCp5BROrcRCvNZBiEadDiZCc5mrdPu6fUEQoewjwuuCvtZBbmrP4sGOx97r9mz7uSJMxMuE78OKUuEys8BbpWyxP2lz1K0ZAL98GvFXheEbROa2wtpQDIJL8SsDz8j9MjbibTp2VgeJstkCS89plGGPbLsVGkdzCjygZD`;
 
     const { data } = await this.httpService
       .get(
