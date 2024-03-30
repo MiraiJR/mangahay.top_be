@@ -1,13 +1,12 @@
 name: Deploy backend
+
 on:
   push:
     branches:
-      - '*'
-    tags:
-      - 'v*'
+      - main
   pull_request:
     branches:
-      - 'main'
+      - main
 
 jobs:
   build-and-push:
