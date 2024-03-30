@@ -1,5 +1,5 @@
-name: SSH to server deploy
-description: SSH to server deploy and install docker
+name: SSH to server ubuntu and remove container and image
+description: SSH to server ubuntu and remove container and image
 
 inputs:
   ssh-private-key: 
@@ -8,6 +8,7 @@ inputs:
   ssh-username: 
     description: Username for SSH connection
     required: true
+    default: "root"
   ssh-host: 
     description: IPv4 address of server
     required: true
@@ -19,7 +20,7 @@ inputs:
 runs:
  using: composite
  steps:
-  - name: SSH to server ubuntu and install docker
+  - name: SSH to server ubuntu and remove container and image
     uses: appleboy/ssh-action@v1.0.3
     with:
       host: ${{ inputs.ssh-host }}
@@ -27,5 +28,11 @@ runs:
       key: ${{ inputs.ssh-private-key }}
       port: ${{ inputs.ssh-port }}
       script: |
-        sudo apt update
-        sudo apt install -y docker.io
+        cd /mangahay/back-end
+        docker stop comic_mangahay_be || true
+        docker rm comic_mangahay_be || true
+        docker rmi miraijr/mangahay-be:main || true
+
+        docker compose up -d
+
+        
