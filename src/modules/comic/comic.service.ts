@@ -346,12 +346,12 @@ export class ComicService {
     }
 
     if (query.filterGenres) {
-      let query_filter: any = `genres @> ARRAY[${query.filterGenres}]`
-        .replace('[', "['")
-        .replace(']', "']");
-
-      query_filter = query_filter.replaceAll(',', "','");
-      result.andWhere(query_filter);
+      result.where(
+        `to_tsvector(array_to_string(comics.genres, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.filterGenres.join(' ')}%`,
+        },
+      );
     }
 
     result

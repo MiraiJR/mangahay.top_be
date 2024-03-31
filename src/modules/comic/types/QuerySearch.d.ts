@@ -5,5 +5,5 @@ type QuerySearch = {
   filterState?: string;
   filterSort?: string;
   filterAuthor?: string;
-  filterGenres?: string;
+  filterGenres?: string[];
 };
