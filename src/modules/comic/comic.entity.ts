@@ -4,12 +4,14 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 
 @Entity()
+@Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
 export class Comic {
   @PrimaryGeneratedColumn()
   id: number;

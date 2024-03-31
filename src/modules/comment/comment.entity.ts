@@ -10,12 +10,16 @@ export class Comment {
 
   @Exclude()
   @Column({ name: 'user_id' })
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.id, {
+    cascade: ['remove'],
+  })
   @JoinColumn({ name: 'user_id' })
   userId: number;
 
   @Column({ name: 'comic_id' })
-  @ManyToOne(() => Comic, (comic) => comic.id)
+  @ManyToOne(() => Comic, (comic) => comic.id, {
+    cascade: ['remove'],
+  })
   @JoinColumn({ name: 'comic_id' })
   comicId: number;
 
