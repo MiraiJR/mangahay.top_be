@@ -7,7 +7,9 @@ export class Notification {
   id: number;
 
   @Column({ name: 'user_id' })
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.id, {
+    cascade: ['remove'],
+  })
   @JoinColumn({ name: 'user_id' })
   userId: number;
 

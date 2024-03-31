@@ -1089,3 +1089,4 @@ SELECT pg_catalog.setval('public.user_id_seq', 2, true);
 -- PostgreSQL database dump complete
 --
 
+CREATE EXTENSION unaccent;

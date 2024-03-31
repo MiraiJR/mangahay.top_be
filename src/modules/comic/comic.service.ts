@@ -307,21 +307,15 @@ export class ComicService {
       page = query.page;
     }
 
-    const result = this.comicRepository.createQueryBuilder('comics');
+    const result = this.comicRepository.createQueryBuilder().from(Comic, 'comics');
 
     if (query.comicName) {
-      const dataSearchSlug = slugify(query.comicName, {
-        replacement: '-',
-        remove: undefined,
-        lower: true,
-        strict: false,
-        locale: 'vi',
-        trim: true,
-      });
-
-      result.where('comics.slug like :search', {
-        search: `%${dataSearchSlug}%`,
-      });
+      result.where(
+        `to_tsvector(comics.name || ' ' || comics.briefDescription || ' ' || comics.anotherName || ' ' || comics.slug) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.comicName}%`,
+        },
+      );
     }
 
     if (query.filterState) {
@@ -343,9 +337,12 @@ export class ComicService {
     }
 
     if (query.filterAuthor) {
-      result.andWhere(':author = any(comics.authors)', {
-        author: query.filterAuthor,
-      });
+      result.where(
+        `to_tsvector(array_to_string(comics.authors, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.filterAuthor}%`,
+        },
+      );
     }
 
     if (query.filterGenres) {

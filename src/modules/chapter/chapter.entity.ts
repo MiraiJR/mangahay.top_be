@@ -3,6 +3,7 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -13,6 +14,7 @@ import { User } from '../user/user.entity';
 
 @Entity()
 export class Chapter {
+  @Index({ unique: true })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -23,7 +25,9 @@ export class Chapter {
   images: string[];
 
   @Column({ name: 'comic_id' })
-  @ManyToOne(() => Comic, (comic) => comic.id)
+  @ManyToOne(() => Comic, (comic) => comic.id, {
+    cascade: ['remove'],
+  })
   @JoinColumn({ name: 'comic_id' })
   comicId: number;
 
