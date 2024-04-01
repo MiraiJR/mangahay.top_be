@@ -8,7 +8,6 @@ import { ChapterModule } from '../modules/chapter/chapter.module';
 import { AuthModule } from '../modules/auth/auth.module';
 import { UserModule } from '../modules/user/user.module';
 import { CommentModule } from '../modules/comment/comment.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { SocketModule } from '../modules/socket/socket.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { GraphQLModule } from '@nestjs/graphql';
@@ -60,7 +59,6 @@ import { GenreModule } from 'src/modules/genre/genre.module';
         autoLoadEntities: true,
       }),
     }),
-    ScheduleModule.forRoot(),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',

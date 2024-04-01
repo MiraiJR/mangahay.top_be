@@ -1,5 +1,4 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import slugify from 'slugify';
 import { IComic } from './comic.interface';
 import { ChapterService } from '../chapter/chapter.service';
 import { ComicRepository } from './comic.repository';
@@ -15,6 +14,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
+import StringUtil from 'src/common/utils/StringUtil';
+import { PagingComics } from 'src/common/types/Paging';
 
 @Injectable()
 export class ComicService {
@@ -300,81 +301,8 @@ export class ComicService {
     );
   }
 
-  async searchComic(query: QuerySearch) {
-    let page = 1;
-
-    if (query.page) {
-      page = query.page;
-    }
-
-    const result = this.comicRepository.createQueryBuilder().from(Comic, 'comics');
-
-    if (query.comicName) {
-      result.where(
-        `to_tsvector(comics.name || ' ' || comics.briefDescription || ' ' || comics.anotherName || ' ' || comics.slug) @@ plainto_tsquery(unaccent(:searchTerm))`,
-        {
-          searchTerm: `%${query.comicName}%`,
-        },
-      );
-    }
-
-    if (query.filterState) {
-      result.andWhere('comics.state = :state', { state: query.filterState });
-    }
-
-    if (query.filterSort) {
-      switch (query.filterSort) {
-        case 'az':
-          result.orderBy('comics.name', 'ASC');
-          break;
-        case 'za':
-          result.orderBy('comics.name', 'DESC');
-          break;
-        default:
-          result.orderBy(`comics.${query.filterSort}`, 'DESC');
-          break;
-      }
-    }
-
-    if (query.filterAuthor) {
-      result.where(
-        `to_tsvector(array_to_string(comics.authors, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
-        {
-          searchTerm: `%${query.filterAuthor}%`,
-        },
-      );
-    }
-
-    if (query.filterGenres) {
-      result.where(
-        `to_tsvector(array_to_string(comics.genres, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
-        {
-          searchTerm: `%${query.filterGenres.join(' ')}%`,
-        },
-      );
-    }
-
-    result
-      .addOrderBy('comics.updatedAt', 'DESC')
-      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comicId = comics.id')
-      .select(['comics'])
-      .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
-
-    const total = await result.getCount();
-
-    let comics = await result.getMany();
-
-    if (query.limit) {
-      comics = await result
-        .skip((page - 1) * query.limit)
-        .take(query.limit)
-        .getMany();
-    }
-
-    return {
-      total,
-      comics,
-    };
+  async searchComic(query: QuerySearch): Promise<PagingComics> {
+    return this.comicRepository.searchComics(query);
   }
 
   async ranking(query: { field: string; limit: number }) {
