@@ -277,6 +277,7 @@ export class ComicService {
     updatedComic.genres = data.genres;
     updatedComic.authors = data.authors;
     updatedComic.briefDescription = data.briefDescription;
+    updatedComic.translators = data.translators;
     updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
