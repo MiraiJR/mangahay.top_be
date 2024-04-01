@@ -1,8 +1,9 @@
-import { CACHE_MANAGER, Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { Cache } from 'cache-manager';
 import { IMessage } from '../message/message.interface';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class SocketService {
@@ -61,6 +62,5 @@ export class SocketService {
     }
   }
 
-  async broadcastMessage() {
-  }
+  async broadcastMessage() {}
 }

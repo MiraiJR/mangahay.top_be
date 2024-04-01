@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chapter } from '../chapter/chapter.entity';
+import StringUtil from 'src/common/utils/StringUtil';
 
 @Injectable()
 export class ComicRepository extends Repository<Comic> {
@@ -85,5 +86,91 @@ export class ComicRepository extends Repository<Comic> {
       .addSelect(['chapter.slug']);
 
     return queryBuilder.getMany();
+  }
+
+  async searchComics(query: QuerySearch) {
+    let page = 1;
+
+    if (query.page) {
+      page = query.page;
+    }
+
+    const result = this.createQueryBuilder().from(Comic, 'comics');
+
+    if (query.comicName) {
+      result.where(
+        `to_tsvector(comics.name || ' ' || comics.briefDescription || ' ' || comics.anotherName || ' ' || comics.slug) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.comicName}%`,
+        },
+      );
+      result.orWhere(
+        `REGEXP_REPLACE(LOWER(unaccent(comics.name)), '[^a-zA-Z0-9\s]', ' ', 'g') LIKE :comicName`,
+        {
+          comicName: `%${StringUtil.removeAccents(query.comicName)}%`,
+        },
+      );
+    }
+
+    if (query.filterState) {
+      result.andWhere('comics.state = :state', { state: query.filterState });
+    }
+
+    if (query.filterSort) {
+      switch (query.filterSort) {
+        case 'az':
+          result.orderBy('comics.name', 'ASC');
+          break;
+        case 'za':
+          result.orderBy('comics.name', 'DESC');
+          break;
+        default:
+          result.orderBy(`comics.${query.filterSort}`, 'DESC');
+          break;
+      }
+    }
+
+    if (query.filterAuthor) {
+      result.where(
+        `to_tsvector(array_to_string(comics.authors, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.filterAuthor}%`,
+        },
+      );
+      result.orWhere(
+        `REGEXP_REPLACE(LOWER(unaccent(array_to_string(comics.authors, ' '))), '[^a-zA-Z0-9\s]', ' ', 'g') LIKE :comicName`,
+        {
+          comicName: `%${StringUtil.removeAccents(query.filterAuthor)}%`,
+        },
+      );
+    }
+
+    if (query.filterGenres) {
+      result.where(
+        `to_tsvector(array_to_string(comics.genres, ' ')) @@ plainto_tsquery(unaccent(:searchTerm))`,
+        {
+          searchTerm: `%${query.filterGenres.join(' ')}%`,
+        },
+      );
+    }
+
+    result
+      .addOrderBy('comics.updatedAt', 'DESC')
+      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comicId = comics.id')
+      .select(['comics'])
+      .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
+
+    const totalRecord = await result.getCount();
+
+    if (query.limit) {
+      result.skip((page - 1) * query.limit).take(query.limit);
+    }
+
+    const comics = await result.getMany();
+
+    return {
+      total: totalRecord,
+      comics,
+    };
   }
 }

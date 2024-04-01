@@ -1,4 +1,4 @@
-import { CacheModule, Logger, Module, forwardRef } from '@nestjs/common';
+import { Logger, Module, forwardRef } from '@nestjs/common';
 import { SocketService } from './socket.service';
 import { SocketGateway } from './socket.gateway';
 import { JwtModule } from '@nestjs/jwt';
@@ -7,6 +7,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { MessageModule } from '../message/message.module';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
