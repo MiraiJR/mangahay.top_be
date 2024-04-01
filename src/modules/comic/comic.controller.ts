@@ -35,6 +35,7 @@ import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
 import { IncreaseFieldDTO } from './dtos/increaseField';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
+import { UpdateComicDTO } from './dtos/update-comic';
 
 @Controller('api/comics')
 export class ComicController {
@@ -127,16 +128,12 @@ export class ComicController {
   @Put('/:comicId')
   @UseInterceptors(FileInterceptor('file'))
   async handleUpdateComic(
-    @Body(new ValidationPipe()) comic: CreateComicDTO,
+    @Body(new ValidationPipe()) data: UpdateComicDTO,
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const updatedComic = await this.comicService.updateComic(
-      userId,
-      { ...comic, id: comicId },
-      file,
-    );
+    const updatedComic = await this.comicService.updateComic(userId, comicId, data, file);
 
     return updatedComic;
   }
