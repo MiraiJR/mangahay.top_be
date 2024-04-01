@@ -16,6 +16,7 @@ import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import StringUtil from 'src/common/utils/StringUtil';
 import { PagingComics } from 'src/common/types/Paging';
+import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
 
 @Injectable()
 export class ComicService {
@@ -261,22 +262,27 @@ export class ComicService {
     throw new HttpException('Bạn không phải người tạo truyện này!', HttpStatus.FORBIDDEN);
   }
 
-  async updateComic(userId: number, comic: IComic, file: Express.Multer.File): Promise<Comic> {
-    await this.checkCreatorOfComic(userId, comic.id);
+  async updateComic(
+    userId: number,
+    comicId: number,
+    data: UpdateComicDTO,
+    file: Express.Multer.File | null = null,
+  ): Promise<Comic> {
+    await this.checkCreatorOfComic(userId, comicId);
 
-    let updatedComic = await this.getComicById(comic.id);
+    let updatedComic = await this.getComicById(comicId);
 
-    updatedComic.name = comic.name;
-    updatedComic.anotherName = comic.anotherName;
-    updatedComic.genres = comic.genres;
-    updatedComic.authors = comic.authors;
-    updatedComic.briefDescription = comic.briefDescription;
+    updatedComic.name = data.name;
+    updatedComic.anotherName = data.anotherName;
+    updatedComic.genres = data.genres;
+    updatedComic.authors = data.authors;
+    updatedComic.briefDescription = data.briefDescription;
     updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
     updatedComic = await this.comicRepository.save(updatedComic);
 
-    if (!file) {
+    if (!file || data.isUpdateImage === UPDATE_IMAGE_WITH_FILE_OR_NOT.NO) {
       return updatedComic;
     }
 
