@@ -3,7 +3,7 @@ FROM node:18 as backend
 WORKDIR /mangahay_be
 COPY ./package.json ./package-lock.json ./
 
-RUN npm install 
+RUN npm install --force
 
 COPY . ./
 
