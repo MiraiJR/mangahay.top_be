@@ -24,12 +24,12 @@ export class Chapter {
   @Column('text', { array: true, nullable: true })
   images: string[];
 
-  @Column({ name: 'comic_id' })
-  @ManyToOne(() => Comic, (comic) => comic.id, {
+  @ManyToOne(() => Comic, (comic) => comic.chapters, {
     cascade: ['remove'],
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'comic_id' })
-  comicId: number;
+  comic: Comic;
 
   @Column({ nullable: false })
   slug: string;
@@ -43,7 +43,9 @@ export class Chapter {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   order: number;
 
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.id, {
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'creator_id' })
   @Column({ name: 'creator_id', nullable: true })
   creator: number;

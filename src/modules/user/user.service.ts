@@ -131,12 +131,13 @@ export class UserService {
   }
 
   async checkInteractionWithComic(userId: number, comicId: number): Promise<ComicInteraction> {
+    const comic = await this.comicService.getComicById(comicId);
     let interaction = await this.comicInteractionService.getInteractionOfWithComic(userId, comicId);
 
     if (!interaction) {
       interaction = {
-        userId: userId,
-        comicId: comicId,
+        user: await this.getUserById(userId),
+        comic: comic,
         isLiked: false,
         isFollowed: false,
         score: null,
