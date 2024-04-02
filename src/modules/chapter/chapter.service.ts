@@ -49,7 +49,7 @@ export class ChapterService {
         'chapter.images',
         'chapter.order',
       ])
-      .where('chapter.comicId = :comicId', { comicId })
+      .where('chapter.comic = :comicId', { comicId })
       .orderBy('chapter.order', 'DESC')
       .getMany();
   }
@@ -98,7 +98,7 @@ export class ChapterService {
     });
 
     this.cloudinaryService
-      .uploadMultipleFile(files, `comics/${newChapter.comicId}/${newChapter.id}`)
+      .uploadMultipleFile(files, `comics/${newChapter.comic}/${newChapter.id}`)
       .then((data) => this.updateImages(newChapter.id, data));
 
     return newChapter;

@@ -1,27 +1,33 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Comic } from '../comic/comic.entity';
-import { Exclude } from 'class-transformer';
+import { Answer } from '../answer-comment/answer.entity';
 
 @Entity()
 export class Comment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Exclude()
-  @Column({ name: 'user_id' })
-  @ManyToOne(() => User, (user) => user.id, {
-    cascade: ['remove'],
-  })
-  @JoinColumn({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'int' })
   userId: number;
 
-  @Column({ name: 'comic_id' })
-  @ManyToOne(() => Comic, (comic) => comic.id, {
+  @Column({ name: 'comic_id', type: 'int' })
+  comicId: number;
+
+  @ManyToOne(() => User, (user) => user.comments, {
+    eager: true,
     cascade: ['remove'],
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
+  @ManyToOne(() => Comic, (comic) => comic.comments, {
+    cascade: ['remove'],
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'comic_id' })
-  comicId: number;
+  comic: Comic;
 
   @Column({ nullable: false })
   content: string;
@@ -31,4 +37,7 @@ export class Comment {
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   updatedAt: Date;
+
+  @OneToMany(() => Answer, (answer) => answer.comment, { eager: true })
+  answers: Answer[];
 }

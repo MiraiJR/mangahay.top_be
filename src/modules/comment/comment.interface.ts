@@ -1,6 +1,6 @@
 export interface IComment {
   id?: number;
-  userId?: number;
+  user?: number;
   comicId?: number;
   content?: string;
   createdAt?: Date;

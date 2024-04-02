@@ -6,12 +6,7 @@ import { ComicInteractionRepository } from './comicInteraction.repository';
 export class ComicInteractionService {
   constructor(private comicInteractionRepository: ComicInteractionRepository) {}
   async getInteractionOfWithComic(userId: number, comicId: number): Promise<ComicInteraction> {
-    const interaction = await this.comicInteractionRepository.findOne({
-      where: {
-        userId,
-        comicId,
-      },
-    });
+    const interaction = await this.comicInteractionRepository.getInteractionByPK(userId, comicId);
 
     return interaction;
   }
@@ -20,7 +15,7 @@ export class ComicInteractionService {
   async calculateEvaluatedRatingStar(comicId: number): Promise<number> {
     const evaluations = await this.comicInteractionRepository.find({
       where: {
-        comicId,
+        comic: { id: comicId },
       },
     });
 
@@ -49,15 +44,11 @@ export class ComicInteractionService {
       throw new HttpException('Bạn đã đánh giá truyện này rồi!', HttpStatus.BAD_REQUEST);
     }
 
-    return await this.comicInteractionRepository
-      .createQueryBuilder()
-      .update(ComicInteraction)
-      .set({
-        score,
-      })
-      .where('userId = :userId', { userId })
-      .andWhere('comicId = :comicId', { comicId })
-      .execute();
+    return this.comicInteractionRepository.updateInteractionByPK(userId, comicId, {
+      isFollowed: interaction.isFollowed,
+      isLiked: interaction.isLiked,
+      score: score,
+    });
   }
 
   //------------> like comic
@@ -76,15 +67,11 @@ export class ComicInteractionService {
       throw new HttpException('Bạn đã thích truyện này rồi!', HttpStatus.BAD_REQUEST);
     }
 
-    return this.comicInteractionRepository.update(
-      {
-        userId,
-        comicId,
-      },
-      {
-        isLiked: true,
-      },
-    );
+    return this.comicInteractionRepository.updateInteractionByPK(userId, comicId, {
+      isFollowed: interaction.isFollowed,
+      isLiked: true,
+      score: interaction.score,
+    });
   }
 
   async unlikeComic(userId: number, comicId: number) {
@@ -98,21 +85,17 @@ export class ComicInteractionService {
       throw new HttpException('Bạn chưa bao giờ thích truyện này!', HttpStatus.BAD_REQUEST);
     }
 
-    return this.comicInteractionRepository.update(
-      {
-        userId,
-        comicId,
-      },
-      {
-        isLiked: false,
-      },
-    );
+    return this.comicInteractionRepository.updateInteractionByPK(userId, comicId, {
+      isFollowed: interaction.isFollowed,
+      isLiked: false,
+      score: interaction.score,
+    });
   }
 
   async listUsersLikeComic(comicId: number) {
     const users = await this.comicInteractionRepository.find({
       where: {
-        comicId,
+        comic: { id: comicId },
       },
     });
 
@@ -135,15 +118,11 @@ export class ComicInteractionService {
       throw new HttpException('Bạn đã theo dõi truyện này rồi!', HttpStatus.BAD_REQUEST);
     }
 
-    return this.comicInteractionRepository.update(
-      {
-        userId,
-        comicId,
-      },
-      {
-        isFollowed: true,
-      },
-    );
+    return this.comicInteractionRepository.updateInteractionByPK(userId, comicId, {
+      isFollowed: true,
+      isLiked: interaction.isLiked,
+      score: interaction.score,
+    });
   }
 
   async unfollowComic(userId: number, comicId: number) {
@@ -157,20 +136,16 @@ export class ComicInteractionService {
       throw new HttpException('Bạn chưa bao theo dõi truyện này!', HttpStatus.BAD_REQUEST);
     }
 
-    return this.comicInteractionRepository.update(
-      {
-        userId,
-        comicId,
-      },
-      {
-        isFollowed: false,
-      },
-    );
+    return this.comicInteractionRepository.updateInteractionByPK(userId, comicId, {
+      isFollowed: false,
+      isLiked: interaction.isLiked,
+      score: interaction.score,
+    });
   }
 
   async getListUserIdFollowedComic(comicId: number): Promise<number[]> {
     const objectUsers = await this.comicInteractionRepository.getUsersFollowedComic(comicId);
-    const arrayUserId = objectUsers.map((objectUser) => objectUser.userId);
+    const arrayUserId = objectUsers.map((objectUser) => objectUser.user.id);
 
     return arrayUserId;
   }

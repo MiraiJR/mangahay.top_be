@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -161,20 +160,12 @@ export class ComicController {
 
   @Get(':slug')
   async handleGetComic(@Param('slug') slugComic: string) {
-    const comic = await this.comicService.getComicBySlug(slugComic);
-    const chapters = await this.comicService.getChapters(comic.id);
-    const comments = await this.commentService.getCommentsOfComic(comic.id);
-
-    return {
-      comic,
-      chapters,
-      comments,
-    };
+    return this.comicService.getComicBySlug(slugComic);
   }
 
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @Delete('delete/:comicId')
+  @Delete(':comicId')
   async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
     await this.comicService.delete(comicId);
 
