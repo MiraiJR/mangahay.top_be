@@ -1,6 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
 import { Exclude } from 'class-transformer';
+import { Comment } from '../comment/comment.entity';
+import { Answer } from '../answer-comment/answer.entity';
+import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
+import { Notification } from '../notification/notification.entity';
 
 @Entity()
 export class User {
@@ -68,4 +72,16 @@ export class User {
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   updatedAt: Date;
+
+  @OneToMany(() => Comment, (comment) => comment.user, { lazy: true })
+  comments: Comment[];
+
+  @OneToMany(() => Answer, (answer) => answer.user, { lazy: true })
+  answers: Answer[];
+
+  @OneToMany(() => ComicInteraction, (comicInteraction) => comicInteraction.user, { lazy: true })
+  comicInteractions: ComicInteraction[];
+
+  @OneToMany(() => Notification, (notification) => notification.user, { lazy: true })
+  notifications: Notification[];
 }

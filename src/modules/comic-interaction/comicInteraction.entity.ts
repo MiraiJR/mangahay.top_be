@@ -6,16 +6,22 @@ import { Exclude } from 'class-transformer';
 @Entity({ name: 'comic_interaction' })
 export class ComicInteraction {
   @Exclude()
-  @PrimaryColumn({ name: 'user_id' })
-  @ManyToOne(() => User, (user) => user.id)
+  @PrimaryColumn({ name: 'user_id', type: 'int' })
+  @ManyToOne(() => User, (user) => user.comicInteractions, {
+    cascade: ['remove'],
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
-  userId: number;
+  user: User;
 
   @Exclude()
-  @PrimaryColumn({ name: 'comic_id' })
-  @ManyToOne(() => Comic, (comic) => comic.id)
+  @PrimaryColumn({ name: 'comic_id', type: 'int' })
+  @ManyToOne(() => Comic, (comic) => comic.comicInteractions, {
+    cascade: ['remove'],
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'comic_id' })
-  comicId: number;
+  comic: Comic;
 
   @Column({ default: false, name: 'is_liked' })
   isLiked: boolean;

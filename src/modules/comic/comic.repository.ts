@@ -81,7 +81,7 @@ export class ComicRepository extends Repository<Comic> {
 
   async findComicsWithChapters() {
     const queryBuilder = this.createQueryBuilder('comic')
-      .leftJoinAndMapMany('comic.chapters', Chapter, 'chapter', 'comic.id = chapter.comicId')
+      .leftJoinAndMapMany('comic.chapters', Chapter, 'chapter', 'comic.id = chapter.comic')
       .select(['comic'])
       .addSelect(['chapter.slug']);
 
@@ -156,7 +156,7 @@ export class ComicRepository extends Repository<Comic> {
 
     result
       .addOrderBy('comics.updatedAt', 'DESC')
-      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comicId = comics.id')
+      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comic = comics.id')
       .select(['comics'])
       .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
 

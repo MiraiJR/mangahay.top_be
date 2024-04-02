@@ -34,7 +34,7 @@ export class NotificationService {
       );
     }
 
-    if (notify.userId !== userId) {
+    if (notify.user.id !== userId) {
       throw new HttpException(`Không có quyền!`, HttpStatus.FORBIDDEN);
     }
 
@@ -71,27 +71,20 @@ export class NotificationService {
     userId: number,
     typeNotification: NotificationType = NotificationType.BOTH,
   ) {
+    const query = this.notificationRepository
+      .createQueryBuilder('notification')
+      .where('notification.user = :userId', { userId });
+
     if (typeNotification !== NotificationType.BOTH) {
-      return this.notificationRepository.find({
-        where: {
-          isRead: typeNotification === NotificationType.READ,
-        },
-        order: {
-          isRead: 'ASC',
-          createdAt: 'DESC',
-        },
+      query.andWhere('notification.isRead = :isRead', {
+        isRead: typeNotification === NotificationType.READ,
       });
     }
 
-    return this.notificationRepository.find({
-      where: {
-        userId,
-      },
-      order: {
-        isRead: 'ASC',
-        createdAt: 'DESC',
-      },
-    });
+    query.orderBy('notification.isRead', 'ASC');
+    query.addOrderBy('notification.createdAt', 'DESC');
+
+    return query.getMany();
   }
 
   async changeAllStateOfUser(id_user: number, status: boolean) {
@@ -99,7 +92,7 @@ export class NotificationService {
       .createQueryBuilder()
       .update(Notification)
       .set({ isRead: status })
-      .where('userId = :id_user', { id_user: id_user })
+      .where('user = :id_user', { id_user: id_user })
       .andWhere('isRead = false')
       .execute();
   }
@@ -109,7 +102,7 @@ export class NotificationService {
       .createQueryBuilder()
       .delete()
       .from(Notification)
-      .where('userId = :id', { id: userId })
+      .where('user = :id', { id: userId })
       .execute();
   }
 }

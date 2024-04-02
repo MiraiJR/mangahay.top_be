@@ -5,10 +5,16 @@ import {
   Column,
   Entity,
   Index,
+  JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
+import { Chapter } from '../chapter/chapter.entity';
+import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
+import { Comment } from '../comment/comment.entity';
+import StringUtil from 'src/common/utils/StringUtil';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -55,7 +61,10 @@ export class Comic {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   star: number;
 
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.id, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'creator_id' })
   @Column({ nullable: true })
   creator: number;
 
@@ -68,14 +77,27 @@ export class Comic {
   @Column('text', { array: true, default: [] })
   translators: string[];
 
+  @OneToMany(() => Chapter, (chapter) => chapter.comic, { eager: true })
+  chapters: Chapter[];
+
+  @OneToMany(() => ComicInteraction, (comicInteraction) => comicInteraction.comic, {
+    lazy: true,
+  })
+  comicInteractions: ComicInteraction[];
+
+  @OneToMany(() => Comment, (comment) => comment.comic, {
+    eager: true,
+  })
+  comments: Comment[];
+
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = `${slugify(this.name, { lower: true })}`;
+    this.slug = `${slugify(StringUtil.removeAccents(this.name), { lower: true })}`;
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = `${slugify(this.name, { lower: true })}`;
+    this.slug = `${slugify(StringUtil.removeAccents(this.name), { lower: true })}`;
   }
 }
