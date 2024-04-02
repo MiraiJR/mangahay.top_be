@@ -1,13 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Comment } from './comment.entity';
-import { Repository } from 'typeorm';
-import { IComment } from './comment.interface';
-import { User } from '../user/user.entity';
 import { AnswerService } from '../answer-comment/answer.service';
-import { Answer } from '../answer-comment/answer.entity';
 import { IAnswer } from '../answer-comment/answer.interface';
 import { CommentRepository } from './comment.repository';
+import { Comic } from '../comic/comic.entity';
 
 @Injectable()
 export class CommentService {
@@ -17,8 +12,8 @@ export class CommentService {
     return this.commentRepository.findOneDetailComment(commentId);
   }
 
-  async createNewComment(comment: IComment) {
-    const newComment = await this.commentRepository.save({ ...comment });
+  async createNewComment(userId: number, comic: Comic, content: string) {
+    const newComment = await this.commentRepository.save({ userId, comic, content });
     const newDetailComment = await this.getCommentById(newComment.id);
 
     return {

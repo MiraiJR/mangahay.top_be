@@ -15,7 +15,7 @@ import * as cheerio from 'cheerio';
 import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import StringUtil from 'src/common/utils/StringUtil';
-import { PagingComics } from 'src/common/types/Paging';
+import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
 
 @Injectable()
@@ -182,12 +182,9 @@ export class ComicService {
   async delete(comicId: number) {
     const comic = await this.getComicById(comicId);
 
-    await this.chapterService.deleteAllChapterOfComic(comicId);
-    // await Promise.all([
-    //   this.userService.deleteComicFromEvaluate(comicId),
-    //   this.userService.deleteComicFromFollow(comicId),
-    //   this.userService.deleteComicFromLike(comicId),
-    // ]);
+    if (!comic) {
+      throw new HttpException(`Cannot found comic with id [${comicId}]`, HttpStatus.NOT_FOUND);
+    }
 
     return await this.comicRepository.delete(comicId);
   }
@@ -199,19 +196,23 @@ export class ComicService {
     });
   }
 
-  async getComics(query: { page: number; limit: number }) {
+  async getComics(query: Paging) {
     let page = 1;
 
     if (query.page) {
       page = query.page;
     }
 
-    const comics = await this.comicRepository.getComicsAndNewesttChapter(
+    const result = await this.comicRepository.getComicsWithPagination(
       page,
       query.limit,
       'updatedAt',
     );
-    return comics;
+
+    return {
+      ...query,
+      ...result,
+    };
   }
 
   async countComics() {
@@ -219,16 +220,27 @@ export class ComicService {
   }
 
   async getComicBySlug(slugComic: string) {
-    return await this.comicRepository
-      .createQueryBuilder('comic')
-      .where('comic.slug = :slug', { slug: slugComic })
-      .getOne();
+    return await this.comicRepository.findOne({
+      where: {
+        slug: slugComic,
+      },
+      order: {
+        chapters: {
+          order: 'DESC',
+        },
+      },
+    });
   }
 
   async getComicById(comicId: number): Promise<Comic> {
     const comic = await this.comicRepository.findOne({
       where: {
         id: comicId,
+      },
+      order: {
+        chapters: {
+          order: 'DESC',
+        },
       },
     });
 
@@ -308,16 +320,12 @@ export class ComicService {
     );
   }
 
-  async searchComic(query: QuerySearch): Promise<PagingComics> {
+  async searchComics(query: QuerySearch): Promise<PagingComics> {
     return this.comicRepository.searchComics(query);
   }
 
   async ranking(query: { field: string; limit: number }) {
-    const comics = await this.comicRepository.getComicsAndNewesttChapter(
-      1,
-      query.limit,
-      query.field,
-    );
+    const comics = await this.comicRepository.getComicsWithPagination(1, query.limit, query.field);
 
     return comics;
   }
@@ -418,11 +426,7 @@ export class ComicService {
       throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
     }
 
-    return this.commentService.createNewComment({
-      userId,
-      comicId,
-      content,
-    });
+    return this.commentService.createNewComment(userId, comic, content);
   }
 
   async addAnswerToCommentOfComic(
@@ -437,11 +441,11 @@ export class ComicService {
       throw new HttpException('Bình luận không tồn tại!', HttpStatus.NOT_FOUND);
     }
 
-    if (comicId !== comment.comicId) {
+    if (comicId !== comment.comic.id) {
       throw new HttpException('Bình luận không thuộc truyện tranh này!', HttpStatus.BAD_REQUEST);
     }
 
-    const comic = await this.getComicById(comment.comicId);
+    const comic = await this.getComicById(comment.comic.id);
 
     if (!comic) {
       throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
@@ -459,6 +463,10 @@ export class ComicService {
     const comics = await this.comicRepository.find({
       where: {
         creator: userId,
+      },
+      order: {
+        updatedAt: 'ASC',
+        id: 'ASC',
       },
     });
 

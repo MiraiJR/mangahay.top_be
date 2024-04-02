@@ -10,20 +10,22 @@ export class Answer {
   id: number;
 
   @Exclude()
-  @Column({ name: 'comment_id' })
-  @ManyToOne(() => Comment, (comment) => comment.id, {
+  @Column({ name: 'comment_id', type: 'int' })
+  @ManyToOne(() => Comment, (comment) => comment.answers, {
     cascade: ['remove'],
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'comment_id' })
-  commentId: number;
+  comment: Comment;
 
   @Exclude()
-  @Column()
-  @ManyToOne(() => User, (user) => user.id, {
+  @Column({ name: 'user_id', type: 'int' })
+  @ManyToOne(() => User, (user) => user.answers, {
     cascade: ['remove'],
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'user_id' })
-  userId: number;
+  user: User;
 
   @Column({ nullable: false })
   mentionedPerson: string;
