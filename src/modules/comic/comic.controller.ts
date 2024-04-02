@@ -50,13 +50,7 @@ export class ComicController {
     @Query(new ValidationPipe())
     query: GetComicsDTO,
   ) {
-    const comics = await this.comicService.getComics(query);
-    const total = await this.comicService.countComics();
-
-    return {
-      comics,
-      total,
-    };
+    return this.comicService.getComics(query);
   }
 
   @UseGuards(JwtAuthorizationd)
@@ -139,16 +133,18 @@ export class ComicController {
 
   @Get('/ranking')
   async handleGetRanking(@Query() query: { field: string; limit: number }) {
-    const comics = await this.comicService.ranking(query);
-
-    return comics;
+    return this.comicService.ranking(query);
   }
 
   @Get('/search')
   async handleSearch(@Query() query: QuerySearch) {
-    const comics = await this.comicService.searchComic(query);
+    const result = await this.comicService.searchComics(query);
 
-    return comics;
+    return {
+      page: query.page ?? 1,
+      limit: query.limit,
+      ...result,
+    };
   }
 
   @Get('/chapters')

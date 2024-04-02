@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ComicInteraction } from './comicInteraction.entity';
 import { ComicInteractionRepository } from './comicInteraction.repository';
+import { DEFAULT_USER_INTERACTION } from './types/defaul';
 
 @Injectable()
 export class ComicInteractionService {
@@ -11,13 +12,8 @@ export class ComicInteractionService {
     return interaction;
   }
 
-  //------------> evaluate comic
   async calculateEvaluatedRatingStar(comicId: number): Promise<number> {
-    const evaluations = await this.comicInteractionRepository.find({
-      where: {
-        comic: { id: comicId },
-      },
-    });
+    const evaluations = await this.comicInteractionRepository.getInteractionsOfComic(comicId);
 
     if (evaluations.length === 0) return 0;
 
@@ -33,9 +29,8 @@ export class ComicInteractionService {
     const interaction = await this.getInteractionOfWithComic(userId, comicId);
 
     if (!interaction) {
-      return await this.comicInteractionRepository.save({
-        userId,
-        comicId,
+      return await this.comicInteractionRepository.createNewInteraction(userId, comicId, {
+        ...DEFAULT_USER_INTERACTION,
         score,
       });
     }
@@ -56,9 +51,8 @@ export class ComicInteractionService {
     const interaction = await this.getInteractionOfWithComic(userId, comicId);
 
     if (!interaction) {
-      return await this.comicInteractionRepository.save({
-        userId,
-        comicId,
+      return await this.comicInteractionRepository.createNewInteraction(userId, comicId, {
+        ...DEFAULT_USER_INTERACTION,
         isLiked: true,
       });
     }
@@ -102,14 +96,12 @@ export class ComicInteractionService {
     return users;
   }
 
-  //------------> follơ comic
   async followComic(userId: number, comicId: number) {
     const interaction = await this.getInteractionOfWithComic(userId, comicId);
 
     if (!interaction) {
-      return await this.comicInteractionRepository.save({
-        userId,
-        comicId,
+      return await this.comicInteractionRepository.createNewInteraction(userId, comicId, {
+        ...DEFAULT_USER_INTERACTION,
         isFollowed: true,
       });
     }
