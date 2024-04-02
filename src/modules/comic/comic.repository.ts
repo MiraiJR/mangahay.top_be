@@ -4,6 +4,7 @@ import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chapter } from '../chapter/chapter.entity';
 import StringUtil from 'src/common/utils/StringUtil';
+import { PagingComics } from 'src/common/types/Paging';
 
 @Injectable()
 export class ComicRepository extends Repository<Comic> {
@@ -14,69 +15,23 @@ export class ComicRepository extends Repository<Comic> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
-  async getComicsAndNewesttChapter(page: number, limit: number, field: string) {
-    if (Number.isNaN(limit)) {
-      throw new Error('Không hợp lệ');
-    }
+  async getComicsWithPagination(page: number, limit: number, field: string): Promise<PagingComics> {
+    let query = this.createQueryBuilder('comic');
 
-    const arrayField = ['view', 'follow', 'star', 'createdAt', 'updatedAt'];
-    if (!arrayField.includes(field)) {
-      throw new Error('Không hợp lệ');
-    }
+    const totalRecord = await query.getCount();
 
-    let comics: any[] = await this.manager.query(
-      `
-      select 
-      truyen.id,
-      truyen.slug,
-      truyen.name,
-      truyen.another_name as "anotherName",
-      truyen.genres,
-      truyen.authors,
-      truyen.state,
-      truyen.thumb,
-      truyen.brief_description as "briefDescription",
-      truyen.view,
-      truyen.like,
-      truyen.follow,
-      truyen.star,
-      truyen.creator,
-      truyen."createdAt",
-      truyen."updatedAt", 
-      truyen.translators,
-      chuong.id as newestchapterid,
-      chuong.name as newestchaptername,
-      chuong.slug as newestchapterslug
-      from public.comic truyen left join (
-      select tempChuong.comic_id, max(tempChuong.order) as max_order
-      from public.chapter tempChuong
-      group by tempChuong.comic_id
-      ) maxUpdatedAt on truyen.id = maxUpdatedAt.comic_id left join public.chapter chuong on chuong.comic_id = truyen.id
-      where chuong.order = maxUpdatedAt.max_order
-      order by truyen."${field}" DESC
-      offset ${(page - 1) * limit}
-      limit ${limit}
-      `,
-    );
+    query = query
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .orderBy(`comic.${field}`, 'DESC')
+      .offset((page - 1) * limit)
+      .take(limit);
 
-    comics = comics.map((comic) => {
-      const refactor = {
-        ...comic,
-        newestChapter: {
-          id: comic.newestchapterid,
-          name: comic.newestchaptername,
-          slug: comic.newestchapterslug,
-        },
-      };
+    const data = await query.getMany();
 
-      delete refactor.newestchapterid;
-      delete refactor.newestchaptername;
-      delete refactor.newestchapterslug;
-
-      return refactor;
-    });
-
-    return comics;
+    return {
+      total: totalRecord,
+      comics: data,
+    };
   }
 
   async findComicsWithChapters() {
@@ -88,14 +43,17 @@ export class ComicRepository extends Repository<Comic> {
     return queryBuilder.getMany();
   }
 
-  async searchComics(query: QuerySearch) {
+  async searchComics(query: QuerySearch): Promise<PagingComics> {
     let page = 1;
 
     if (query.page) {
       page = query.page;
     }
 
-    const result = this.createQueryBuilder().from(Comic, 'comics');
+    const result = this.createQueryBuilder('comics').leftJoinAndSelect(
+      'comics.chapters',
+      'chapters',
+    );
 
     if (query.comicName) {
       result.where(
@@ -154,11 +112,7 @@ export class ComicRepository extends Repository<Comic> {
       );
     }
 
-    result
-      .addOrderBy('comics.updatedAt', 'DESC')
-      .leftJoinAndMapOne('comics.newestChapter', Chapter, 'chapter', 'chapter.comic = comics.id')
-      .select(['comics'])
-      .addSelect(['chapter.name', 'chapter.slug', 'chapter.id']);
+    result.addOrderBy('comics.updatedAt', 'DESC');
 
     const totalRecord = await result.getCount();
 

@@ -15,7 +15,7 @@ import * as cheerio from 'cheerio';
 import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import StringUtil from 'src/common/utils/StringUtil';
-import { PagingComics } from 'src/common/types/Paging';
+import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
 
 @Injectable()
@@ -196,19 +196,23 @@ export class ComicService {
     });
   }
 
-  async getComics(query: { page: number; limit: number }) {
+  async getComics(query: Paging) {
     let page = 1;
 
     if (query.page) {
       page = query.page;
     }
 
-    const comics = await this.comicRepository.getComicsAndNewesttChapter(
+    const result = await this.comicRepository.getComicsWithPagination(
       page,
       query.limit,
       'updatedAt',
     );
-    return comics;
+
+    return {
+      ...query,
+      ...result,
+    };
   }
 
   async countComics() {
@@ -316,16 +320,12 @@ export class ComicService {
     );
   }
 
-  async searchComic(query: QuerySearch): Promise<PagingComics> {
+  async searchComics(query: QuerySearch): Promise<PagingComics> {
     return this.comicRepository.searchComics(query);
   }
 
   async ranking(query: { field: string; limit: number }) {
-    const comics = await this.comicRepository.getComicsAndNewesttChapter(
-      1,
-      query.limit,
-      query.field,
-    );
+    const comics = await this.comicRepository.getComicsWithPagination(1, query.limit, query.field);
 
     return comics;
   }

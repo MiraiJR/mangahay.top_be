@@ -13,6 +13,12 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
+  async getInteractionsOfComic(comicId: number): Promise<ComicInteraction[]> {
+    return this.createQueryBuilder('interaction')
+      .andWhere('interaction.comic = :comicId', { comicId })
+      .getMany();
+  }
+
   async evaluatedComic(userId: number, comicId: number) {
     return this.createQueryBuilder('interaction')
       .where('interaction.user = :userId', { userId })
@@ -58,6 +64,24 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
       .set(userInteraction)
       .where('user = :userId', { userId })
       .andWhere('comic = :comicId', { comicId })
+      .execute();
+
+    return this.getInteractionByPK(userId, comicId);
+  }
+
+  async createNewInteraction(
+    userId: number,
+    comicId: number,
+    userInteraction: UserInteraction,
+  ): Promise<ComicInteraction> {
+    await this.createQueryBuilder()
+      .insert()
+      .into(ComicInteraction)
+      .values({
+        comic: { id: comicId },
+        user: { id: userId },
+        ...userInteraction,
+      })
       .execute();
 
     return this.getInteractionByPK(userId, comicId);
