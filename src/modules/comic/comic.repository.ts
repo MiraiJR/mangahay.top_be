@@ -23,14 +23,13 @@ export class ComicRepository extends Repository<Comic> {
     query = query
       .leftJoinAndSelect('comic.chapters', 'chapters')
       .orderBy(`comic.${field}`, 'DESC')
-      .offset((page - 1) * limit)
-      .take(limit);
+      .addOrderBy(`chapters.id`, 'DESC');
 
     const data = await query.getMany();
 
     return {
       total: totalRecord,
-      comics: data,
+      comics: data.slice((page - 1) * limit, page * limit),
     };
   }
 
@@ -126,5 +125,15 @@ export class ComicRepository extends Repository<Comic> {
       total: totalRecord,
       comics,
     };
+  }
+
+  async updateTimeForComic(comicId: number): Promise<void> {
+    await this.createQueryBuilder()
+      .update(Comic)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where('id = :comicId', { comicId })
+      .execute();
   }
 }
