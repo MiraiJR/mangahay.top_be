@@ -88,6 +88,11 @@ export class ComicService {
         `https://graph.facebook.com/v18.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
       )
       .toPromise();
+
+    if (data.attachments === undefined) {
+      throw new HttpException('Cannot crawl data from this link!', HttpStatus.BAD_REQUEST);
+    }
+
     const images: string[] = [];
     data.attachments.data[0].subattachments.data.map((ele: any) => {
       images.push(ele.media.image.src);
@@ -154,10 +159,7 @@ export class ComicService {
       }
     }
 
-    await this.update({
-      ...comic,
-      updatedAt: new Date(),
-    });
+    await this.comicRepository.updateTimeForComic(comicId);
 
     const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
     for (const userId of listUserId) {
@@ -187,13 +189,6 @@ export class ComicService {
     }
 
     return await this.comicRepository.delete(comicId);
-  }
-
-  async update(comic: IComic) {
-    return await this.comicRepository.save({
-      id: comic.id,
-      ...comic,
-    });
   }
 
   async getComics(query: Paging) {
@@ -388,10 +383,7 @@ export class ComicService {
       files,
     );
 
-    await this.update({
-      ...comic,
-      updatedAt: new Date(),
-    });
+    await this.comicRepository.updateTimeForComic(comicId);
 
     const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
     for (const userId of listUserId) {

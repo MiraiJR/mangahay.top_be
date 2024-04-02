@@ -24,6 +24,9 @@ export class Chapter {
   @Column('text', { array: true, nullable: true })
   images: string[];
 
+  @Column({ name: 'comic_id' })
+  comicId: number;
+
   @ManyToOne(() => Comic, (comic) => comic.chapters, {
     cascade: ['remove'],
     onDelete: 'CASCADE',
