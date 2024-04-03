@@ -23,7 +23,7 @@ export class ComicRepository extends Repository<Comic> {
     query = query
       .leftJoinAndSelect('comic.chapters', 'chapters')
       .orderBy(`comic.${field}`, 'DESC')
-      .addOrderBy(`chapters.id`, 'DESC');
+      .addOrderBy(`chapters.order`, 'DESC');
 
     const data = await query.getMany();
 
@@ -112,6 +112,7 @@ export class ComicRepository extends Repository<Comic> {
     }
 
     result.addOrderBy('comics.updatedAt', 'DESC');
+    result.addOrderBy('chapters.order', 'DESC');
 
     const totalRecord = await result.getCount();
 
