@@ -115,12 +115,11 @@ export class ComicRepository extends Repository<Comic> {
     result.addOrderBy('chapters.order', 'DESC');
 
     const totalRecord = await result.getCount();
+    let comics = await result.getMany();
 
     if (query.limit) {
-      result.skip((page - 1) * query.limit).take(query.limit);
+      comics = comics.slice((page - 1) * query.limit, page * query.limit);
     }
-
-    const comics = await result.getMany();
 
     return {
       total: totalRecord,
