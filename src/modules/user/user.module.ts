@@ -11,6 +11,7 @@ import { ComicInteractionModule } from '../comic-interaction/comicInteraction.mo
 import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
 import { RedisModule } from '../redis/redis.module';
 import { ComicModule } from '../comic/comic.module';
+import { UserSettingModule } from '../user-setting/user-setting.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ComicModule } from '../comic/comic.module';
     ComicInteractionModule,
     ReadingHistoryModule,
     RedisModule,
+    UserSettingModule,
     forwardRef(() => ComicModule),
     TypeOrmModule.forFeature([User]),
   ],
