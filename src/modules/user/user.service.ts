@@ -11,6 +11,8 @@ import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { RedisService } from '../redis/redis.service';
 import { ComicService } from '../comic/comic.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UserSettingRepository } from '../user-setting/user-setting.repository';
+import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 
 @Injectable()
 export class UserService {
@@ -21,10 +23,20 @@ export class UserService {
     private cloudinaryService: CloudinaryService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private userSettingRepository: UserSettingRepository,
   ) {}
 
   async create(user: IUser) {
-    return await this.userRepository.save(user);
+    const newUser = await this.userRepository.save(user);
+    await this.userSettingRepository.insert({
+      user: newUser,
+      chapterSetting: {
+        type: ChapterViewType.DEFAULT,
+        amount: 1,
+      },
+    });
+
+    return newUser;
   }
 
   async getAll() {

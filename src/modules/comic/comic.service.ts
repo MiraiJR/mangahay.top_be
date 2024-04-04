@@ -17,6 +17,8 @@ import { ConfigService } from '@nestjs/config';
 import StringUtil from 'src/common/utils/StringUtil';
 import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
+import { Connection, DataSource, EntityManager, Transaction, getManager } from 'typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
 
 @Injectable()
 export class ComicService {
@@ -30,6 +32,7 @@ export class ComicService {
     private commentService: CommentService,
     private httpService: HttpService,
     private configService: ConfigService,
+    private readonly databaseConnection: DataSource,
   ) {}
 
   async getComicsWithChapters() {
@@ -125,6 +128,8 @@ export class ComicService {
 
     const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0];
 
+    // start transaction
+
     const newChapter = await this.chapterService.createNewChapterWithoutFiles({
       name: nameChapter,
       comicId,
@@ -151,11 +156,17 @@ export class ComicService {
         throw new HttpException('Lỗi không crawl được dữ liệu!', HttpStatus.BAD_REQUEST);
       }
 
+      if (imagesChapter.length === 0) {
+        // revert transaction
+      }
+
       if (imagesChapter.length === crawledImages.length) {
         await this.chapterService.update({
           ...newChapter,
-          images: Helper.shortArrayImages(imagesChapter),
+          images: Helper.sortArrayImages(imagesChapter),
         });
+
+        // commit transaction
       }
     }
 
