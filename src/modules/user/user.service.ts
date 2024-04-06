@@ -13,6 +13,7 @@ import { ComicService } from '../comic/comic.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserSettingRepository } from '../user-setting/user-setting.repository';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
@@ -21,8 +22,7 @@ export class UserService {
     private redisService: RedisService,
     private comicInteractionService: ComicInteractionService,
     private cloudinaryService: CloudinaryService,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: UserRepository,
     private userSettingRepository: UserSettingRepository,
   ) {}
 
@@ -92,13 +92,6 @@ export class UserService {
       .set({ password: hashedPassword })
       .where('email = :email', { email: email })
       .execute();
-  }
-
-  async update(id_user: number, data_update: IUser) {
-    return this.userRepository.save({
-      id: id_user,
-      ...data_update,
-    });
   }
 
   async interactWithComic(
