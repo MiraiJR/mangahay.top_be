@@ -1,6 +1,5 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -13,7 +12,6 @@ import {
   Post,
   Put,
   Query,
-  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -21,7 +19,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';

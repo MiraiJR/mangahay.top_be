@@ -12,6 +12,7 @@ import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
 import { RedisModule } from '../redis/redis.module';
 import { ComicModule } from '../comic/comic.module';
 import { UserSettingModule } from '../user-setting/user-setting.module';
+import { UserRepository } from './user.repository';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { UserSettingModule } from '../user-setting/user-setting.module';
     TypeOrmModule.forFeature([User]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserResolver, Logger],
-  exports: [UserService],
+  providers: [UserService, UserResolver, Logger, UserRepository],
+  exports: [UserService, UserRepository],
 })
 export class UserModule {}
