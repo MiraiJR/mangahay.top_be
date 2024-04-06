@@ -22,6 +22,7 @@ import { ComicInteractionModule } from 'src/modules/comic-interaction/comicInter
 import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
 import { AnswerModule } from 'src/modules/answer-comment/answer.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
+import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { GenreModule } from 'src/modules/genre/genre.module';
     ReadingHistoryModule,
     AnswerModule,
     GenreModule,
+    UserSettingModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
