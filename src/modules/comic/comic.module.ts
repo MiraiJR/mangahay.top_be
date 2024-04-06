@@ -14,6 +14,7 @@ import { ComicRepository } from './comic.repository';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
+import { CoreModule } from 'src/core/core.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HttpModule } from '@nestjs/axios';
     CommentModule,
     HttpModule,
     TypeOrmModule.forFeature([Comic]),
+    CoreModule,
   ],
   controllers: [ComicController],
   providers: [ComicService, Logger, ComicResolver, ComicRepository],
