@@ -136,4 +136,12 @@ export class ComicRepository extends Repository<Comic> {
       .where('id = :comicId', { comicId })
       .execute();
   }
+
+  async getComicsByCreator(creatorId: number): Promise<Comic[]> {
+    return this.createQueryBuilder('comics')
+      .where('comics.creator = :creatorId', { creatorId })
+      .orderBy('comics.updatedAt', 'ASC')
+      .addOrderBy('comics.id', 'ASC')
+      .getMany();
+  }
 }
