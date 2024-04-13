@@ -1,4 +1,3 @@
-import slugify from 'slugify';
 import {
   BeforeInsert,
   BeforeUpdate,
@@ -14,7 +13,7 @@ import { User } from '../user/user.entity';
 import { Chapter } from '../chapter/chapter.entity';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { Comment } from '../comment/comment.entity';
-import StringUtil from 'src/common/utils/StringUtil';
+import { customSlugify } from 'src/common/configs/slugify.config';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -92,12 +91,12 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = `${slugify(StringUtil.removeAccents(this.name), { lower: true })}`;
+    this.slug = `${customSlugify(this.name)}`;
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = `${slugify(StringUtil.removeAccents(this.name), { lower: true })}`;
+    this.slug = `${customSlugify(this.name)}`;
   }
 }

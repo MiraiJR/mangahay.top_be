@@ -15,11 +15,14 @@ import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
+import { DataSource, EntityManager } from 'typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
 
 @Injectable()
 export class ComicService {
   constructor(
+    @InjectEntityManager() private readonly manager: EntityManager,
     private notifyService: NotificationService,
     private logger: Logger = new Logger(ComicService.name),
     private chapterService: ChapterService,
@@ -29,7 +32,8 @@ export class ComicService {
     private commentService: CommentService,
     private httpService: HttpService,
     private configService: ConfigService,
-    private googleApiService: GoogleApiService,
+    private readonly databaseConnection: DataSource,
+    private readonly googleApiService: GoogleApiService,
   ) {}
 
   async getComicsWithChapters() {
@@ -123,62 +127,94 @@ export class ComicService {
       crawledImages = await this.crawlImagesFromLinkWebsite(urlPost, querySelector, attribute);
     }
 
-    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0];
+    if (crawledImages.length === 0) {
+      throw new HttpException('Lỗi không crawl được dữ liệu!', HttpStatus.BAD_REQUEST);
+    }
 
-    const newChapter = await this.chapterService.createNewChapterWithoutFiles({
-      name: nameChapter,
-      comicId,
-      creator: userId,
-      order: parseFloat(order),
-    });
-    const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
-      newChapter.slug
-    }`;
-    this.googleApiService.indexingUrl(newChapterUrl);
+    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
 
-    let imagesChapter = [];
+    if (!order) {
+      throw new HttpException(
+        'Vui lòng điền tên chapter chưa một số hoặc số thập phân!',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-    for (let _index = 0; _index < crawledImages.length; _index++) {
-      const folder = `${comic.id}/${newChapter.id}`;
-      const imageName = `${_index}`;
-
+    return await this.manager.transaction(async (manager) => {
       try {
-        const linkImage = await this.cloudinaryService.uploadImageFromUrl(
-          crawledImages[_index],
-          folder,
-          imageName,
+        const newChapter = await this.chapterService.createNewChapterWithoutFiles(
+          {
+            name: nameChapter,
+            comicId,
+            creator: userId,
+            order: parseFloat(order),
+          },
+          manager,
         );
 
-        imagesChapter.push(linkImage);
+        const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
+          newChapter.slug
+        }`;
+        this.googleApiService.indexingUrl(newChapterUrl);
+
+        let imagesChapter = [];
+
+        for (let _index = 0; _index < crawledImages.length; _index++) {
+          const folder = `${comic.id}/${newChapter.id}`;
+          const imageName = `${_index}`;
+
+          const linkImage = await this.cloudinaryService.uploadImageFromUrl(
+            crawledImages[_index],
+            folder,
+            imageName,
+          );
+
+          imagesChapter.push(linkImage);
+        }
+
+        if (imagesChapter.length === 0) {
+          throw new HttpException(
+            'Lỗi không crawl được dữ liệu hoặc trang web được crawl đã chặn quyền!',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        if (imagesChapter.length === crawledImages.length) {
+          await this.chapterService.update(
+            {
+              ...newChapter,
+              images: Helper.sortArrayImages(imagesChapter),
+            },
+            manager,
+          );
+
+          await manager.query('COMMIT');
+        }
+
+        await this.comicRepository.updateTimeForComic(comicId);
+
+        const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
+        for (const userId of listUserId) {
+          const notify: INotification = {
+            userId: userId,
+            title: 'Chương mới!',
+            body: `${comic.name} vừa cập nhật thêm chapter mới - ${newChapter.name}.`,
+            redirectUrl: `/truyen/${comic.slug}/${newChapter.slug}`,
+            thumb: comic.thumb,
+          };
+
+          this.notifyService.create(notify);
+        }
+
+        return newChapter;
       } catch (error) {
-        await this.chapterService.delete(newChapter.id);
-        throw new HttpException('Lỗi không crawl được dữ liệu!', HttpStatus.BAD_REQUEST);
+        await manager.query('ROLLBACK');
+        throw new HttpException(
+          'Lỗi không crawl được dữ liệu hoặc trang web được crawl đã chặn quyền!',
+          HttpStatus.BAD_REQUEST,
+        );
       }
-
-      if (imagesChapter.length === crawledImages.length) {
-        await this.chapterService.update({
-          ...newChapter,
-          images: Helper.shortArrayImages(imagesChapter),
-        });
-      }
-    }
-
-    await this.comicRepository.updateTimeForComic(comicId);
-
-    const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
-    for (const userId of listUserId) {
-      const notify: INotification = {
-        userId: userId,
-        title: 'Chương mới!',
-        body: `${comic.name} vừa cập nhật thêm chapter mới - ${newChapter.name}.`,
-        redirectUrl: `/truyen/${comic.slug}/${newChapter.slug}`,
-        thumb: comic.thumb,
-      };
-
-      this.notifyService.create(notify);
-    }
-
-    return newChapter;
+    });
   }
 
   async getChapters(comicId: number) {
@@ -462,16 +498,6 @@ export class ComicService {
   }
 
   async getComicsCreatedByCreator(userId: number) {
-    const comics = await this.comicRepository.find({
-      where: {
-        creator: userId,
-      },
-      order: {
-        updatedAt: 'ASC',
-        id: 'ASC',
-      },
-    });
-
-    return comics;
+    return this.comicRepository.getComicsByCreator(userId);
   }
 }

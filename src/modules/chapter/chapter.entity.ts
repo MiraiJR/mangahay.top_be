@@ -9,8 +9,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Comic } from '../comic/comic.entity';
-import slugify from 'slugify';
 import { User } from '../user/user.entity';
+import { customSlugify } from 'src/common/configs/slugify.config';
 
 @Entity()
 export class Chapter {
@@ -55,7 +55,7 @@ export class Chapter {
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = slugify(this.name, { lower: true });
+    this.slug = `${customSlugify(this.name)}`;
   }
 
   @BeforeUpdate()

@@ -43,12 +43,7 @@ export class AuthController {
 
   @Post('/login')
   async handleLogin(@Body(new ValidationPipe()) data: LoginUserDTO) {
-    const user = await this.authService.login(data);
-
-    return {
-      accessToken: user.accessToken,
-      refreshToken: user.refreshToken,
-    };
+    return this.authService.login(data);
   }
 
   @Post('/refresh-token')
@@ -62,7 +57,6 @@ export class AuthController {
   @UseGuards(JwtAuthorizationd)
   async logout(@UserId() userId: number) {
     await this.authService.logout(userId);
-    await this.authService.removeSocket(userId);
 
     return 'Đăng xuất thành công!';
   }

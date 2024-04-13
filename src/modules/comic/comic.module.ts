@@ -15,6 +15,7 @@ import { ComicInteractionModule } from '../comic-interaction/comicInteraction.mo
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
+import { CoreModule } from 'src/core/core.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { GoogleApiModule } from '../google-api/google-api.module';
     CommentModule,
     HttpModule,
     TypeOrmModule.forFeature([Comic]),
+    CoreModule,
   ],
   controllers: [ComicController],
   providers: [ComicService, Logger, ComicResolver, ComicRepository],

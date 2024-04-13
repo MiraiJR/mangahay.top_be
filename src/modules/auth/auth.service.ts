@@ -10,6 +10,7 @@ import { UserRole } from '../user/user.role';
 import { SALT_HASH_PWD } from 'src/common/utils/salt';
 import { RedisService } from '../redis/redis.service';
 import { MailService } from '../mail/mail.service';
+import { UserRepository } from '../user/user.repository';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private configService: ConfigService,
     private redisService: RedisService,
     private mailService: MailService,
+    private userRepository: UserRepository,
   ) {}
 
   async register(newUser: RegisterUserDTO, role: string): Promise<User> {
@@ -42,19 +44,16 @@ export class AuthService {
   }
 
   async logout(userId: number): Promise<void> {
-    let user = await this.userService.getUserById(userId);
+    const user = await this.userService.getUserById(userId);
 
     if (!user) {
       throw new HttpException('Người dùng không tồn tại!', HttpStatus.BAD_REQUEST);
     }
 
-    user = {
-      ...user,
+    await this.userRepository.updatePairToken(userId, {
       accessToken: null,
       refreshToken: null,
-    };
-
-    await this.userService.update(userId, user);
+    });
   }
 
   async verifyEmailToRegister(token: string, accountRole: string): Promise<void> {
@@ -65,7 +64,7 @@ export class AuthService {
     await this.register(newAccountInformation, accountRole);
   }
 
-  async login(userLogin: LoginUserDTO): Promise<User> {
+  async login(userLogin: LoginUserDTO): Promise<PairToken> {
     let user = await this.userService.getUserByEmail(userLogin.email);
 
     if (!user) {
@@ -85,14 +84,15 @@ export class AuthService {
     const accessToken = this.signAccessToken(user);
     const refreshToken = this.signRefreshToken(user);
 
-    user = {
-      ...user,
+    await this.userRepository.updatePairToken(user.id, {
+      accessToken,
+      refreshToken,
+    });
+
+    return {
       accessToken,
       refreshToken,
     };
-    await this.userService.update(user.id, user);
-
-    return user;
   }
 
   signAccessToken(payload: any): string {
@@ -158,10 +158,6 @@ export class AuthService {
     await this.mailService.sendMailForgetPassword(email, 'Quên mật khẩu', forgetPasswordToken);
   }
 
-  async removeSocket(id: number) {
-    await this.redisService.deleteObjectByKey(`USER:${id}:SOCKET`);
-  }
-
   async resignToken(token: string): Promise<PairToken> {
     const payload = await this.jwtService.verify(token, {
       secret: process.env.REFRESHTOKEN_KEY,
@@ -172,7 +168,7 @@ export class AuthService {
     }
 
     const userId = payload.idUser;
-    let user = await this.userService.getUserById(userId);
+    const user = await this.userService.getUserById(userId);
 
     if (user.refreshToken !== token) {
       throw new HttpException('Token không hợp lệ', HttpStatus.BAD_REQUEST);
@@ -186,13 +182,10 @@ export class AuthService {
       id: userId,
     });
 
-    user = {
-      ...user,
+    await this.userRepository.updatePairToken(userId, {
       accessToken,
       refreshToken,
-    };
-
-    await this.userService.update(userId, user);
+    });
 
     return {
       accessToken,

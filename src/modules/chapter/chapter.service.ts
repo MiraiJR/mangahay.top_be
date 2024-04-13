@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -78,7 +78,18 @@ export class ChapterService {
     };
   }
 
-  async createNewChapterWithoutFiles(chapter: IChapter) {
+  async createNewChapterWithoutFiles(chapter: IChapter, manager?: EntityManager) {
+    if (manager) {
+      let newChapter = manager.getRepository(Chapter).create(chapter);
+      newChapter = await manager.getRepository(Chapter).save(newChapter);
+      newChapter = await manager.getRepository(Chapter).save({
+        ...newChapter,
+        slug: `${newChapter.slug}-${newChapter.id}`,
+      });
+
+      return newChapter;
+    }
+
     let newChapter = this.chapterRepository.create(chapter);
     newChapter = await this.chapterRepository.save(newChapter);
     newChapter = await this.chapterRepository.save({
@@ -104,10 +115,14 @@ export class ChapterService {
     return newChapter;
   }
 
-  async update(chapter: IChapter) {
-    const update_chapter = this.chapterRepository.create(chapter);
+  async update(chapter: IChapter, manager?: EntityManager) {
+    const update_chapter = manager
+      ? manager.getRepository(Chapter).create(chapter)
+      : this.chapterRepository.create(chapter);
 
-    return await this.chapterRepository.save(update_chapter);
+    return manager
+      ? manager.getRepository(Chapter).save(update_chapter)
+      : this.chapterRepository.save(update_chapter);
   }
 
   async delete(id_chapter: number) {

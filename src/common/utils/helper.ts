@@ -11,7 +11,7 @@ const Helper = {
     });
   },
 
-  shortArrayImages(images: string[]): string[] {
+  sortArrayImages(images: string[]): string[] {
     const sortedFileNames = images.sort((a: string, b: string) => {
       const aFileName = a.split('/')[a.split('/').length - 1];
       const bFileName = b.split('/')[b.split('/').length - 1];

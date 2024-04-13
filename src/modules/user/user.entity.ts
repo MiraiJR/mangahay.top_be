@@ -1,10 +1,11 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
 import { Exclude } from 'class-transformer';
 import { Comment } from '../comment/comment.entity';
 import { Answer } from '../answer-comment/answer.entity';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { Notification } from '../notification/notification.entity';
+import { UserSettingEntity } from '../user-setting/user-setting.entity';
 
 @Entity()
 export class User {
@@ -84,4 +85,9 @@ export class User {
 
   @OneToMany(() => Notification, (notification) => notification.user, { lazy: true })
   notifications: Notification[];
+
+  @OneToOne(() => UserSettingEntity, (setting) => setting.user, {
+    eager: true,
+  })
+  setting: UserSettingEntity;
 }
