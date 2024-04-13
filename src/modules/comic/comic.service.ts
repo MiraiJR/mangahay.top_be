@@ -8,15 +8,14 @@ import { ComicInteractionService } from '../comic-interaction/comicInteraction.s
 import { NotificationService } from '../notification/notification.service';
 import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
-import { Chapter } from '../chapter/chapter.entity';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
-import StringUtil from 'src/common/utils/StringUtil';
 import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
+import { GoogleApiService } from '../google-api/google-api.service';
 
 @Injectable()
 export class ComicService {
@@ -30,6 +29,7 @@ export class ComicService {
     private commentService: CommentService,
     private httpService: HttpService,
     private configService: ConfigService,
+    private googleApiService: GoogleApiService,
   ) {}
 
   async getComicsWithChapters() {
@@ -131,6 +131,10 @@ export class ComicService {
       creator: userId,
       order: parseFloat(order),
     });
+    const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
+      newChapter.slug
+    }`;
+    this.googleApiService.indexingUrl(newChapterUrl);
 
     let imagesChapter = [];
 
@@ -249,6 +253,8 @@ export class ComicService {
     });
 
     newComic = await this.comicRepository.save(newComic);
+    const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${newComic.slug}`;
+    this.googleApiService.indexingUrl(urlOfNewComic);
 
     this.cloudinaryService
       .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
@@ -382,6 +388,10 @@ export class ComicService {
       },
       files,
     );
+    const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
+      newChapter.slug
+    }`;
+    this.googleApiService.indexingUrl(newChapterUrl);
 
     await this.comicRepository.updateTimeForComic(comicId);
 

@@ -14,9 +14,11 @@ import { ComicRepository } from './comic.repository';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
+import { GoogleApiModule } from '../google-api/google-api.module';
 
 @Module({
   imports: [
+    GoogleApiModule,
     JwtModule,
     ChapterModule,
     CloudinaryModule,

@@ -29,7 +29,6 @@ import { GetComicsDTO } from './dtos/getComics';
 import { ScoreDTO } from './dtos/evaluateComic';
 import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
-import { CommentService } from '../comment/comment.service';
 import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
 import { IncreaseFieldDTO } from './dtos/increaseField';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
@@ -38,11 +37,7 @@ import { UpdateComicDTO } from './dtos/update-comic';
 
 @Controller('api/comics')
 export class ComicController {
-  constructor(
-    private comicService: ComicService,
-    private redisService: RedisService,
-    private commentService: CommentService,
-  ) {}
+  constructor(private comicService: ComicService, private redisService: RedisService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
