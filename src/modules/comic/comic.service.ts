@@ -8,9 +8,6 @@ import { ComicInteractionService } from '../comic-interaction/comicInteraction.s
 import { NotificationService } from '../notification/notification.service';
 import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
-import { HttpService } from '@nestjs/axios';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
 import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import { Paging, PagingComics } from 'src/common/types/Paging';
@@ -18,6 +15,7 @@ import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-com
 import { DataSource, EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
+import { CrawlerService } from './crawler.service';
 
 @Injectable()
 export class ComicService {
@@ -30,10 +28,10 @@ export class ComicService {
     private cloudinaryService: CloudinaryService,
     private comicInteractionService: ComicInteractionService,
     private commentService: CommentService,
-    private httpService: HttpService,
     private configService: ConfigService,
     private readonly databaseConnection: DataSource,
     private readonly googleApiService: GoogleApiService,
+    private readonly crawlerService: CrawlerService,
   ) {}
 
   async getComicsWithChapters() {
@@ -66,65 +64,24 @@ export class ComicService {
     }
   }
 
-  async crawlImagesFromLinkWebsite(urlPost: string, querySelector: string, attribute: string) {
-    const response = await axios.get(urlPost);
-    const $ = cheerio.load(response.data);
-    const imgElements = $(querySelector);
-
-    const srcAttributes = imgElements.map((_index, element) => $(element).attr(attribute)).get();
-
-    if (urlPost.includes('blogtruyen')) {
-      srcAttributes.shift();
-      srcAttributes.pop();
-    }
-
-    return srcAttributes;
-  }
-
-  async crawlImagesFromFacebookPost(urlPost: string) {
-    const convertedURL = new URL(urlPost);
-    const pageId = convertedURL.searchParams.get('id');
-    const postId = convertedURL.searchParams.get('story_fbid');
-    const accessToken = this.configService.get<string>('FACEBOOK_TOKEN');
-
-    const { data } = await this.httpService
-      .get(
-        `https://graph.facebook.com/v18.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
-      )
-      .toPromise();
-
-    if (data.attachments === undefined) {
-      throw new HttpException('Cannot crawl data from this link!', HttpStatus.BAD_REQUEST);
-    }
-
-    const images: string[] = [];
-    data.attachments.data[0].subattachments.data.map((ele: any) => {
-      images.push(ele.media.image.src);
-    });
-
-    return images;
-  }
-
-  async crawlChapterForComic(
+  async crawlImagesForChapter(
     userId: number,
-    comicId: number,
+    comic: Comic,
     nameChapter: string,
     urlPost: string,
     querySelector: string,
     attribute: string,
   ) {
-    const comic = await this.getComicById(comicId);
-
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
     let crawledImages = [];
 
     if (urlPost.includes('facebook')) {
-      crawledImages = await this.crawlImagesFromFacebookPost(urlPost);
+      crawledImages = await this.crawlerService.crawlImagesFromFacebookPost(urlPost);
     } else {
-      crawledImages = await this.crawlImagesFromLinkWebsite(urlPost, querySelector, attribute);
+      crawledImages = await this.crawlerService.crawlImagesFromLinkWebsite(
+        urlPost,
+        querySelector,
+        attribute,
+      );
     }
 
     if (crawledImages.length === 0) {
@@ -145,7 +102,7 @@ export class ComicService {
         const newChapter = await this.chapterService.createNewChapterWithoutFiles(
           {
             name: nameChapter,
-            comicId,
+            comicId: comic.id,
             creator: userId,
             order: parseFloat(order),
           },
@@ -191,9 +148,9 @@ export class ComicService {
           await manager.query('COMMIT');
         }
 
-        await this.comicRepository.updateTimeForComic(comicId);
+        await this.comicRepository.updateTimeForComic(comic.id);
 
-        const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
+        const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comic.id);
         for (const userId of listUserId) {
           const notify: INotification = {
             userId: userId,
@@ -209,12 +166,83 @@ export class ComicService {
         return newChapter;
       } catch (error) {
         await manager.query('ROLLBACK');
+        const notify: INotification = {
+          userId,
+          title: 'Lỗi Cào Dữ Liệu!',
+          body: `Qúa trình cào dữ liệu ${nameChapter} cho ${comic.name} diễn ra không thành công!`,
+          redirectUrl: ``,
+          thumb: comic.thumb,
+        };
+
+        this.notifyService.create(notify);
         throw new HttpException(
           'Lỗi không crawl được dữ liệu hoặc trang web được crawl đã chặn quyền!',
           HttpStatus.BAD_REQUEST,
         );
       }
     });
+  }
+
+  async crawlChapterForComic(
+    userId: number,
+    comicId: number,
+    nameChapter: string,
+    urlPost: string,
+    querySelector: string,
+    attribute: string,
+  ) {
+    const comic = await this.getComicById(comicId);
+
+    if (!comic) {
+      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
+    await this.crawlImagesForChapter(userId, comic, nameChapter, urlPost, querySelector, attribute);
+  }
+
+  async crawlChaptersForComic(
+    userId: number,
+    comicId: number,
+    urlNeedCrawled: string,
+    querySelectorChapterUrl: string,
+    attributeChapterUrl: string,
+    querySelectorChapterName: string,
+    querySelectorImageUrl: string,
+    attributeImageUrl: string,
+  ): Promise<void> {
+    const comic = await this.getComicById(comicId);
+
+    if (!comic) {
+      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
+    }
+
+    const chaptersCrawlInformation = await this.crawlerService.crawlChapters(
+      urlNeedCrawled,
+      querySelectorChapterUrl,
+      attributeChapterUrl,
+      querySelectorChapterName,
+    );
+
+    for (const chapter of chaptersCrawlInformation) {
+      await this.crawlImagesForChapter(
+        userId,
+        comic,
+        chapter.chapterName,
+        chapter.chapterUrl,
+        querySelectorImageUrl,
+        attributeImageUrl,
+      );
+    }
+
+    const notify: INotification = {
+      userId,
+      title: 'Lỗi Cào Dữ Liệu!',
+      body: `Qúa trình cào dữ liệu cho truyện ${comic.name} diễn ra thành công!`,
+      redirectUrl: `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}`,
+      thumb: comic.thumb,
+    };
+
+    this.notifyService.create(notify);
   }
 
   async getChapters(comicId: number) {

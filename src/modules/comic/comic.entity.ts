@@ -91,12 +91,12 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = `${customSlugify(this.name)}`;
+    this.slug = `${customSlugify(this.name)}-${Date.now()}`;
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = `${customSlugify(this.name)}`;
+    this.slug = `${customSlugify(this.name)}-${Date.now()}`;
   }
 }

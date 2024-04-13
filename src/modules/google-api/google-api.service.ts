@@ -23,6 +23,10 @@ export class GoogleApiService {
   }
 
   async indexingUrl(url: string): Promise<void> {
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+
     try {
       const jwtClient = this.createJwtClient();
       const tokens = await jwtClient.authorize();

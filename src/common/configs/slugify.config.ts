@@ -13,6 +13,7 @@ export const customSlugify = (text: string): string => {
   text = text.replace(/[đĐ]/g, (match) => customReplacements[match]);
 
   text = text.replace(/[:\-+]/g, '');
+  text = text.replace('/', '');
 
   // remove all special case
   const regex = /[^a-zA-Z0-9 ]/g;

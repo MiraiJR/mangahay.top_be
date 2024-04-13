@@ -16,6 +16,7 @@ import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
 import { CoreModule } from 'src/core/core.module';
+import { CrawlerService } from './crawler.service';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { CoreModule } from 'src/core/core.module';
     CoreModule,
   ],
   controllers: [ComicController],
-  providers: [ComicService, Logger, ComicResolver, ComicRepository],
+  providers: [ComicService, Logger, ComicResolver, ComicRepository, CrawlerService],
   exports: [ComicService],
 })
 export class ComicModule {}
