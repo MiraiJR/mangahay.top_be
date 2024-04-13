@@ -23,7 +23,7 @@ export class ComicRepository extends Repository<Comic> {
     query = query
       .leftJoinAndSelect('comic.chapters', 'chapters')
       .orderBy(`comic.${field}`, 'DESC')
-      .addOrderBy(`chapters.id`, 'DESC');
+      .addOrderBy(`chapters.order`, 'DESC');
 
     const data = await query.getMany();
 
@@ -112,14 +112,14 @@ export class ComicRepository extends Repository<Comic> {
     }
 
     result.addOrderBy('comics.updatedAt', 'DESC');
+    result.addOrderBy('chapters.order', 'DESC');
 
     const totalRecord = await result.getCount();
+    let comics = await result.getMany();
 
     if (query.limit) {
-      result.skip((page - 1) * query.limit).take(query.limit);
+      comics = comics.slice((page - 1) * query.limit, page * query.limit);
     }
-
-    const comics = await result.getMany();
 
     return {
       total: totalRecord,
@@ -135,5 +135,13 @@ export class ComicRepository extends Repository<Comic> {
       })
       .where('id = :comicId', { comicId })
       .execute();
+  }
+
+  async getComicsByCreator(creatorId: number): Promise<Comic[]> {
+    return this.createQueryBuilder('comics')
+      .where('comics.creator = :creatorId', { creatorId })
+      .orderBy('comics.updatedAt', 'ASC')
+      .addOrderBy('comics.id', 'ASC')
+      .getMany();
   }
 }
