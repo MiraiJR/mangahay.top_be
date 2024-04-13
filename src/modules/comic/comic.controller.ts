@@ -34,6 +34,7 @@ import { IncreaseFieldDTO } from './dtos/increaseField';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
+import { CrawlChaptersReq } from './dtos/crawl-chapters.request';
 
 @Controller('api/comics')
 export class ComicController {
@@ -89,6 +90,28 @@ export class ComicController {
     );
 
     return 'Cào dữ liệu thành công!';
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Roles(UserRole.ADMIN)
+  @Post(':comicId/crawl-chapters')
+  async handleCrawlChaptersForComic(
+    @UserId() userId: number,
+    @Body(new ValidationPipe()) data: CrawlChaptersReq,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    this.comicService.crawlChaptersForComic(
+      userId,
+      comicId,
+      data.urlComic,
+      data.querySelectorChapterUrl,
+      data.attributeChapterUrl,
+      data.querySelectorChapterName,
+      data.querySelectorImageUrl,
+      data.attributeImageUrl,
+    );
+
+    return 'Quá trình cào dữ liệu đang được tiến hành và chúng tối sẽ gửi thông báo cho bạn khi thành công!';
   }
 
   @UseGuards(JwtAuthorizationd)
