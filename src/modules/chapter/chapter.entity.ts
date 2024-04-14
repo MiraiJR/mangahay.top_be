@@ -11,6 +11,7 @@ import {
 import { Comic } from '../comic/comic.entity';
 import { User } from '../user/user.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
+import { ChapterType } from './types/ChapterType';
 
 @Entity()
 export class Chapter {
@@ -45,6 +46,9 @@ export class Chapter {
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   order: number;
+
+  @Column({ type: 'enum', enum: ChapterType, default: ChapterType.NORMAL })
+  type: ChapterType;
 
   @ManyToOne(() => User, (user) => user.id, {
     onDelete: 'SET NULL',

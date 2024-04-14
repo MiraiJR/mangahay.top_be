@@ -1,3 +1,5 @@
+import { ChapterType } from './types/ChapterType';
+
 export interface IChapter {
   id?: number;
   name?: string;
@@ -6,4 +8,5 @@ export interface IChapter {
   slug?: string;
   creator?: number;
   order?: number;
+  type?: ChapterType;
 }
