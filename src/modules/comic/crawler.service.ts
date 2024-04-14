@@ -1,12 +1,15 @@
 import { HttpService } from '@nestjs/axios';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 @Injectable()
 export class CrawlerService {
-  constructor(private httpService: HttpService, private configService: ConfigService) {}
+  private readonly logger: Logger;
+  constructor(private httpService: HttpService, private configService: ConfigService) {
+    this.logger = new Logger(CrawlerService.name);
+  }
 
   async crawlImagesFromLinkWebsite(
     urlPost: string,

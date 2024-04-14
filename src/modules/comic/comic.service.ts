@@ -12,27 +12,29 @@ import Helper from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
-import { DataSource, EntityManager } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
 import { CrawlerService } from './crawler.service';
+import { ChapterType } from '../chapter/types/ChapterType';
 
 @Injectable()
 export class ComicService {
+  private logger: Logger;
   constructor(
     @InjectEntityManager() private readonly manager: EntityManager,
     private notifyService: NotificationService,
-    private logger: Logger = new Logger(ComicService.name),
     private chapterService: ChapterService,
     private comicRepository: ComicRepository,
     private cloudinaryService: CloudinaryService,
     private comicInteractionService: ComicInteractionService,
     private commentService: CommentService,
     private configService: ConfigService,
-    private readonly databaseConnection: DataSource,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
-  ) {}
+  ) {
+    this.logger = new Logger(ComicService.name);
+  }
 
   async getComicsWithChapters() {
     return this.comicRepository.findComicsWithChapters();
@@ -88,16 +90,15 @@ export class ComicService {
       throw new HttpException('Lỗi không crawl được dữ liệu!', HttpStatus.BAD_REQUEST);
     }
 
-    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
-
-    if (!order) {
-      throw new HttpException(
-        'Vui lòng điền tên chapter chưa một số hoặc số thập phân!',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     return await this.manager.transaction(async (manager) => {
+      let chapterType = ChapterType.NORMAL;
+      let order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
+
+      if (!order) {
+        chapterType = ChapterType.EXTRA;
+        order = '0';
+      }
+
       try {
         const newChapter = await this.chapterService.createNewChapterWithoutFiles(
           {
@@ -105,6 +106,7 @@ export class ComicService {
             comicId: comic.id,
             creator: userId,
             order: parseFloat(order),
+            type: chapterType,
           },
           manager,
         );
@@ -224,6 +226,9 @@ export class ComicService {
     );
 
     for (const chapter of chaptersCrawlInformation) {
+      this.logger.log(
+        `Hệ thông đang crawl dữ liệu từ ${chapter.chapterUrl} - ${chapter.chapterName}. UserId: ${userId}`,
+      );
       await this.crawlImagesForChapter(
         userId,
         comic,
@@ -442,13 +447,21 @@ export class ComicService {
       );
     }
 
-    const order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0];
+    let chapterType = ChapterType.NORMAL;
+    let order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
+
+    if (!order) {
+      chapterType = ChapterType.EXTRA;
+      order = '0';
+    }
+
     const newChapter = await this.chapterService.createNewChapter(
       {
         name: nameChapter,
         comicId,
         creator: userId,
         order: parseFloat(order),
+        type: chapterType,
       },
       files,
     );
