@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { google } from 'googleapis';
 import * as key from './json/raicy0222-cb718c7c3581.json';
 import { JWT } from 'google-auth-library';
@@ -10,7 +10,10 @@ const GOOGLE_INDEXING_AUTH: string = 'https://www.googleapis.com/auth/indexing';
 
 @Injectable()
 export class GoogleApiService {
-  constructor(private readonly httpService: HttpService) {}
+  private logger: Logger;
+  constructor(private readonly httpService: HttpService) {
+    this.logger = new Logger(GoogleApiService.name);
+  }
 
   createJwtClient(): JWT {
     return new google.auth.JWT(
@@ -46,6 +49,8 @@ export class GoogleApiService {
           },
         ),
       );
+
+      this.logger.log(`Hệ thống đã gửi request indexing cho đường dẫn: ${url} thành công!`);
     } catch (error) {
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
