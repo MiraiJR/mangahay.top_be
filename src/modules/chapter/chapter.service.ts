@@ -4,14 +4,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { ChapterRepository } from './chapter.repository';
 
 @Injectable()
 export class ChapterService {
   constructor(
     private cloudinaryService: CloudinaryService,
-    @InjectRepository(Chapter)
-    private chapterRepository: Repository<Chapter>,
+    private chapterRepository: ChapterRepository,
   ) {}
+
+  async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
+    const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
+    return !!matchedChapter;
+  }
 
   async getChapters() {
     return this.chapterRepository.find({

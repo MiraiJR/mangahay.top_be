@@ -34,7 +34,7 @@ export class NotificationService {
       );
     }
 
-    if (notify.user.id !== userId) {
+    if (notify.userId !== userId) {
       throw new HttpException(`Không có quyền!`, HttpStatus.FORBIDDEN);
     }
 
