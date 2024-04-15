@@ -6,7 +6,9 @@ export class Notification {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'user_id', type: 'int' })
+  @Column({ name: 'user_id' })
+  userId: number;
+
   @ManyToOne(() => User, (user) => user.id, {
     cascade: ['remove'],
     onDelete: 'CASCADE',

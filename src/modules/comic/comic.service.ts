@@ -17,6 +17,8 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
 import { CrawlerService } from './crawler.service';
 import { ChapterType } from '../chapter/types/ChapterType';
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
 export class ComicService {
@@ -32,6 +34,7 @@ export class ComicService {
     private configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
+    @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
   ) {
     this.logger = new Logger(ComicService.name);
   }
@@ -97,6 +100,15 @@ export class ComicService {
       if (!order) {
         chapterType = ChapterType.EXTRA;
         order = '0';
+      }
+
+      const isExistedChapterWithOrder = await this.chapterService.checkChapterWithOrderExisted(
+        comic.id,
+        parseFloat(order),
+      );
+
+      if (isExistedChapterWithOrder) {
+        throw new HttpException('Chapter is existed!', HttpStatus.BAD_REQUEST);
       }
 
       try {
@@ -226,28 +238,19 @@ export class ComicService {
     );
 
     for (const chapter of chaptersCrawlInformation) {
-      this.logger.log(
-        `Hệ thông đang crawl dữ liệu từ ${chapter.chapterUrl} - ${chapter.chapterName}. UserId: ${userId}`,
-      );
-      await this.crawlImagesForChapter(
-        userId,
-        comic,
-        chapter.chapterName,
-        chapter.chapterUrl,
-        querySelectorImageUrl,
-        attributeImageUrl,
+      await this.crawlChaptersQueue.add(
+        'crawl-chapters-multiple',
+        {
+          userId,
+          comic,
+          chapterName: chapter.chapterName,
+          chapterUrl: chapter.chapterUrl,
+          querySelectorImageUrl,
+          attributeImageUrl,
+        },
+        { delay: 3000, lifo: true },
       );
     }
-
-    const notify: INotification = {
-      userId,
-      title: 'Lỗi Cào Dữ Liệu!',
-      body: `Qúa trình cào dữ liệu cho truyện ${comic.name} diễn ra thành công!`,
-      redirectUrl: `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}`,
-      thumb: comic.thumb,
-    };
-
-    this.notifyService.create(notify);
   }
 
   async getChapters(comicId: number) {
