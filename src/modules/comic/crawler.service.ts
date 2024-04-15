@@ -1,7 +1,9 @@
 import { HttpService } from '@nestjs/axios';
+import { InjectQueue } from '@nestjs/bull';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { Queue } from 'bull';
 import * as cheerio from 'cheerio';
 
 @Injectable()
@@ -71,10 +73,18 @@ export class CrawlerService {
     const valueOfAttributeChapter: ChapterCrawler[] = chatperElements
       .map((_index, chapterElement) => {
         const chapterUrl = $(chapterElement).attr(attributeChapterUrl);
-        const chapterName = $(chapterElement).find(querySelectorChapterName).text();
+
+        let chapterName = '';
+        if (querySelectorChapterName === querySelectorChapterUrl) {
+          chapterName = $(chapterElement).text();
+        } else {
+          chapterName = $(chapterElement).find(querySelectorChapterName).text();
+        }
 
         return {
-          chapterUrl: `https://${hostName}${chapterUrl}`,
+          chapterUrl: chapterUrl.startsWith(`https://${hostName}`)
+            ? chapterUrl
+            : `https://${hostName}${chapterUrl}`,
           chapterName,
         };
       })
