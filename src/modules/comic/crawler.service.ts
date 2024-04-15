@@ -1,9 +1,7 @@
 import { HttpService } from '@nestjs/axios';
-import { InjectQueue } from '@nestjs/bull';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { Queue } from 'bull';
 import * as cheerio from 'cheerio';
 
 @Injectable()
@@ -32,7 +30,7 @@ export class CrawlerService {
 
       return srcAttributes;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 

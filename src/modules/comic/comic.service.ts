@@ -17,7 +17,6 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
 import { CrawlerService } from './crawler.service';
 import { ChapterType } from '../chapter/types/ChapterType';
-import { CrawlChaptersProcessor } from './comic.prossessor';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 
@@ -78,14 +77,6 @@ export class ComicService {
     querySelector: string,
     attribute: string,
   ) {
-    console.log({
-      userId,
-      comic,
-      nameChapter,
-      urlPost,
-      querySelector,
-      attribute,
-    });
     let crawledImages = [];
 
     if (urlPost.includes('facebook')) {
@@ -109,6 +100,15 @@ export class ComicService {
       if (!order) {
         chapterType = ChapterType.EXTRA;
         order = '0';
+      }
+
+      const isExistedChapterWithOrder = await this.chapterService.checkChapterWithOrderExisted(
+        comic.id,
+        parseFloat(order),
+      );
+
+      if (isExistedChapterWithOrder) {
+        throw new HttpException('Chapter is existed!', HttpStatus.BAD_REQUEST);
       }
 
       try {
@@ -251,16 +251,6 @@ export class ComicService {
         { delay: 3000, lifo: true },
       );
     }
-
-    // const notify: INotification = {
-    //   userId,
-    //   title: 'Lỗi Cào Dữ Liệu!',
-    //   body: `Qúa trình cào dữ liệu cho truyện ${comic.name} diễn ra thành công!`,
-    //   redirectUrl: `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}`,
-    //   thumb: comic.thumb,
-    // };
-
-    // this.notifyService.create(notify);
   }
 
   async getChapters(comicId: number) {
