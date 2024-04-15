@@ -30,7 +30,7 @@ export class CrawlerService {
 
       return srcAttributes;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -71,10 +71,18 @@ export class CrawlerService {
     const valueOfAttributeChapter: ChapterCrawler[] = chatperElements
       .map((_index, chapterElement) => {
         const chapterUrl = $(chapterElement).attr(attributeChapterUrl);
-        const chapterName = $(chapterElement).find(querySelectorChapterName).text();
+
+        let chapterName = '';
+        if (querySelectorChapterName === querySelectorChapterUrl) {
+          chapterName = $(chapterElement).text();
+        } else {
+          chapterName = $(chapterElement).find(querySelectorChapterName).text();
+        }
 
         return {
-          chapterUrl: `https://${hostName}${chapterUrl}`,
+          chapterUrl: chapterUrl.startsWith(`https://${hostName}`)
+            ? chapterUrl
+            : `https://${hostName}${chapterUrl}`,
           chapterName,
         };
       })

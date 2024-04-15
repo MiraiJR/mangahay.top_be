@@ -24,9 +24,11 @@ import { AnswerModule } from 'src/modules/answer-comment/answer.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
 import { GoogleApiModule } from 'src/modules/google-api/google-api.module';
 import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
+import { QueueHandlerModule } from 'src/modules/queue-handler/queue-handler.module';
 
 @Module({
   imports: [
+    QueueHandlerModule,
     AuthModule,
     UserModule,
     ComicModule,

@@ -17,6 +17,8 @@ import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
 import { CoreModule } from 'src/core/core.module';
 import { CrawlerService } from './crawler.service';
+import { BullModule } from '@nestjs/bull';
+import { CrawlChaptersProcessor } from './comic.prossessor';
 
 @Module({
   imports: [
@@ -32,9 +34,19 @@ import { CrawlerService } from './crawler.service';
     HttpModule,
     TypeOrmModule.forFeature([Comic]),
     CoreModule,
+    BullModule.registerQueue({
+      name: 'crawl-chapters',
+    }),
   ],
   controllers: [ComicController],
-  providers: [ComicService, Logger, ComicResolver, ComicRepository, CrawlerService],
+  providers: [
+    ComicService,
+    Logger,
+    ComicResolver,
+    ComicRepository,
+    CrawlerService,
+    CrawlChaptersProcessor,
+  ],
   exports: [ComicService],
 })
 export class ComicModule {}
