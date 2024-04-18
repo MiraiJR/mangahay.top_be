@@ -72,7 +72,7 @@ export class CrawlerService {
 
     const valueOfAttributeChapter: ChapterCrawler[] = [];
 
-    for (let index = 0; index < chapterElements.length; index++) {
+    for (let index = chapterElements.length - 1; index >= 0; index--) {
       const chapterUrl = $(chapterElements[index]).attr(attributeChapterUrl);
       const chapterName = $(chapterNameElements[index]).text();
       valueOfAttributeChapter.push({
