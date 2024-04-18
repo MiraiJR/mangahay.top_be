@@ -123,11 +123,6 @@ export class ComicService {
           manager,
         );
 
-        const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
-          newChapter.slug
-        }`;
-        this.googleApiService.indexingUrl(newChapterUrl);
-
         let imagesChapter = [];
 
         for (let _index = 0; _index < crawledImages.length; _index++) {
@@ -160,6 +155,11 @@ export class ComicService {
           );
 
           await manager.query('COMMIT');
+
+          const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${
+            comic.slug
+          }/${newChapter.slug}`;
+          this.googleApiService.indexingUrl(newChapterUrl);
         }
 
         await this.comicRepository.updateTimeForComic(comic.id);

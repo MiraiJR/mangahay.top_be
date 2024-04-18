@@ -25,7 +25,7 @@ export class CrawlChaptersProcessor {
   @Process('crawl-chapters-multiple')
   async handleCrawlChapters(job: Job) {
     this.logger.log(
-      `Hệ thông đang crawl dữ liệu từ ${job.data.chapterUrl} - ${job.data.chapterName}. UserId: ${job.data.userId}`,
+      `Hệ thống đang crawl dữ liệu từ ${job.data.chapterUrl} - ${job.data.chapterName}. Request - userId: ${job.data.userId}`,
     );
 
     await this.comicService.crawlImagesForChapter(

@@ -38,7 +38,7 @@ export class CloudinaryService {
     });
   }
 
-  async uploadImageFromUrl(urlImage: string, folder: string, imageName: string) {
+  async uploadImageFromUrl(urlImage: string, folder: string, imageName: string): Promise<string> {
     const response = await axios({
       method: 'get',
       url: urlImage,
