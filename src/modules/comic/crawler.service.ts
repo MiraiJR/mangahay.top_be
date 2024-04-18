@@ -67,26 +67,21 @@ export class CrawlerService {
     const hostName = new URL(urlNeedCrawled).hostname;
     const { data: htmlResponse } = await axios.get(urlNeedCrawled);
     const $ = cheerio.load(htmlResponse);
-    const chatperElements = $(querySelectorChapterUrl);
-    const valueOfAttributeChapter: ChapterCrawler[] = chatperElements
-      .map((_index, chapterElement) => {
-        const chapterUrl = $(chapterElement).attr(attributeChapterUrl);
+    const chapterElements = $(querySelectorChapterUrl);
+    const chapterNameElements = $(querySelectorChapterName);
 
-        let chapterName = '';
-        if (querySelectorChapterName === querySelectorChapterUrl) {
-          chapterName = $(chapterElement).text();
-        } else {
-          chapterName = $(chapterElement).find(querySelectorChapterName).text();
-        }
+    const valueOfAttributeChapter: ChapterCrawler[] = [];
 
-        return {
-          chapterUrl: chapterUrl.startsWith(`https://${hostName}`)
-            ? chapterUrl
-            : `https://${hostName}${chapterUrl}`,
-          chapterName,
-        };
-      })
-      .get();
+    for (let index = 0; index < chapterElements.length; index++) {
+      const chapterUrl = $(chapterElements[index]).attr(attributeChapterUrl);
+      const chapterName = $(chapterNameElements[index]).text();
+      valueOfAttributeChapter.push({
+        chapterUrl: chapterUrl.startsWith(`https://${hostName}`)
+          ? chapterUrl
+          : `https://${hostName}${chapterUrl}`,
+        chapterName,
+      });
+    }
 
     return valueOfAttributeChapter;
   }
