@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { IComic } from './comic.interface';
 import { ChapterService } from '../chapter/chapter.service';
 import { ComicRepository } from './comic.repository';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Comic } from './comic.entity';
 import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
 import { NotificationService } from '../notification/notification.service';
@@ -19,6 +18,7 @@ import { CrawlerService } from './crawler.service';
 import { ChapterType } from '../chapter/types/ChapterType';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { S3Service } from '../image-storage/s3.service';
 
 @Injectable()
 export class ComicService {
@@ -28,7 +28,7 @@ export class ComicService {
     private notifyService: NotificationService,
     private chapterService: ChapterService,
     private comicRepository: ComicRepository,
-    private cloudinaryService: CloudinaryService,
+    private s3Service: S3Service,
     private comicInteractionService: ComicInteractionService,
     private commentService: CommentService,
     private configService: ConfigService,
@@ -126,10 +126,10 @@ export class ComicService {
         let imagesChapter = [];
 
         for (let _index = 0; _index < crawledImages.length; _index++) {
-          const folder = `${comic.id}/${newChapter.id}`;
+          const folder = `comics/${comic.id}/${newChapter.id}`;
           const imageName = `${_index}`;
 
-          const linkImage = await this.cloudinaryService.uploadImageFromUrl(
+          const linkImage = await this.s3Service.uploadImageFromUrl(
             crawledImages[_index],
             folder,
             imageName,
@@ -328,10 +328,10 @@ export class ComicService {
     const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${newComic.slug}`;
     this.googleApiService.indexingUrl(urlOfNewComic);
 
-    this.cloudinaryService
+    this.s3Service
       .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
-      .then((data: any) => {
-        return this.updateThumb(newComic.id, data.url);
+      .then((data: string) => {
+        return this.updateThumb(newComic.id, data);
       });
 
     return newComic;
@@ -372,7 +372,7 @@ export class ComicService {
       return updatedComic;
     }
 
-    this.cloudinaryService
+    this.s3Service
       .uploadFileFromBuffer(file.buffer, `comics/${updatedComic.id}/thumb`)
       .then((data: any) => {
         return this.updateThumb(updatedComic.id, data.url);

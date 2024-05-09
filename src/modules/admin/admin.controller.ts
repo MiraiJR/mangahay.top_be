@@ -11,14 +11,14 @@ import {
 import { AdminService } from './admin.service';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../image-storage/s3.service';
 
 @Controller('api/admin')
 export class AdminController {
   constructor(
     private adminService: AdminService,
     private logger: Logger = new Logger(AdminController.name),
-    private cloudinaryService: CloudinaryService,
+    private s3Service: S3Service,
   ) {}
 
   @Put('/change-slide')
@@ -29,7 +29,7 @@ export class AdminController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      const res = await this.cloudinaryService
+      const res = await this.s3Service
         .uploadFileFromBuffer(file.buffer, `slide-image`)
         .then((data: any) => {
           this.adminService.changeSlideImage(parseInt(body.index), data.url);

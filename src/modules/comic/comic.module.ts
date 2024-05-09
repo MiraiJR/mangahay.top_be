@@ -19,6 +19,7 @@ import { CoreModule } from 'src/core/core.module';
 import { CrawlerService } from './crawler.service';
 import { BullModule } from '@nestjs/bull';
 import { CrawlChaptersProcessor } from './comic.prossessor';
+import { S3Module } from '../image-storage/s3.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CrawlChaptersProcessor } from './comic.prossessor';
     BullModule.registerQueue({
       name: 'crawl-chapters',
     }),
+    S3Module,
   ],
   controllers: [ComicController],
   providers: [

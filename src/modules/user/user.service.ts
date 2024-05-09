@@ -1,29 +1,25 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
 import { IUser } from './user.interface';
 import { UserRole } from './user.role';
 import { SALT_HASH_PWD } from 'src/common/utils/salt';
 import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
-import { RedisService } from '../redis/redis.service';
 import { ComicService } from '../comic/comic.service';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserSettingRepository } from '../user-setting/user-setting.repository';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
+import { S3Service } from '../image-storage/s3.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private comicService: ComicService,
-    private redisService: RedisService,
     private comicInteractionService: ComicInteractionService,
-    private cloudinaryService: CloudinaryService,
     private userRepository: UserRepository,
     private userSettingRepository: UserSettingRepository,
+    private s3Service: S3Service,
   ) {}
 
   async create(user: IUser) {
@@ -166,14 +162,15 @@ export class UserService {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    const responseFile: any = await this.cloudinaryService.uploadFileFromBuffer(
+    const imageUrl: string = await this.s3Service.uploadFileFromBuffer(
       file.buffer,
-      `users/avatars/${userId}`,
+      `users/avatar/${userId}`,
+      `${userId}.jpeg`,
     );
 
     return this.userRepository.save({
       ...user,
-      avatar: responseFile.url,
+      avatar: imageUrl,
     });
   }
 

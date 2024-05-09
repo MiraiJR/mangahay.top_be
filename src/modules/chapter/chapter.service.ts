@@ -1,17 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { IChapter } from './chapter.interface';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { ChapterRepository } from './chapter.repository';
+import { S3Service } from '../image-storage/s3.service';
 
 @Injectable()
 export class ChapterService {
-  constructor(
-    private cloudinaryService: CloudinaryService,
-    private chapterRepository: ChapterRepository,
-  ) {}
+  constructor(private s3Service: S3Service, private chapterRepository: ChapterRepository) {}
 
   async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
@@ -113,8 +109,8 @@ export class ChapterService {
       slug: `${newChapter.slug}-${newChapter.id}`,
     });
 
-    this.cloudinaryService
-      .uploadMultipleFile(files, `comics/${newChapter.comic}/${newChapter.id}`)
+    this.s3Service
+      .uploadMultipleFile(files, `comics/${newChapter.comic.id}/${newChapter.id}`)
       .then((data) => this.updateImages(newChapter.id, data));
 
     return newChapter;

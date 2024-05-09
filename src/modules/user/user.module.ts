@@ -13,6 +13,7 @@ import { RedisModule } from '../redis/redis.module';
 import { ComicModule } from '../comic/comic.module';
 import { UserSettingModule } from '../user-setting/user-setting.module';
 import { UserRepository } from './user.repository';
+import { S3Service } from '../image-storage/s3.service';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { UserRepository } from './user.repository';
     TypeOrmModule.forFeature([User]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserResolver, Logger, UserRepository],
+  providers: [UserService, UserResolver, Logger, UserRepository, S3Service],
   exports: [UserService, UserRepository],
 })
 export class UserModule {}
