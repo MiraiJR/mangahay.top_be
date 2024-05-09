@@ -20,21 +20,18 @@ import {
 import { UserService } from './user.service';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
 import UserId from './decorators/userId';
 import { ReadingHistoryService } from '../reading-history/readingHistory.service';
 import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
-import { PagingDTO } from 'src/common/dtos/PagingDTO';
 import { UpdateProfileDTO } from './dtos/updateProfile.dto';
-import { NotificationType, toNotificationType } from './types/NotificationType';
+import { toNotificationType } from './types/NotificationType';
 
 @Controller('api/users')
 export class UserController {
   constructor(
     private logger: Logger = new Logger(UserController.name),
     private userService: UserService,
-    private cloudinaryService: CloudinaryService,
     private notifyService: NotificationService,
     private readingHistoryService: ReadingHistoryService,
   ) {}
