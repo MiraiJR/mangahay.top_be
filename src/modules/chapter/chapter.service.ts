@@ -7,7 +7,7 @@ import { S3Service } from '../image-storage/s3.service';
 
 @Injectable()
 export class ChapterService {
-  constructor(private s3Service: S3Service, private chapterRepository: ChapterRepository) {}
+  constructor(private chapterRepository: ChapterRepository, private s3Service: S3Service) {}
 
   async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
