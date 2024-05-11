@@ -351,7 +351,7 @@ export class ComicService {
     userId: number,
     comicId: number,
     data: UpdateComicDTO,
-    file: Express.Multer.File | null = null,
+    file?: Express.Multer.File,
   ): Promise<Comic> {
     await this.checkCreatorOfComic(userId, comicId);
 
@@ -366,18 +366,17 @@ export class ComicService {
     updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
-    updatedComic = await this.comicRepository.save(updatedComic);
+    if (file && data.isUpdateImage === UPDATE_IMAGE_WITH_FILE_OR_NOT.YES) {
+      const imageUrl = await this.s3Service.uploadFileFromBuffer(
+        file.buffer,
+        `comics/${updatedComic.id}`,
+        'thumb.jpeg',
+      );
 
-    if (!file || data.isUpdateImage === UPDATE_IMAGE_WITH_FILE_OR_NOT.NO) {
-      return updatedComic;
+      updatedComic.thumb = imageUrl;
     }
 
-    this.s3Service
-      .uploadFileFromBuffer(file.buffer, `comics/${updatedComic.id}/thumb`)
-      .then((data: any) => {
-        return this.updateThumb(updatedComic.id, data.url);
-      });
-
+    updatedComic = await this.comicRepository.save(updatedComic);
     return updatedComic;
   }
 

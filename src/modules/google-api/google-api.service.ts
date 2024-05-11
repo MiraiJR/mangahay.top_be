@@ -4,6 +4,7 @@ import * as key from './json/raicy0222-cb718c7c3581.json';
 import { JWT } from 'google-auth-library';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { EnvironmentUtil } from 'src/common/utils/EnvironmentUtil';
 
 const ENDPOINT_INDEXING: string = 'https://indexing.googleapis.com/v3/urlNotifications:publish';
 const GOOGLE_INDEXING_AUTH: string = 'https://www.googleapis.com/auth/indexing';
@@ -26,7 +27,7 @@ export class GoogleApiService {
   }
 
   async indexingUrl(url: string): Promise<void> {
-    if (process.env.NODE_ENV === 'development') {
+    if (EnvironmentUtil.isDevMode()) {
       return;
     }
 
