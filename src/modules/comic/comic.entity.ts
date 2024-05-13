@@ -14,6 +14,7 @@ import { Chapter } from '../chapter/chapter.entity';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { Comment } from '../comment/comment.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
+import { StatusComic } from './enums/StatusComic';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -36,8 +37,8 @@ export class Comic {
   @Column('text', { array: true, default: ['Đang cập nhật'] })
   authors: string[];
 
-  @Column({ default: 'Đang tiến hành' })
-  state: string;
+  @Column({ default: StatusComic.PROCESSING })
+  state: StatusComic;
 
   @Column({
     default:

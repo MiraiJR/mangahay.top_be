@@ -1,3 +1,5 @@
+import { StatusComic } from './enums/StatusComic';
+
 export interface IComic {
   id?: number;
   slug?: string;
@@ -5,7 +7,7 @@ export interface IComic {
   anotherName?: string;
   genres?: string[];
   authors?: string[];
-  state?: string;
+  state?: StatusComic;
   thumb?: string;
   briefDescription?: string;
   creator?: number;

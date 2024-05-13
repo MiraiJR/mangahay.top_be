@@ -1,4 +1,5 @@
 import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { StatusComic } from '../enums/StatusComic';
 
 export enum UPDATE_IMAGE_WITH_FILE_OR_NOT {
   NO = 0,
@@ -33,4 +34,8 @@ export class UpdateComicDTO {
   @IsNotEmpty()
   @IsEnum(UPDATE_IMAGE_WITH_FILE_OR_NOT)
   isUpdateImage: UPDATE_IMAGE_WITH_FILE_OR_NOT;
+
+  @IsNotEmpty()
+  @IsEnum(StatusComic)
+  state: StatusComic;
 }

@@ -19,6 +19,7 @@ import { ChapterType } from '../chapter/types/ChapterType';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { S3Service } from '../image-storage/s3.service';
+import { StatusComic } from './enums/StatusComic';
 
 @Injectable()
 export class ComicService {
@@ -328,7 +329,7 @@ export class ComicService {
     const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${newComic.slug}`;
     this.googleApiService.indexingUrl(urlOfNewComic);
 
-    this.s3Service
+    await this.s3Service
       .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
       .then((data: string) => {
         return this.updateThumb(newComic.id, data);
@@ -363,6 +364,7 @@ export class ComicService {
     updatedComic.authors = data.authors;
     updatedComic.briefDescription = data.briefDescription;
     updatedComic.translators = data.translators;
+    updatedComic.state = data.state;
     updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
