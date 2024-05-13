@@ -2,9 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
-  Logger,
   Post,
   Put,
   Query,
@@ -18,27 +15,17 @@ import { Response } from 'express';
 import { RegisterUserDTO } from './DTO/register-dto';
 import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
 import { UserRole } from '../user/user.role';
-import { MailService } from '../mail/mail.service';
 import UserId from '../user/decorators/userId';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(
-    private logger: Logger = new Logger(AuthController.name),
-    private authService: AuthService,
-    private mailService: MailService,
-  ) {}
+  constructor(private authService: AuthService) {}
 
   @Post('/register')
   async register(@Body(new ValidationPipe()) data: RegisterUserDTO) {
-    const mailOtp: string = await this.authService.signTokenVerifyMail(data);
-    try {
-      await this.mailService.sendMailVerifyEmail(data.email, 'Xác nhận email', mailOtp);
-    } catch (error) {
-      throw new HttpException('Gửi mail không thành công', HttpStatus.BAD_REQUEST);
-    }
+    await this.authService.register(data, UserRole.VIEWER);
 
-    return `Vui lòng kiểm tra email để xác nhận đăng ký!`;
+    return `Đăng ký tài khoản thành công!`;
   }
 
   @Post('/login')
