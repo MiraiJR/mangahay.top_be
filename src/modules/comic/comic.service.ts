@@ -19,7 +19,6 @@ import { ChapterType } from '../chapter/types/ChapterType';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { S3Service } from '../image-storage/s3.service';
-import { StatusComic } from './enums/StatusComic';
 
 @Injectable()
 export class ComicService {
@@ -166,9 +165,10 @@ export class ComicService {
         await this.comicRepository.updateTimeForComic(comic.id);
 
         const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comic.id);
-        for (const userId of listUserId) {
+
+        for (const notifyToUserId of listUserId) {
           const notify: INotification = {
-            userId: userId,
+            userId: notifyToUserId,
             title: 'Chương mới!',
             body: `${comic.name} vừa cập nhật thêm chapter mới - ${newChapter.name}.`,
             redirectUrl: `/truyen/${comic.slug}/${newChapter.slug}`,
