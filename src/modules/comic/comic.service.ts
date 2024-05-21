@@ -29,13 +29,13 @@ export class ComicService {
   private logger: Logger;
   constructor(
     @InjectEntityManager() private readonly manager: EntityManager,
-    private notifyService: NotificationService,
-    private chapterService: ChapterService,
-    private comicRepository: ComicRepository,
-    private s3Service: S3Service,
-    private comicInteractionService: ComicInteractionService,
-    private commentService: CommentService,
-    private configService: ConfigService,
+    private readonly notifyService: NotificationService,
+    private readonly chapterService: ChapterService,
+    private readonly comicRepository: ComicRepository,
+    private readonly s3Service: S3Service,
+    private readonly comicInteractionService: ComicInteractionService,
+    private readonly commentService: CommentService,
+    private readonly configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
     private readonly redisService: RedisService,
@@ -398,6 +398,14 @@ export class ComicService {
     }
 
     updatedComic = await this.comicRepository.save(updatedComic);
+
+    await this.redisService.setObjectByKeyValue<Comic>(
+      updatedComic.slug,
+      updatedComic,
+      CommonConstant.ONE_DAY,
+      RedisPrefixKey.COMIC,
+    );
+
     return updatedComic;
   }
 
@@ -434,10 +442,19 @@ export class ComicService {
       thumb: thumb,
     });
 
-    return {
+    const updatedComic = {
       ...comic,
       thumb: newInformation.thumb,
-    };
+    } as Comic;
+
+    await this.redisService.setObjectByKeyValue<Comic>(
+      comic.slug,
+      updatedComic,
+      CommonConstant.ONE_DAY,
+      RedisPrefixKey.COMIC,
+    );
+
+    return updatedComic;
   }
 
   async evaluateComic(userId: number, comicId: number, score: number) {
