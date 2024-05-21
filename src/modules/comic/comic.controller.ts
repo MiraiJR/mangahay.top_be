@@ -50,14 +50,6 @@ export class ComicController {
     return this.comicService.getComics(query);
   }
 
-  @UseGuards(JwtAuthorizationd)
-  @Get('/created-by-me')
-  async handleGetComicsCreatedByMe(@UserId() userId: number) {
-    const comics = await this.comicService.getComicsCreatedByCreator(userId);
-
-    return comics;
-  }
-
   @UseGuards(JwtAuthorizationd, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @UseInterceptors(FileInterceptor('file'))
@@ -70,6 +62,66 @@ export class ComicController {
     const newComic = await this.comicService.createComic(creatorId, comic, file);
 
     return newComic;
+  }
+
+  @UseGuards(JwtAuthorizationd)
+  @Get('/created-by-me')
+  async handleGetComicsCreatedByMe(@UserId() userId: number) {
+    const comics = await this.comicService.getComicsCreatedByCreator(userId);
+
+    return comics;
+  }
+
+  @Get('/ranking')
+  async handleGetRanking(@Query() query: { field: string; limit: number }) {
+    return this.comicService.ranking(query);
+  }
+
+  @Get('/search')
+  async handleSearch(@Query() query: QuerySearch) {
+    const result = await this.comicService.searchComics(query);
+
+    return {
+      page: query.page ?? 1,
+      limit: query.limit,
+      ...result,
+    };
+  }
+
+  @Get('/chapters')
+  async getComicsWithChapters() {
+    const comicsWithChapters = await this.comicService.getComicsWithChapters();
+
+    return comicsWithChapters;
+  }
+
+  @Get(':slug')
+  async handleGetComic(@Param('slug') slugComic: string) {
+    return this.comicService.getComicBySlug(slugComic);
+  }
+
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Delete(':comicId')
+  async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
+    await this.comicService.delete(comicId);
+
+    return `Xóa truyện với id ${comicId} thành công!`;
+  }
+
+  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Put('/:comicId')
+  @UseInterceptors(FileInterceptor('file'))
+  async handleUpdateComic(
+    @Body(new ValidationPipe()) data: UpdateComicDTO,
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const updatedComic = await this.comicService.updateComic(userId, comicId, data, file);
+
+    return updatedComic;
   }
 
   @UseGuards(JwtAuthorizationd)
@@ -133,58 +185,6 @@ export class ComicController {
     );
 
     return 'Cào dữ liệu thành công!';
-  }
-
-  @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @Put('/:comicId')
-  @UseInterceptors(FileInterceptor('file'))
-  async handleUpdateComic(
-    @Body(new ValidationPipe()) data: UpdateComicDTO,
-    @UserId() userId: number,
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    const updatedComic = await this.comicService.updateComic(userId, comicId, data, file);
-
-    return updatedComic;
-  }
-
-  @Get('/ranking')
-  async handleGetRanking(@Query() query: { field: string; limit: number }) {
-    return this.comicService.ranking(query);
-  }
-
-  @Get('/search')
-  async handleSearch(@Query() query: QuerySearch) {
-    const result = await this.comicService.searchComics(query);
-
-    return {
-      page: query.page ?? 1,
-      limit: query.limit,
-      ...result,
-    };
-  }
-
-  @Get('/chapters')
-  async getComicsWithChapters() {
-    const comicsWithChapters = await this.comicService.getComicsWithChapters();
-
-    return comicsWithChapters;
-  }
-
-  @Get(':slug')
-  async handleGetComic(@Param('slug') slugComic: string) {
-    return this.comicService.getComicBySlug(slugComic);
-  }
-
-  @UseGuards(JwtAuthorizationd, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Delete(':comicId')
-  async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
-    await this.comicService.delete(comicId);
-
-    return `Xóa truyện với id ${comicId} thành công!`;
   }
 
   @Patch(':comicId/increment')
