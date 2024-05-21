@@ -19,6 +19,10 @@ import { ChapterType } from '../chapter/types/ChapterType';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { S3Service } from '../image-storage/s3.service';
+import { RedisService } from '../redis/redis.service';
+import { CommonConstant } from 'src/common/constant/Constant';
+import { RedisPrefixKey } from '../redis/enums/RedisEnum';
+import { Chapter } from '../chapter/chapter.entity';
 
 @Injectable()
 export class ComicService {
@@ -34,6 +38,7 @@ export class ComicService {
     private configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
+    private readonly redisService: RedisService,
     @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
   ) {
     this.logger = new Logger(ComicService.name);
@@ -292,7 +297,12 @@ export class ComicService {
   }
 
   async getComicBySlug(slugComic: string) {
-    return await this.comicRepository.findOne({
+    let comic = await this.redisService.getObjectByKey<Comic>(slugComic, RedisPrefixKey.COMIC);
+    if (comic) {
+      return comic;
+    }
+
+    comic = await this.comicRepository.findOne({
       where: {
         slug: slugComic,
       },
@@ -302,6 +312,15 @@ export class ComicService {
         },
       },
     });
+
+    await this.redisService.setObjectByKeyValue<Comic>(
+      slugComic,
+      comic,
+      CommonConstant.ONE_DAY,
+      RedisPrefixKey.COMIC,
+    );
+
+    return comic;
   }
 
   async getComicById(comicId: number): Promise<Comic> {
@@ -491,13 +510,31 @@ export class ComicService {
   }
 
   async getASpecificChapterOfComic(comicId: number, chapterId: number) {
+    let chapter = await this.redisService.getObjectByKey<any>(
+      chapterId.toString(),
+      RedisPrefixKey.CHAPTER,
+    );
+
+    if (chapter) {
+      return chapter;
+    }
+
     const comic = await this.getComicById(comicId);
     if (!comic) {
       throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
     }
 
     const chapters = await this.chapterService.getChaptersOfComic(comicId);
-    const chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
+    chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
+
+    if (chapter.nextChapter) {
+      await this.redisService.setObjectByKeyValue<Chapter>(
+        chapterId.toString(),
+        chapter,
+        CommonConstant.ONE_DAY,
+        RedisPrefixKey.CHAPTER,
+      );
+    }
 
     return chapter;
   }
