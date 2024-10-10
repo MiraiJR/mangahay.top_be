@@ -44,6 +44,10 @@ export class ComicService {
     this.logger = new Logger(ComicService.name);
   }
 
+  async getListComment(comicId: number) {
+    return this.commentService.getCommentsOfComic(comicId);
+  }
+
   async getComicsWithChapters() {
     return this.comicRepository.findComicsWithChapters();
   }
@@ -260,7 +264,7 @@ export class ComicService {
   }
 
   async getChapters(comicId: number) {
-    return await this.chapterService.getChaptersOfComic(comicId);
+    return this.chapterService.getChaptersOfComic(comicId);
   }
 
   async delete(comicId: number) {
@@ -297,12 +301,12 @@ export class ComicService {
   }
 
   async getComicBySlug(slugComic: string) {
-    let comic = await this.redisService.getObjectByKey<Comic>(slugComic, RedisPrefixKey.COMIC);
-    if (comic) {
-      return comic;
-    }
+    // let comic = await this.redisService.getObjectByKey<Comic>(slugComic, RedisPrefixKey.COMIC);
+    // if (comic) {
+    //   return comic;
+    // }
 
-    comic = await this.comicRepository.findOne({
+    let comic = await this.comicRepository.findOne({
       where: {
         slug: slugComic,
       },
@@ -313,12 +317,12 @@ export class ComicService {
       },
     });
 
-    await this.redisService.setObjectByKeyValue<Comic>(
-      slugComic,
-      comic,
-      CommonConstant.ONE_DAY,
-      RedisPrefixKey.COMIC,
-    );
+    // await this.redisService.setObjectByKeyValue<Comic>(
+    //   slugComic,
+    //   comic,
+    //   CommonConstant.ONE_DAY,
+    //   RedisPrefixKey.COMIC,
+    // );
 
     return comic;
   }

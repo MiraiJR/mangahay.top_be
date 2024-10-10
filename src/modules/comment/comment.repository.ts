@@ -30,8 +30,8 @@ export class CommentRepository extends Repository<Comment> {
     const queryBuilder = this.createQueryBuilder('comment')
       .where('comment.comicId = :comicId', { comicId })
       .leftJoinAndMapOne('comment.user', User, 'user', 'comment.userId = user.id')
-      .leftJoinAndMapMany('comment.answers', Answer, 'answer', 'answer.commentId = comment.id')
-      .leftJoinAndMapOne('answer.user', User, 'user_answer', 'user_answer.id = answer.userId')
+      .leftJoinAndMapMany('comment.answers', Answer, 'answer', 'answer.comment_id = comment.id')
+      .leftJoinAndMapOne('answer.user', User, 'user_answer', 'user_answer.id = answer.user_id')
       .select(['comment'])
       .addSelect(['user.id', 'user.fullname', 'user.avatar'])
       .addSelect([

@@ -124,6 +124,17 @@ export class ComicController {
     return updatedComic;
   }
 
+  @Get('/:comicId/chapters')
+  async handleGetListChapter(@Param('comicId') comicId: number) {
+    return this.comicService.getChapters(comicId);
+  }
+
+  @Get('/:comicId/comments')
+  async handleGetListComment(@Param('comicId') comicId: number) {
+    console.log(comicId);
+    return this.comicService.getListComment(comicId);
+  }
+
   @UseGuards(JwtAuthorizationd)
   @Roles(UserRole.ADMIN)
   @Post(':comicId/crawl-chapter')
