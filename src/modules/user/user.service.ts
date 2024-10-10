@@ -185,7 +185,7 @@ export class UserService {
       throw new HttpException('Tên quá ngắn tối thiểu 3 ký tự!', HttpStatus.BAD_REQUEST);
     }
 
-    if (phone.trim() === '') {
+    if (!phone || phone.trim() === '') {
       return this.userRepository.save({
         ...user,
         fullname,

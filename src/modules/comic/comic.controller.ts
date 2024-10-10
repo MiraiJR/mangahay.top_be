@@ -131,7 +131,6 @@ export class ComicController {
 
   @Get('/:comicId/comments')
   async handleGetListComment(@Param('comicId') comicId: number) {
-    console.log(comicId);
     return this.comicService.getListComment(comicId);
   }
 
