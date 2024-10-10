@@ -22,6 +22,14 @@ export class ChapterService {
     });
   }
 
+  async getChapter(chapterId: number) {
+    return this.chapterRepository.findOne({
+      where: {
+        id: chapterId,
+      },
+    });
+  }
+
   async reorderChapters() {
     const chapters = await this.chapterRepository.find();
 
