@@ -2,30 +2,34 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { IImageStorage } from './IImageStorage';
 import { ObjectCannedACL, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import axios from 'axios';
-import { EnvironmentUtil } from 'src/common/utils/EnvironmentUtil';
 
 @Injectable()
 export class S3Service implements IImageStorage {
   private logger: Logger;
+  private s3Client: S3Client;
+
   constructor() {
     this.logger = new Logger(S3Service.name);
+    this.s3Client = new S3Client({
+      endpoint: process.env.S3_ENDPOINT,
+      forcePathStyle: true,
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.ACCESSKEY_ID,
+        secretAccessKey: process.env.ACCESSKEY_SECRET,
+      },
+    });
   }
 
-  private s3Client = new S3Client({
-    endpoint: 'https://sgp1.digitaloceanspaces.com',
-    forcePathStyle: false,
-    region: 'sgp1',
-    credentials: {
-      accessKeyId: EnvironmentUtil.isDevMode() ? 'DO007ZQBNQXLDCJGBWF4' : 'DO00EB2KGADTAQGDKF6D',
-      secretAccessKey: process.env.SPACES_SECRET,
-    },
-  });
-
-  async uploadFileFromBuffer(buffer: Buffer, folder: string, imageName?: string): Promise<string> {
+  async uploadFileFromBuffer(
+    buffer: Buffer,
+    folder: string,
+    imageName?: string,
+  ): Promise<UploadedFile> {
     try {
-      imageName ??= `${Date.now()}`;
+      imageName ??= `${Date.now()}.jpeg`;
       const params = {
-        Bucket: EnvironmentUtil.isDevMode() ? 'mangahay-development' : 'mangahay',
+        Bucket: process.env.S3_BUCKET,
         Key: `${folder}/${imageName}`,
         Body: buffer,
         ACL: ObjectCannedACL.public_read,
@@ -33,27 +37,32 @@ export class S3Service implements IImageStorage {
 
       await this.s3Client.send(new PutObjectCommand(params));
 
-      return EnvironmentUtil.isDevMode()
-        ? `https://mangahay-development.sgp1.digitaloceanspaces.com/${folder}/${imageName}`
-        : `https://mangahay.sgp1.digitaloceanspaces.com/${folder}/${imageName}`;
+      return {
+        url: `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${folder}/${imageName}`,
+        relativePath: `${folder}/${imageName}`,
+      };
     } catch (error: any) {
       this.logger.error(error);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async uploadMultipleFile(files: Express.Multer.File[], folder: string): Promise<string[]> {
+  async uploadMultipleFile(files: Express.Multer.File[], folder: string): Promise<UploadedFile[]> {
     const result = [];
 
     for (let i = 0; i < files.length; i++) {
-      const imageUrl = await this.uploadFileFromBuffer(files[i].buffer, folder, `${i}.jpeg`);
-      result.push(imageUrl);
+      const uploadedFile = await this.uploadFileFromBuffer(files[i].buffer, folder, `${i}.jpeg`);
+      result.push(uploadedFile);
     }
 
     return result;
   }
 
-  async uploadImageFromUrl(urlImage: string, folder: string, imageName: string): Promise<string> {
+  async uploadImageFromUrl(
+    urlImage: string,
+    folder: string,
+    imageName: string,
+  ): Promise<UploadedFile> {
     const response = await axios({
       method: 'get',
       url: urlImage,

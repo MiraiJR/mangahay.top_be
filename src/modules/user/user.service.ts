@@ -162,7 +162,7 @@ export class UserService {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    const imageUrl: string = await this.s3Service.uploadFileFromBuffer(
+    const { relativePath } = await this.s3Service.uploadFileFromBuffer(
       file.buffer,
       `users/avatar/${userId}`,
       `${userId}.jpeg`,
@@ -170,7 +170,7 @@ export class UserService {
 
     return this.userRepository.save({
       ...user,
-      avatar: imageUrl,
+      avatar: relativePath,
     });
   }
 

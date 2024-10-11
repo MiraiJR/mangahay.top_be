@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { AfterLoad, Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
 import { Exclude } from 'class-transformer';
 import { Comment } from '../comment/comment.entity';
@@ -6,6 +6,7 @@ import { Answer } from '../answer-comment/answer.entity';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { Notification } from '../notification/notification.entity';
 import { UserSettingEntity } from '../user-setting/user-setting.entity';
+import { buildImageUrl } from 'src/common/utils/helper';
 
 @Entity()
 export class User {
@@ -23,7 +24,7 @@ export class User {
   password: string;
 
   @Column({
-    default: 'https://i.pinimg.com/originals/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg',
+    nullable: true,
   })
   avatar: string;
 
@@ -90,4 +91,9 @@ export class User {
     eager: true,
   })
   setting: UserSettingEntity;
+
+  @AfterLoad()
+  updateImage() {
+    this.avatar = buildImageUrl(this.avatar);
+  }
 }

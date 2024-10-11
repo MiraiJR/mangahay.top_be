@@ -354,8 +354,8 @@ export class ComicService {
 
     await this.s3Service
       .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
-      .then((data: string) => {
-        return this.updateThumb(newComic.id, data);
+      .then((uploadedFile) => {
+        return this.updateThumb(newComic.id, uploadedFile.relativePath);
       });
 
     return newComic;
@@ -392,13 +392,13 @@ export class ComicService {
     updatedComic.updateTimeStamp();
 
     if (file && data.isUpdateImage === UPDATE_IMAGE_WITH_FILE_OR_NOT.YES) {
-      const imageUrl = await this.s3Service.uploadFileFromBuffer(
+      const { relativePath } = await this.s3Service.uploadFileFromBuffer(
         file.buffer,
         `comics/${updatedComic.id}`,
         'thumb.jpeg',
       );
 
-      updatedComic.thumb = imageUrl;
+      updatedComic.thumb = relativePath;
     }
 
     updatedComic = await this.comicRepository.save(updatedComic);

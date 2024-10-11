@@ -115,11 +115,17 @@ export class ChapterService {
     newChapter = await this.chapterRepository.save({
       ...newChapter,
       slug: `${newChapter.slug}-${newChapter.id}`,
+      images: [],
     });
 
     this.s3Service
-      .uploadMultipleFile(files, `comics/${newChapter.comic.id}/${newChapter.id}`)
-      .then((data) => this.updateImages(newChapter.id, data));
+      .uploadMultipleFile(files, `comics/${newChapter.comicId}/${newChapter.id}`)
+      .then((uploadedFiles) =>
+        this.updateImages(
+          newChapter.id,
+          uploadedFiles.map((uploadedFile) => uploadedFile.relativePath),
+        ),
+      );
 
     return newChapter;
   }

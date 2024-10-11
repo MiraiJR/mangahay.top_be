@@ -4,7 +4,6 @@ import { UserService } from './user.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationModule } from '../notification/notification.module';
 import { UserResolver } from './user.resolver';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
@@ -17,7 +16,6 @@ import { S3Service } from '../image-storage/s3.service';
 
 @Module({
   imports: [
-    CloudinaryModule,
     JwtModule,
     NotificationModule,
     ComicInteractionModule,
