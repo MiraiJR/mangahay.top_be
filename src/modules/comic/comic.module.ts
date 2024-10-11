@@ -4,7 +4,6 @@ import { ComicService } from './comic.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Comic } from './comic.entity';
 import { ChapterModule } from '../chapter/chapter.module';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -15,7 +14,6 @@ import { ComicInteractionModule } from '../comic-interaction/comicInteraction.mo
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
-import { CoreModule } from 'src/core/core.module';
 import { CrawlerService } from './crawler.service';
 import { BullModule } from '@nestjs/bull';
 import { CrawlChaptersProcessor } from './comic.prossessor';
@@ -26,7 +24,6 @@ import { S3Module } from '../image-storage/s3.module';
     GoogleApiModule,
     JwtModule,
     ChapterModule,
-    CloudinaryModule,
     UserModule,
     NotificationModule,
     ComicInteractionModule,
@@ -34,7 +31,6 @@ import { S3Module } from '../image-storage/s3.module';
     CommentModule,
     HttpModule,
     TypeOrmModule.forFeature([Comic]),
-    CoreModule,
     BullModule.registerQueue({
       name: 'crawl-chapters',
     }),

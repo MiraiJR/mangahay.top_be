@@ -2,6 +2,8 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { EnvironmentUtil } from './common/utils/EnvironmentUtil';
+import { TransactionDatabase } from './common/database/transaction';
+import { TransactionInterceptor } from './common/interceptor/transaction-interceptor';
 
 async function bootstrap() {
   const logger = new Logger('MainApplication');
@@ -19,6 +21,10 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  const transactionDatabase = app.get(TransactionDatabase);
+  app.useGlobalInterceptors(new TransactionInterceptor(transactionDatabase));
+
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT, () => {

@@ -1,4 +1,5 @@
 import {
+  AfterLoad,
   BeforeInsert,
   BeforeUpdate,
   Column,
@@ -12,6 +13,7 @@ import { Comic } from '../comic/comic.entity';
 import { User } from '../user/user.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
 import { ChapterType } from './types/ChapterType';
+import { buildImageUrl } from 'src/common/utils/helper';
 
 @Entity()
 export class Chapter {
@@ -22,7 +24,7 @@ export class Chapter {
   @Column({ nullable: false })
   name: string;
 
-  @Column('text', { array: true, nullable: true })
+  @Column('text', { array: true, nullable: true, default: () => 'ARRAY[]::text[]' })
   images: string[];
 
   @Column({ name: 'comic_id' })
@@ -65,5 +67,12 @@ export class Chapter {
   @BeforeUpdate()
   changeUpdatedAt() {
     this.updatedAt = new Date();
+  }
+
+  @AfterLoad()
+  updateImage() {
+    if (this.images) {
+      this.images = this.images.map((image) => buildImageUrl(image));
+    }
   }
 }

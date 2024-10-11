@@ -1,4 +1,5 @@
 import {
+  AfterLoad,
   BeforeInsert,
   BeforeUpdate,
   Column,
@@ -15,6 +16,7 @@ import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { Comment } from '../comment/comment.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
 import { StatusComic } from './enums/StatusComic';
+import { buildImageUrl } from 'src/common/utils/helper';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -99,5 +101,10 @@ export class Comic {
   @BeforeInsert()
   generateSlug() {
     this.slug = `${customSlugify(this.name)}-${Date.now()}`;
+  }
+
+  @AfterLoad()
+  updateImage() {
+    this.thumb = buildImageUrl(this.thumb);
   }
 }

@@ -25,4 +25,11 @@ const Helper = {
   },
 };
 
+export const buildImageUrl = (relativePath?: string) => {
+  if (!relativePath) {
+    return '';
+  }
+  return `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${relativePath}`;
+};
+
 export default Helper;

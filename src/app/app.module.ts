@@ -25,6 +25,7 @@ import { GenreModule } from 'src/modules/genre/genre.module';
 import { GoogleApiModule } from 'src/modules/google-api/google-api.module';
 import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
 import { QueueHandlerModule } from 'src/modules/queue-handler/queue-handler.module';
+import { TransactionDatabase } from 'src/common/database/transaction';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { QueueHandlerModule } from 'src/modules/queue-handler/queue-handler.modu
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, TransactionDatabase],
+  exports: [TransactionDatabase],
 })
 export class AppModule {}
