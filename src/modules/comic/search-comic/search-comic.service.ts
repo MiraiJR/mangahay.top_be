@@ -17,20 +17,20 @@ export class SearchComicService {
       query: {
         bool: {
           must: [
-            // {
-            //   multi_match: {
-            //     query: inputData.name,
-            //     fields: ['name', 'anotherName', 'briefDescription'],
-            //     fuzziness: 'AUTO',
-            //   },
-            // },
-            // {
-            //   match: {
-            //     state: {
-            //       query: inputData.status,
-            //     },
-            //   },
-            // },
+            {
+              multi_match: {
+                query: inputData.name,
+                fields: ['name', 'anotherName', 'briefDescription'],
+                fuzziness: 'AUTO',
+              },
+            },
+            {
+              match: {
+                state: {
+                  query: inputData.status,
+                },
+              },
+            },
             {
               terms: {
                 genres: inputData.genres,
