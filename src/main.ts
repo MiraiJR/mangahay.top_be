@@ -3,7 +3,8 @@ import { AppModule } from './app/app.module';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { EnvironmentUtil } from './common/utils/EnvironmentUtil';
 import { TransactionDatabase } from './common/database/transaction';
-import { TransactionInterceptor } from './common/interceptor/transaction-interceptor';
+import { TransactionInterceptor } from './common/interceptor/transaction.interceptor';
+import { ApplicationExceptionFilter } from '@common/exception/application.exception.filter';
 
 async function bootstrap() {
   const logger = new Logger('MainApplication');
@@ -21,6 +22,7 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+  app.useGlobalFilters(new ApplicationExceptionFilter());
 
   const transactionDatabase = app.get(TransactionDatabase);
   app.useGlobalInterceptors(new TransactionInterceptor(transactionDatabase));

@@ -5,7 +5,6 @@ export const customSlugify = (text: string): string => {
   text = text.toLowerCase();
   text = StringUtil.removeAccents(text);
 
-  // convert đ to d
   const customReplacements: { [key: string]: string } = {
     đ: 'd',
   };
@@ -15,9 +14,8 @@ export const customSlugify = (text: string): string => {
   text = text.replace(/[:\-+]/g, '');
   text = text.replace('/', '');
 
-  // remove all special case
   const regex = /[^a-zA-Z0-9 ]/g;
   text = text.replace(regex, '');
 
-  return slugify(text, { lower: true, trim: true });
+  return slugify(text, { lower: true, trim: true, strict: true });
 };

@@ -18,14 +18,14 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import { AuthGuard } from '../../common/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { NotificationService } from '../notification/notification.service';
-import UserId from './decorators/userId';
 import { ReadingHistoryService } from '../reading-history/readingHistory.service';
 import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
 import { UpdateProfileDTO } from './dtos/updateProfile.dto';
 import { toNotificationType } from './types/NotificationType';
+import UserId from '@common/decorators/userId';
 
 @Controller('api/users')
 export class UserController {
@@ -36,7 +36,7 @@ export class UserController {
     private readingHistoryService: ReadingHistoryService,
   ) {}
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/me')
   async handleGetUserInformation(@UserId() userId: number) {
     const user = await this.userService.getUserById(userId);
@@ -48,7 +48,7 @@ export class UserController {
     return user;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/me/reading-history')
   async handleGetHistory(@UserId() userId: number) {
     const comics = await this.readingHistoryService.getReadingHistoryOfUser(userId);
@@ -56,7 +56,7 @@ export class UserController {
     return comics;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Post('/me/reading-history')
   async handleAddToHistory(
     @Body(new ValidationPipe()) data: ReadingHistoryDTO,
@@ -68,7 +68,7 @@ export class UserController {
     return `Thêm vào lịch sử thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Delete('/me/reading-history')
   async handleDeleteAllHistory(@UserId() userId: number) {
     await this.readingHistoryService.deleteAllReadingHistoryOfUser(userId);
@@ -76,7 +76,7 @@ export class UserController {
     return `Xoá toàn bộ lịch sử thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Delete('/me/reading-history/:comicId')
   async handleDeleteOneRecordRedingHistory(
     @Param('comicId', new ParseIntPipe()) comicId: number,
@@ -87,7 +87,7 @@ export class UserController {
     return `Xoá truyện ra khỏi lịch sử thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @Put('/me/profile/avatar')
   async handleUpdateAvatar(@UserId() userId: number, @UploadedFile() file: Express.Multer.File) {
@@ -96,7 +96,7 @@ export class UserController {
     return user;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Patch('/me/profile')
   async handleUpdateProfile(
     @UserId() userId: number,
@@ -108,7 +108,7 @@ export class UserController {
     return user;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/me/notifies')
   async getNotifies(@Query('type') type: string = '2', @UserId() userId: number) {
     const notifies = await this.notifyService.getNotifiesOfUser(userId, toNotificationType(type));
@@ -116,7 +116,7 @@ export class UserController {
     return notifies;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Put('/me/interact/:comicId')
   async handleIntractWithComic(
     @Query('action') interactionType: string,
@@ -133,7 +133,7 @@ export class UserController {
     return status;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/me/check-interaction/:comicId')
   async checkFollowAndLikeComic(
     @UserId() userId: number,
@@ -149,7 +149,7 @@ export class UserController {
     return status;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/me/comics/following')
   async handleGetFollowingComics(@UserId() userId: number) {
     const comics = await this.userService.getFollowingComicOfUser(userId);

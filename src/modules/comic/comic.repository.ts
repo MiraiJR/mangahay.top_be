@@ -23,13 +23,15 @@ export class ComicRepository extends Repository<Comic> {
     query = query
       .leftJoinAndSelect('comic.chapters', 'chapters')
       .orderBy(`comic.${field}`, 'DESC')
-      .addOrderBy(`chapters.order`, 'DESC');
+      .addOrderBy(`chapters.order`, 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit);
 
-    const data = await query.getMany();
+    const comics = await query.getMany();
 
     return {
       total: totalRecord,
-      comics: data.slice((page - 1) * limit, page * limit),
+      comics,
     };
   }
 

@@ -3,13 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './notification.entity';
 import { Repository } from 'typeorm';
 import { INotification } from './notification.interface';
-import { SocketService } from '../socket/socket.service';
 import { NotificationType } from '../user/types/NotificationType';
 
 @Injectable()
 export class NotificationService {
   constructor(
-    private socketService: SocketService,
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
   ) {}
@@ -49,14 +47,6 @@ export class NotificationService {
       id: notify.id,
       ...notify,
     });
-  }
-
-  async notifyToUser(notify: INotification) {
-    const user_socket = await this.socketService.checkUserOnline(notify.userId);
-
-    if (user_socket) {
-      this.socketService.getSocket().to(user_socket).emit('notification_user', notify);
-    }
   }
 
   async countUnread(id_user: number) {

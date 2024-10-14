@@ -14,11 +14,11 @@ import {
 } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { Response } from 'express';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import { Roles, RolesGuard } from '../../common/guards/check-role';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import { Roles, RoleGuard } from '../../common/guards/role.guard';
 import { CreateReportDTO } from './DTO/create-report';
 import { UserRole } from '../user/user.role';
-import UserId from '../user/decorators/userId';
+import UserId from '../../common/decorators/userId';
 
 @Controller('api/report')
 export class ReportController {
@@ -27,7 +27,7 @@ export class ReportController {
     private logger: Logger = new Logger(ReportController.name),
   ) {}
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Post('create')
   async createReport(
     @UserId() id_user: number,
@@ -56,7 +56,7 @@ export class ReportController {
     }
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
   @Put('/update/:id_report')
   async updatedReport(

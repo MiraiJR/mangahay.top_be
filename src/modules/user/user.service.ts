@@ -1,16 +1,15 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
 import { IUser } from './user.interface';
 import { UserRole } from './user.role';
-import { SALT_HASH_PWD } from 'src/common/utils/salt';
 import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { ComicService } from '../comic/comic.service';
 import { UserSettingRepository } from '../user-setting/user-setting.repository';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
-import { S3Service } from '../image-storage/s3.service';
+import { S3Service } from '../../common/external-service/image-storage/s3.service';
+import { hashPassword } from '@common/utils/password.util';
 
 @Injectable()
 export class UserService {
@@ -79,13 +78,10 @@ export class UserService {
   }
 
   async updatePassword(email: string, newRawPassword: string) {
-    const salt = await SALT_HASH_PWD;
-    const hashedPassword = await bcrypt.hash(newRawPassword, salt);
-
     return await this.userRepository
       .createQueryBuilder()
       .update(User)
-      .set({ password: hashedPassword })
+      .set({ password: await hashPassword(newRawPassword) })
       .where('email = :email', { email: email })
       .execute();
   }
@@ -202,5 +198,10 @@ export class UserService {
       fullname: fullname,
       phone: phone,
     });
+  }
+
+  async isExistedEmail(email: string) {
+    const matchedUser = await this.getUserByEmail(email);
+    return !!matchedUser;
   }
 }

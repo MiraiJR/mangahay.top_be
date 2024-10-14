@@ -1,53 +1,49 @@
-import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { User } from '../user/user.entity';
-import { JwtService } from '@nestjs/jwt';
-import { RegisterUserDTO } from './DTO/register-dto';
+import { RegisterUserDTO } from './dto/register.dto';
 import { UserService } from '../user/user.service';
-import * as bcrypt from 'bcrypt';
-import { LoginUserDTO } from './DTO/login-dto';
-import { ConfigService } from '@nestjs/config';
+import { LoginUserDTO } from './dto/login.dto';
 import { UserRole } from '../user/user.role';
-import { SALT_HASH_PWD } from 'src/common/utils/salt';
-import { RedisService } from '../redis/redis.service';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../../common/external-service/mail/mail.service';
 import { UserRepository } from '../user/user.repository';
+import { ApplicationException } from '@common/exception/application.exception';
+import AuthError from './resources/error/error';
+import { hashPassword, isMatchedPassword } from '@common/utils/password.util';
+import UserError from '@modules/user/resources/error/error';
+import { JwtAdapterService } from '@common/external-service/jwt/jwt.adapter';
+import { LoginResponse } from './models/responses/login.reponse';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private jwtService: JwtService,
+    private jwtService: JwtAdapterService,
     private userService: UserService,
-    private configService: ConfigService,
-    private redisService: RedisService,
     private mailService: MailService,
     private userRepository: UserRepository,
   ) {}
 
-  async register(newUser: RegisterUserDTO, role: string): Promise<User> {
-    const checkUser = await this.userService.getUserByEmail(newUser.email);
+  async register(inputData: RegisterUserDTO): Promise<User> {
+    const isUsedEmail = await this.userService.isExistedEmail(inputData.email);
 
-    if (checkUser) {
-      throw new ConflictException(`Email ${newUser.email} đã được sử dụng`);
+    if (isUsedEmail) {
+      throw new ApplicationException(AuthError.AUTH_ERROR_0001);
     }
 
-    const salt = await SALT_HASH_PWD;
-    const hash_password = await bcrypt.hash(newUser.password, salt);
-
-    const user = await this.userService.create({
-      ...newUser,
-      password: hash_password,
+    const newUser = await this.userService.create({
+      ...inputData,
+      password: await hashPassword(inputData.password),
       active: true,
-      role: role === 'admin' ? UserRole.ADMIN : UserRole.VIEWER,
+      role: UserRole.VIEWER,
     });
 
-    return user;
+    return newUser;
   }
 
   async logout(userId: number): Promise<void> {
-    const user = await this.userService.getUserById(userId);
+    const matchedUser = await this.userService.getUserById(userId);
 
-    if (!user) {
-      throw new HttpException('Người dùng không tồn tại!', HttpStatus.BAD_REQUEST);
+    if (!matchedUser) {
+      throw new ApplicationException(UserError.USER_ERROR_0001);
     }
 
     await this.userRepository.updatePairToken(userId, {
@@ -56,35 +52,29 @@ export class AuthService {
     });
   }
 
-  async verifyEmailToRegister(token: string, accountRole: string): Promise<void> {
-    const newAccountInformation: RegisterUserDTO = await this.jwtService.verify(token, {
-      secret: process.env.VERIFY_EMAIL_KEY,
-    });
+  async login(inputData: LoginUserDTO): Promise<LoginResponse> {
+    let matchedUser = await this.userService.getUserByEmail(inputData.email);
 
-    await this.register(newAccountInformation, accountRole);
-  }
-
-  async login(userLogin: LoginUserDTO): Promise<PairToken> {
-    let user = await this.userService.getUserByEmail(userLogin.email);
-
-    if (!user) {
-      throw new HttpException('Thông tin đăng nhập không chính xác', HttpStatus.BAD_REQUEST);
+    if (!matchedUser) {
+      throw new ApplicationException(AuthError.AUTH_ERROR_0002);
     }
 
-    if (!user.active) {
-      throw new HttpException('Tài khoản chưa xác thực địa chỉ email!', HttpStatus.BAD_REQUEST);
-    }
-
-    const checkPassword = await bcrypt.compare(userLogin.password, user.password);
+    const checkPassword = await isMatchedPassword(inputData.password, matchedUser.password);
 
     if (!checkPassword) {
-      throw new HttpException('Mật khẩu không chính xác!', HttpStatus.BAD_REQUEST);
+      throw new ApplicationException(AuthError.AUTH_ERROR_0003);
     }
 
-    const accessToken = this.signAccessToken(user);
-    const refreshToken = this.signRefreshToken(user);
+    const accessToken = this.jwtService.signAccessToken({
+      userId: matchedUser.id,
+      role: matchedUser.role,
+    });
+    const refreshToken = this.jwtService.signRefreshToken({
+      userId: matchedUser.id,
+      role: matchedUser.role,
+    });
 
-    await this.userRepository.updatePairToken(user.id, {
+    await this.userRepository.updatePairToken(matchedUser.id, {
       accessToken,
       refreshToken,
     });
@@ -95,58 +85,6 @@ export class AuthService {
     };
   }
 
-  signAccessToken(payload: any): string {
-    return this.jwtService.sign(
-      {
-        idUser: payload.id,
-      },
-      {
-        secret: this.configService.get('ACCESSTOKEN_KEY'),
-        expiresIn: this.configService.get('ACCESSTOKEN_EXPIRED'),
-      },
-    );
-  }
-
-  signRefreshToken(payload: any): string {
-    return this.jwtService.sign(
-      {
-        idUser: payload.id,
-      },
-      {
-        secret: this.configService.get('REFRESHTOKEN_KEY'),
-        expiresIn: this.configService.get('REFRESHTOKEN_EXPIRED'),
-      },
-    );
-  }
-
-  async signTokenVerifyMail(data: RegisterUserDTO): Promise<string> {
-    const user = await this.userService.getUserByEmail(data.email);
-
-    if (user) {
-      throw new ConflictException(`Email ${user.email} đã được sử dụng`);
-    }
-
-    return this.jwtService.sign(
-      { ...data },
-      {
-        secret: this.configService.get('VERIFY_EMAIL_KEY'),
-        expiresIn: parseInt(this.configService.get('VERIFY_EMAIL_EXPIRED')),
-      },
-    );
-  }
-
-  signTokenForgetPassword(email: string) {
-    return this.jwtService.sign(
-      {
-        email: email,
-      },
-      {
-        secret: this.configService.get('FORGETPASSWORD_KEY'),
-        expiresIn: parseInt(this.configService.get('FORGETPASSWORD_EXPIRED')),
-      },
-    );
-  }
-
   async forgetPassword(email: string): Promise<void> {
     const user = await this.userService.getUserByEmail(email);
 
@@ -154,32 +92,32 @@ export class AuthService {
       throw new ConflictException(`Email ${email} không khớp với bất kỳ tài khoản nào!`);
     }
 
-    const forgetPasswordToken = this.signTokenForgetPassword(email);
-    await this.mailService.sendMailForgetPassword(email, 'Quên mật khẩu', forgetPasswordToken);
+    const forgetPasswordToken = this.jwtService.signTokenForgetPassword(email);
+    await this.mailService.sendMail<{
+      name: string;
+      url: string;
+    }>(email, 'Quên mật khẩu', 'ForgetPassword', {
+      name: user.fullname,
+      url: `${process.env.URL_CHANGEPASSWORD}?token=${forgetPasswordToken}`,
+    });
   }
 
   async resignToken(token: string): Promise<PairToken> {
-    const payload = await this.jwtService.verify(token, {
-      secret: process.env.REFRESHTOKEN_KEY,
-    });
+    const payload = await this.jwtService.verifyRefreshToken(token);
+    const userId = payload.userId;
+    const matchedUser = await this.userService.getUserById(userId);
 
-    if (!payload) {
-      throw new HttpException('Token không hợp lệ', HttpStatus.BAD_REQUEST);
+    if (matchedUser.refreshToken !== token) {
+      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
 
-    const userId = payload.idUser;
-    const user = await this.userService.getUserById(userId);
-
-    if (user.refreshToken !== token) {
-      throw new HttpException('Token không hợp lệ', HttpStatus.BAD_REQUEST);
-    }
-
-    // tạo token mới
-    const accessToken = this.signAccessToken({
-      id: userId,
+    const accessToken = this.jwtService.signAccessToken({
+      userId: matchedUser.id,
+      role: matchedUser.role,
     });
-    const refreshToken = this.signRefreshToken({
-      id: userId,
+    const refreshToken = this.jwtService.signRefreshToken({
+      userId: matchedUser.id,
+      role: matchedUser.role,
     });
 
     await this.userRepository.updatePairToken(userId, {
@@ -194,10 +132,7 @@ export class AuthService {
   }
 
   async changePassword(token: string, newPassword: string): Promise<void> {
-    const payload = await this.jwtService.verify(token, {
-      secret: process.env.FORGETPASSWORD_KEY,
-    });
-
+    const payload = await this.jwtService.verifyTokenForgetPassword(token);
     await this.userService.updatePassword(payload.email, newPassword);
   }
 }

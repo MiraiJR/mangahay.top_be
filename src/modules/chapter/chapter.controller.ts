@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ChapterService } from './chapter.service';
-import { JwtAuthorizationd } from 'src/common/guards/jwt-guard';
+import { AuthGuard } from '@common/guards/auth.guard';
 import { UserRole } from '../user/user.role';
-import { Roles } from 'src/common/guards/check-role';
+import { Roles } from '@common/guards/role.guard';
 
 @Controller('api/chapters')
 export class ChapterController {
@@ -13,7 +13,7 @@ export class ChapterController {
     return this.chapterService.getChapter(chapterId);
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN)
   @Patch('/reorder')
   async handleReorderChapters() {

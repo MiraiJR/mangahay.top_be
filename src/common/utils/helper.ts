@@ -1,3 +1,4 @@
+import { customSlugify } from '@common/configs/slugify.config';
 import * as fs from 'fs';
 
 const Helper = {
@@ -30,6 +31,10 @@ export const buildImageUrl = (relativePath?: string) => {
     return '';
   }
   return `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${relativePath}`;
+};
+
+export const buildSlug = (name: string): string => {
+  return `${customSlugify(name)}-${Date.now()}`;
 };
 
 export default Helper;
