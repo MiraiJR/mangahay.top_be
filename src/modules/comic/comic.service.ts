@@ -7,7 +7,7 @@ import { ComicInteractionService } from '../comic-interaction/comicInteraction.s
 import { NotificationService } from '../notification/notification.service';
 import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
-import Helper from 'src/common/utils/helper';
+import Helper, { buildSlug } from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import { Paging, PagingComics } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
@@ -18,15 +18,13 @@ import { CrawlerService } from './crawler.service';
 import { ChapterType } from '../chapter/types/ChapterType';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
-import { S3Service } from '../image-storage/s3.service';
-import { RedisService } from '../redis/redis.service';
-import { CommonConstant } from 'src/common/constant/Constant';
-import { RedisPrefixKey } from '../redis/enums/RedisEnum';
-import { Chapter } from '../chapter/chapter.entity';
+import { S3Service } from '@common/external-service/image-storage/s3.service';
+import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
+import { CreateComicDTO } from './dtos/create-comic';
+import { UserRepository } from '@modules/user/user.repository';
 
 @Injectable()
 export class ComicService {
-  private logger: Logger;
   constructor(
     @InjectEntityManager() private readonly manager: EntityManager,
     private readonly notifyService: NotificationService,
@@ -38,11 +36,10 @@ export class ComicService {
     private readonly configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
-    private readonly redisService: RedisService,
+    private readonly elasticsearchAdapter: ElasticsearchAdapterService,
+    private readonly userRepository: UserRepository,
     @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
-  ) {
-    this.logger = new Logger(ComicService.name);
-  }
+  ) {}
 
   async getListComment(comicId: number) {
     return this.commentService.getCommentsOfComic(comicId);
@@ -278,14 +275,8 @@ export class ComicService {
   }
 
   async getComics(query: Paging) {
-    let page = 1;
-
-    if (query.page) {
-      page = query.page;
-    }
-
     const result = await this.comicRepository.getComicsWithPagination(
-      page,
+      query.page,
       query.limit,
       'updatedAt',
     );
@@ -342,29 +333,34 @@ export class ComicService {
     return comic;
   }
 
-  async createComic(creator: number, comic: IComic, file: Express.Multer.File): Promise<Comic> {
-    let newComic = this.comicRepository.create({
+  async createComic(
+    creatorId: number,
+    comic: CreateComicDTO,
+    thumb: Express.Multer.File,
+  ): Promise<Comic> {
+    const creator = await this.userRepository.getUserById(creatorId);
+    const { id: comicId, slug } = await this.comicRepository.save({
       ...comic,
       creator,
+      slug: buildSlug(comic.name),
     });
-
-    newComic = await this.comicRepository.save(newComic);
-    const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${newComic.slug}`;
+    const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${slug}`;
     this.googleApiService.indexingUrl(urlOfNewComic);
 
-    await this.s3Service
-      .uploadFileFromBuffer(file.buffer, `comics/${newComic.id}/thumb`)
+    const createdComic = await this.s3Service
+      .uploadFileFromBuffer(thumb.buffer, `comics/${comicId}/thumb`, `${comicId}.jpeg`)
       .then((uploadedFile) => {
-        return this.updateThumb(newComic.id, uploadedFile.relativePath);
+        return this.updateThumb(comicId, uploadedFile.relativePath);
       });
+    this.elasticsearchAdapter.addRecord('comics', createdComic);
 
-    return newComic;
+    return createdComic;
   }
 
   async checkCreatorOfComic(userId: number, comicId: number): Promise<boolean> {
     const comic = await this.getComicById(comicId);
 
-    if (!comic.creator || comic.creator === userId) {
+    if (!comic.creator || comic.creatorId === userId) {
       return true;
     }
 
@@ -403,12 +399,12 @@ export class ComicService {
 
     updatedComic = await this.comicRepository.save(updatedComic);
 
-    await this.redisService.setObjectByKeyValue<Comic>(
-      updatedComic.slug,
-      updatedComic,
-      CommonConstant.ONE_DAY,
-      RedisPrefixKey.COMIC,
-    );
+    // await this.redisService.setObjectByKeyValue<Comic>(
+    //   updatedComic.slug,
+    //   updatedComic,
+    //   CommonConstant.ONE_DAY,
+    //   RedisPrefixKey.COMIC,
+    // );
 
     return updatedComic;
   }
@@ -435,30 +431,18 @@ export class ComicService {
     return comics;
   }
 
-  async updateThumb(comicId: number, thumb: string) {
+  async updateThumb(comicId: number, thumb: string): Promise<Comic> {
     const comic = await this.getComicById(comicId);
     if (!comic) {
       throw new HttpException(`Truyên id [${comic.id}] không tồn tại!`, HttpStatus.BAD_REQUEST);
     }
 
-    const newInformation = await this.comicRepository.save({
+    await this.comicRepository.save({
       id: comicId,
       thumb: thumb,
     });
 
-    const updatedComic = {
-      ...comic,
-      thumb: newInformation.thumb,
-    } as Comic;
-
-    await this.redisService.setObjectByKeyValue<Comic>(
-      comic.slug,
-      updatedComic,
-      CommonConstant.ONE_DAY,
-      RedisPrefixKey.COMIC,
-    );
-
-    return updatedComic;
+    return this.getComicById(comicId);
   }
 
   async evaluateComic(userId: number, comicId: number, score: number) {
@@ -484,7 +468,7 @@ export class ComicService {
       throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
     }
 
-    if (userId !== comic.creator) {
+    if (userId !== comic.creatorId) {
       throw new HttpException(
         'Bạn không có quyền để tạo chapter mới cho truyện này!',
         HttpStatus.FORBIDDEN,
@@ -531,14 +515,14 @@ export class ComicService {
   }
 
   async getASpecificChapterOfComic(comicId: number, chapterId: number) {
-    let chapter = await this.redisService.getObjectByKey<any>(
-      chapterId.toString(),
-      RedisPrefixKey.CHAPTER,
-    );
+    // let chapter = await this.redisService.getObjectByKey<any>(
+    //   chapterId.toString(),
+    //   RedisPrefixKey.CHAPTER,
+    // );
 
-    if (chapter) {
-      return chapter;
-    }
+    // if (chapter) {
+    //   return chapter;
+    // }
 
     const comic = await this.getComicById(comicId);
     if (!comic) {
@@ -546,16 +530,16 @@ export class ComicService {
     }
 
     const chapters = await this.chapterService.getChaptersOfComic(comicId);
-    chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
+    const chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
 
-    if (chapter.nextChapter) {
-      await this.redisService.setObjectByKeyValue<Chapter>(
-        chapterId.toString(),
-        chapter,
-        CommonConstant.ONE_DAY,
-        RedisPrefixKey.CHAPTER,
-      );
-    }
+    // if (chapter.nextChapter) {
+    //   await this.redisService.setObjectByKeyValue<Chapter>(
+    //     chapterId.toString(),
+    //     chapter,
+    //     CommonConstant.ONE_DAY,
+    //     RedisPrefixKey.CHAPTER,
+    //   );
+    // }
 
     return chapter;
   }

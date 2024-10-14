@@ -10,12 +10,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginUserDTO } from './DTO/login-dto';
+import { LoginUserDTO } from './dto/login.dto';
 import { Response } from 'express';
-import { RegisterUserDTO } from './DTO/register-dto';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import { RegisterUserDTO } from './dto/register.dto';
+import { AuthGuard } from '../../common/guards/auth.guard';
 import { UserRole } from '../user/user.role';
-import UserId from '../user/decorators/userId';
+import UserId from '../../common/decorators/userId';
 
 @Controller('api/auth')
 export class AuthController {
@@ -23,8 +23,7 @@ export class AuthController {
 
   @Post('/register')
   async register(@Body(new ValidationPipe()) data: RegisterUserDTO) {
-    await this.authService.register(data, UserRole.VIEWER);
-
+    await this.authService.register(data);
     return `Đăng ký tài khoản thành công!`;
   }
 
@@ -41,18 +40,11 @@ export class AuthController {
   }
 
   @Put('/logout')
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   async logout(@UserId() userId: number) {
     await this.authService.logout(userId);
 
     return 'Đăng xuất thành công!';
-  }
-
-  @Get('/verify-email')
-  async verifyEmail(@Query('token') token: string, @Res() response: Response) {
-    await this.authService.verifyEmailToRegister(token, UserRole.VIEWER);
-
-    return response.redirect(process.env.URL_SIGNIN);
   }
 
   @Post('/forget-password')

@@ -3,7 +3,7 @@ import { Chapter } from './chapter.entity';
 import { EntityManager } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { ChapterRepository } from './chapter.repository';
-import { S3Service } from '../image-storage/s3.service';
+import { S3Service } from '../../common/external-service/image-storage/s3.service';
 
 @Injectable()
 export class ChapterService {

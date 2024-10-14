@@ -5,10 +5,10 @@ export class PagingDTO {
   @Type(() => Number)
   @IsNotEmpty()
   @IsPositive()
-  page: number;
+  page: number = 1;
 
   @Type(() => Number)
   @IsNotEmpty()
   @IsPositive()
-  limit: number;
+  limit: number = Number.MAX_VALUE;
 }

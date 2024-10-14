@@ -8,7 +8,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
 import { ComicResolver } from './comic.resolver';
-import { RedisModule } from '../redis/redis.module';
 import { ComicRepository } from './comic.repository';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { CommentModule } from '../comment/comment.module';
@@ -17,7 +16,10 @@ import { GoogleApiModule } from '../google-api/google-api.module';
 import { CrawlerService } from './crawler.service';
 import { BullModule } from '@nestjs/bull';
 import { CrawlChaptersProcessor } from './comic.prossessor';
-import { S3Module } from '../image-storage/s3.module';
+import { ExternalServiceModule } from '@common/external-service/external-service.module';
+import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
+import { SearchComicController } from './search-comic/search-comic.controller';
+import { SearchComicService } from './search-comic/search-comic.service';
 
 @Module({
   imports: [
@@ -27,16 +29,17 @@ import { S3Module } from '../image-storage/s3.module';
     UserModule,
     NotificationModule,
     ComicInteractionModule,
-    RedisModule,
     CommentModule,
     HttpModule,
     TypeOrmModule.forFeature([Comic]),
     BullModule.registerQueue({
       name: 'crawl-chapters',
     }),
-    S3Module,
+    ExternalServiceModule,
+    ElasticsearchAdapterModule,
+    UserModule,
   ],
-  controllers: [ComicController],
+  controllers: [ComicController, SearchComicController],
   providers: [
     ComicService,
     Logger,
@@ -44,6 +47,7 @@ import { S3Module } from '../image-storage/s3.module';
     ComicRepository,
     CrawlerService,
     CrawlChaptersProcessor,
+    SearchComicService,
   ],
   exports: [ComicService],
 })

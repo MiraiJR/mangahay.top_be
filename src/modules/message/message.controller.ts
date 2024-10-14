@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { Response } from 'express';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import UserId from '../user/decorators/userId';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import UserId from '../../common/decorators/userId';
 
 @Controller('api/message')
 export class MessageController {
@@ -20,7 +20,7 @@ export class MessageController {
     private messageService: MessageService,
   ) {}
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/conservation')
   async getConservation(@UserId() id_user: number, @Res() response: Response) {
     try {
@@ -42,7 +42,7 @@ export class MessageController {
     }
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/conservation/:id')
   async getSpecificConservation(
     @UserId() id_user: number,

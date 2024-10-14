@@ -1,13 +1,13 @@
 import { Controller, Delete, Param, ParseIntPipe, Patch, Put, UseGuards } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
-import UserId from '../user/decorators/userId';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import UserId from '../../common/decorators/userId';
 
 @Controller('api/notifies')
 export class NotificationController {
   constructor(private notifyService: NotificationService) {}
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Patch(':notifyId/change-state')
   async handleChangeStateNotify(
     @Param('notifyId', new ParseIntPipe()) notifyId: number,
@@ -18,7 +18,7 @@ export class NotificationController {
     return notify;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Put('/mark-all-read')
   async handleMarkAllRead(@UserId() userId: number) {
     await this.notifyService.changeAllStateOfUser(userId, true);
@@ -26,7 +26,7 @@ export class NotificationController {
     return 'Mark read all notifications successfully!';
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Delete()
   async handleRemoveAll(@UserId() userId: number) {
     await this.notifyService.removeAllNotificationsOfUser(userId);

@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -19,19 +18,18 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ComicService } from './comic.service';
-import { JwtAuthorizationd } from '../../common/guards/jwt-guard';
+import { AuthGuard } from '../../common/guards/auth.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { Roles, RolesGuard } from '../../common/guards/check-role';
+import { Roles, RoleGuard } from '../../common/guards/role.guard';
 import { UserRole } from '../user/user.role';
 import { CreateComicDTO } from './dtos/create-comic';
-import { RedisService } from '../redis/redis.service';
-import UserId from '../user/decorators/userId';
-import { GetComicsDTO } from './dtos/getComics';
-import { ScoreDTO } from './dtos/evaluateComic';
+import UserId from '../../common/decorators/userId';
+import { GetComicsDTO } from './dtos/get-comics';
+import { ScoreDTO } from './dtos/evaluate-comic';
 import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
 import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
-import { IncreaseFieldDTO } from './dtos/increaseField';
+import { IncreaseFieldDTO } from './dtos/increase-field';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
@@ -39,7 +37,7 @@ import { CrawlChaptersReq } from './dtos/crawl-chapters.request';
 
 @Controller('api/comics')
 export class ComicController {
-  constructor(private comicService: ComicService, private redisService: RedisService) {}
+  constructor(private comicService: ComicService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -50,21 +48,21 @@ export class ComicController {
     return this.comicService.getComics(query);
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('thumb'))
   @Post()
   async handleCreateComic(
     @Body(new ValidationPipe()) comic: CreateComicDTO,
     @UserId() creatorId: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() thumb: Express.Multer.File,
   ) {
-    const newComic = await this.comicService.createComic(creatorId, comic, file);
+    const newComic = await this.comicService.createComic(creatorId, comic, thumb);
 
     return newComic;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Get('/created-by-me')
   async handleGetComicsCreatedByMe(@UserId() userId: number) {
     const comics = await this.comicService.getComicsCreatedByCreator(userId);
@@ -100,7 +98,7 @@ export class ComicController {
     return this.comicService.getComicBySlug(slugComic);
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
   @Delete(':comicId')
   async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
@@ -109,7 +107,7 @@ export class ComicController {
     return `Xóa truyện với id ${comicId} thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Put('/:comicId')
   @UseInterceptors(FileInterceptor('file'))
@@ -134,7 +132,7 @@ export class ComicController {
     return this.comicService.getListComment(comicId);
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN)
   @Post(':comicId/crawl-chapter')
   async handleCrawlChapterForComic(
@@ -155,7 +153,7 @@ export class ComicController {
     return 'Cào dữ liệu thành công!';
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN)
   @Post(':comicId/crawl-chapters')
   async handleCrawlChaptersForComic(
@@ -177,7 +175,7 @@ export class ComicController {
     return 'Quá trình cào dữ liệu đang được tiến hành và chúng tối sẽ gửi thông báo cho bạn khi thành công!';
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN)
   @Post(':comicId/crawl-all-chapters')
   async handleCrawlAllChaptersForComic(
@@ -207,7 +205,7 @@ export class ComicController {
     return `Tăng [${query.field}] cho truyện thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Patch(':comicId/evaluate')
   async handleEvaluateComic(
     @Body(new ValidationPipe()) data: ScoreDTO,
@@ -220,7 +218,7 @@ export class ComicController {
     return `Đánh giá truyện thành công!`;
   }
 
-  @UseGuards(JwtAuthorizationd, RolesGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @UseInterceptors(FilesInterceptor('files'))
   @Post(':comicId/chapters')
@@ -245,7 +243,7 @@ export class ComicController {
     return chapter;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Post(':comicId/comments')
   async handleCommentComic(
     @Param('comicId', new ParseIntPipe()) comicId: number,
@@ -258,7 +256,7 @@ export class ComicController {
     return newComment;
   }
 
-  @UseGuards(JwtAuthorizationd)
+  @UseGuards(AuthGuard)
   @Post(':comicId/comments/:commentId/answer')
   async handleReplyComment(
     @Param('comicId', new ParseIntPipe()) comicId: number,

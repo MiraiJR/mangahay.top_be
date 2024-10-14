@@ -11,7 +11,7 @@ import {
 import { AdminService } from './admin.service';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { S3Service } from '../image-storage/s3.service';
+import { S3Service } from '../../common/external-service/image-storage/s3.service';
 
 @Controller('api/admin')
 export class AdminController {

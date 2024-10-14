@@ -8,11 +8,10 @@ import { NotificationModule } from '../notification/notification.module';
 import { UserResolver } from './user.resolver';
 import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
-import { RedisModule } from '../redis/redis.module';
 import { ComicModule } from '../comic/comic.module';
 import { UserSettingModule } from '../user-setting/user-setting.module';
 import { UserRepository } from './user.repository';
-import { S3Service } from '../image-storage/s3.service';
+import { S3Service } from '../../common/external-service/image-storage/s3.service';
 
 @Module({
   imports: [
@@ -20,7 +19,6 @@ import { S3Service } from '../image-storage/s3.service';
     NotificationModule,
     ComicInteractionModule,
     ReadingHistoryModule,
-    RedisModule,
     UserSettingModule,
     forwardRef(() => ComicModule),
     TypeOrmModule.forFeature([User]),
