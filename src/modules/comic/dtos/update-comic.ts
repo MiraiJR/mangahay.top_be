@@ -1,5 +1,5 @@
 import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { StatusComic } from '../enums/StatusComic';
+import { StatusComic } from '../enums/status-comic';
 
 export enum UPDATE_IMAGE_WITH_FILE_OR_NOT {
   NO = 0,

@@ -52,7 +52,7 @@ export class JwtAdapterService {
       });
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new ApplicationException(AuthError.AUTH_ERROR_0005);
+        throw new ApplicationException(AuthError.AUTH_ERROR_0006);
       } else if (error instanceof JsonWebTokenError) {
         throw new ApplicationException(AuthError.AUTH_ERROR_0004);
       }
@@ -62,26 +62,38 @@ export class JwtAdapterService {
   }
 
   async verifyRefreshToken(token: string): Promise<TokenPayload> {
-    const payload = await this.jwtService.verify(token, {
-      secret: this.configService.get('REFRESHTOKEN_KEY'),
-    });
+    try {
+      const payload = await this.jwtService.verify(token, {
+        secret: this.configService.get('REFRESHTOKEN_KEY'),
+      });
 
-    if (!payload) {
-      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
+      return payload;
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw new ApplicationException(AuthError.AUTH_ERROR_0007);
+      } else if (error instanceof JsonWebTokenError) {
+        throw new ApplicationException(AuthError.AUTH_ERROR_0004);
+      }
+
+      throw new ApplicationException(CommonError.COMMON_ERROR_0001);
     }
-
-    return payload;
   }
 
   async verifyAccessToken(token: string): Promise<TokenPayload> {
-    const payload = await this.jwtService.verify(token, {
-      secret: this.configService.get('ACCESSTOKEN_KEY'),
-    });
+    try {
+      const payload = await this.jwtService.verify(token, {
+        secret: this.configService.get('ACCESSTOKEN_KEY'),
+      });
 
-    if (!payload) {
-      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
+      return payload;
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw new ApplicationException(AuthError.AUTH_ERROR_0005);
+      } else if (error instanceof JsonWebTokenError) {
+        throw new ApplicationException(AuthError.AUTH_ERROR_0004);
+      }
+
+      throw new ApplicationException(CommonError.COMMON_ERROR_0001);
     }
-
-    return payload;
   }
 }

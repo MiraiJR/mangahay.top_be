@@ -16,15 +16,13 @@ import { AdminModule } from '../modules/admin/admin.module';
 import { ReportModule } from '../modules/report/report.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { ComicInteractionModule } from 'src/modules/comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
-import { AnswerModule } from 'src/modules/answer-comment/answer.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
 import { GoogleApiModule } from 'src/modules/google-api/google-api.module';
 import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
 import { QueueHandlerModule } from 'src/modules/queue-handler/queue-handler.module';
-import { TransactionDatabase } from 'src/common/database/transaction';
 import { ExternalServiceModule } from '@common/external-service/external-service.module';
+import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicInteraction.module';
 
 @Module({
   imports: [
@@ -41,7 +39,6 @@ import { ExternalServiceModule } from '@common/external-service/external-service
     ChapterModule,
     ComicInteractionModule,
     ReadingHistoryModule,
-    AnswerModule,
     GenreModule,
     GoogleApiModule,
     UserSettingModule,
@@ -73,7 +70,7 @@ import { ExternalServiceModule } from '@common/external-service/external-service
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, TransactionDatabase],
-  exports: [TransactionDatabase],
+  providers: [AppService],
+  exports: [],
 })
 export class AppModule {}

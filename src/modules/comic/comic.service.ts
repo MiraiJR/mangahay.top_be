@@ -1,9 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { IComic } from './comic.interface';
 import { ChapterService } from '../chapter/chapter.service';
 import { ComicRepository } from './comic.repository';
 import { Comic } from './comic.entity';
-import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
 import { NotificationService } from '../notification/notification.service';
 import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
@@ -22,6 +20,11 @@ import { S3Service } from '@common/external-service/image-storage/s3.service';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { CreateComicDTO } from './dtos/create-comic';
 import { UserRepository } from '@modules/user/user.repository';
+import { ComicInteractionService } from './comic-interaction/comicInteraction.service';
+import { ComicInteractionRepository } from './comic-interaction/comicInteraction.repository';
+import { ApplicationException } from '@common/exception/application.exception';
+import ComicError from './resources/error/error';
+import { CommentRepository } from '@modules/comment/comment.repository';
 
 @Injectable()
 export class ComicService {
@@ -32,16 +35,18 @@ export class ComicService {
     private readonly comicRepository: ComicRepository,
     private readonly s3Service: S3Service,
     private readonly comicInteractionService: ComicInteractionService,
+    private readonly comicInteractionRepository: ComicInteractionRepository,
     private readonly commentService: CommentService,
     private readonly configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
     private readonly elasticsearchAdapter: ElasticsearchAdapterService,
     private readonly userRepository: UserRepository,
+    private readonly commentRepository: CommentRepository,
     @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
   ) {}
 
-  async getListComment(comicId: number) {
+  async getListCommentOfComic(comicId: number) {
     return this.commentService.getCommentsOfComic(comicId);
   }
 
@@ -214,10 +219,6 @@ export class ComicService {
   ) {
     const comic = await this.getComicById(comicId);
 
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
     await this.crawlImagesForChapter(userId, comic, nameChapter, urlPost, querySelector, attribute);
   }
 
@@ -232,11 +233,6 @@ export class ComicService {
     attributeImageUrl: string,
   ): Promise<void> {
     const comic = await this.getComicById(comicId);
-
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
     const chaptersCrawlInformation = await this.crawlerService.crawlChapters(
       urlNeedCrawled,
       querySelectorChapterUrl,
@@ -265,12 +261,7 @@ export class ComicService {
   }
 
   async delete(comicId: number) {
-    const comic = await this.getComicById(comicId);
-
-    if (!comic) {
-      throw new HttpException(`Cannot found comic with id [${comicId}]`, HttpStatus.NOT_FOUND);
-    }
-
+    await this.getComicById(comicId);
     return await this.comicRepository.delete(comicId);
   }
 
@@ -292,43 +283,30 @@ export class ComicService {
   }
 
   async getComicBySlug(slugComic: string) {
-    // let comic = await this.redisService.getObjectByKey<Comic>(slugComic, RedisPrefixKey.COMIC);
-    // if (comic) {
-    //   return comic;
-    // }
+    const comic = await this.comicRepository.getComicBySlug(slugComic);
 
-    let comic = await this.comicRepository.findOne({
-      where: {
-        slug: slugComic,
-      },
-      order: {
-        chapters: {
-          order: 'DESC',
-        },
-      },
-    });
+    if (!comic) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0001);
+    }
 
-    // await this.redisService.setObjectByKeyValue<Comic>(
-    //   slugComic,
-    //   comic,
-    //   CommonConstant.ONE_DAY,
-    //   RedisPrefixKey.COMIC,
-    // );
+    const [like, follow] = await Promise.all([
+      this.comicInteractionRepository.countLikeOfComic(comic.id),
+      this.comicInteractionRepository.countFollowOfComic(comic.id),
+    ]);
 
-    return comic;
+    return {
+      ...comic,
+      like,
+      follow,
+    };
   }
 
   async getComicById(comicId: number): Promise<Comic> {
-    const comic = await this.comicRepository.findOne({
-      where: {
-        id: comicId,
-      },
-      order: {
-        chapters: {
-          order: 'DESC',
-        },
-      },
-    });
+    const comic = await this.comicRepository.getComicById(comicId);
+
+    if (!comic) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0001);
+    }
 
     return comic;
   }
@@ -357,14 +335,12 @@ export class ComicService {
     return createdComic;
   }
 
-  async checkCreatorOfComic(userId: number, comicId: number): Promise<boolean> {
-    const comic = await this.getComicById(comicId);
-
+  async checkCreatorOfComic(userId: number, comic: Comic): Promise<boolean> {
     if (!comic.creator || comic.creatorId === userId) {
       return true;
     }
 
-    throw new HttpException('Bạn không phải người tạo truyện này!', HttpStatus.FORBIDDEN);
+    throw new ApplicationException(ComicError.COMIC_ERROR_0002);
   }
 
   async updateComic(
@@ -373,9 +349,8 @@ export class ComicService {
     data: UpdateComicDTO,
     file?: Express.Multer.File,
   ): Promise<Comic> {
-    await this.checkCreatorOfComic(userId, comicId);
-
     let updatedComic = await this.getComicById(comicId);
+    await this.checkCreatorOfComic(userId, updatedComic);
 
     updatedComic.name = data.name;
     updatedComic.anotherName = data.anotherName;
@@ -399,26 +374,12 @@ export class ComicService {
 
     updatedComic = await this.comicRepository.save(updatedComic);
 
-    // await this.redisService.setObjectByKeyValue<Comic>(
-    //   updatedComic.slug,
-    //   updatedComic,
-    //   CommonConstant.ONE_DAY,
-    //   RedisPrefixKey.COMIC,
-    // );
-
     return updatedComic;
   }
 
-  async increaseTheNumberViewOrFollowOrLike(comicId: number, field: string, jump: number) {
-    const comic = await this.getComicById(comicId);
-
-    await this.comicRepository.increment(
-      {
-        slug: comic.slug,
-      },
-      `${field}`,
-      jump,
-    );
+  async increaseViewForComic(comicId: number) {
+    await this.getComicById(comicId);
+    await this.comicRepository.increamentView(comicId);
   }
 
   async searchComics(query: QuerySearch): Promise<PagingComics> {
@@ -432,11 +393,7 @@ export class ComicService {
   }
 
   async updateThumb(comicId: number, thumb: string): Promise<Comic> {
-    const comic = await this.getComicById(comicId);
-    if (!comic) {
-      throw new HttpException(`Truyên id [${comic.id}] không tồn tại!`, HttpStatus.BAD_REQUEST);
-    }
-
+    await this.getComicById(comicId);
     await this.comicRepository.save({
       id: comicId,
       thumb: thumb,
@@ -463,17 +420,7 @@ export class ComicService {
     files: Express.Multer.File[],
   ) {
     const comic = await this.getComicById(comicId);
-
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
-    if (userId !== comic.creatorId) {
-      throw new HttpException(
-        'Bạn không có quyền để tạo chapter mới cho truyện này!',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    this.checkCreatorOfComic(userId, comic);
 
     let chapterType = ChapterType.NORMAL;
     let order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
@@ -515,73 +462,16 @@ export class ComicService {
   }
 
   async getASpecificChapterOfComic(comicId: number, chapterId: number) {
-    // let chapter = await this.redisService.getObjectByKey<any>(
-    //   chapterId.toString(),
-    //   RedisPrefixKey.CHAPTER,
-    // );
-
-    // if (chapter) {
-    //   return chapter;
-    // }
-
-    const comic = await this.getComicById(comicId);
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
+    await this.getComicById(comicId);
     const chapters = await this.chapterService.getChaptersOfComic(comicId);
     const chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
-
-    // if (chapter.nextChapter) {
-    //   await this.redisService.setObjectByKeyValue<Chapter>(
-    //     chapterId.toString(),
-    //     chapter,
-    //     CommonConstant.ONE_DAY,
-    //     RedisPrefixKey.CHAPTER,
-    //   );
-    // }
 
     return chapter;
   }
 
   async commentOnComic(userId: number, comicId: number, content: string) {
     const comic = await this.getComicById(comicId);
-
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
     return this.commentService.createNewComment(userId, comic, content);
-  }
-
-  async addAnswerToCommentOfComic(
-    userId: number,
-    comicId: number,
-    commentId: number,
-    content: string,
-    mentionedPerson: string,
-  ): Promise<void> {
-    const comment = await this.commentService.getCommentById(commentId);
-    if (!comment) {
-      throw new HttpException('Bình luận không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
-    if (comicId !== comment.comic.id) {
-      throw new HttpException('Bình luận không thuộc truyện tranh này!', HttpStatus.BAD_REQUEST);
-    }
-
-    const comic = await this.getComicById(comment.comic.id);
-
-    if (!comic) {
-      throw new HttpException('Truyện không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
-    await this.commentService.addAnswerToComment({
-      userId,
-      commentId,
-      mentionedPerson,
-      content,
-    });
   }
 
   async getComicsCreatedByCreator(userId: number) {

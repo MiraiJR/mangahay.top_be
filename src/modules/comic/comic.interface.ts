@@ -1,5 +1,5 @@
 import { User } from '@modules/user/user.entity';
-import { StatusComic } from './enums/StatusComic';
+import { StatusComic } from './enums/status-comic';
 
 export interface IComic {
   id?: number;

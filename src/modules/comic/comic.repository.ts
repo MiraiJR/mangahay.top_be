@@ -146,4 +146,40 @@ export class ComicRepository extends Repository<Comic> {
       .addOrderBy('comics.id', 'ASC')
       .getMany();
   }
+
+  getComicBySlug(slug: string) {
+    return this.findOne({
+      where: {
+        slug,
+      },
+      order: {
+        chapters: {
+          order: 'DESC',
+        },
+      },
+    });
+  }
+
+  getComicById(id: number) {
+    return this.findOne({
+      where: {
+        id,
+      },
+      order: {
+        chapters: {
+          order: 'DESC',
+        },
+      },
+    });
+  }
+
+  increamentView(id: number) {
+    return this.increment(
+      {
+        id,
+      },
+      'view',
+      1,
+    );
+  }
 }

@@ -1,19 +1,25 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { AnswerService } from '../answer-comment/answer.service';
-import { IAnswer } from '../answer-comment/answer.interface';
+import { Injectable } from '@nestjs/common';
 import { CommentRepository } from './comment.repository';
 import { Comic } from '../comic/comic.entity';
+import { CommandCommentRequest } from './models/requests/command-comment.request';
+import { CommentEntity } from './comment.entity';
+import { MentionedUserRepository } from './mentioned-user/mentioned-user.repository';
 
 @Injectable()
 export class CommentService {
-  constructor(private answerService: AnswerService, private commentRepository: CommentRepository) {}
+  constructor(
+    private readonly commentRepository: CommentRepository,
+    private readonly mentionedUserRepository: MentionedUserRepository,
+  ) {}
 
   async getCommentById(commentId: number) {
     return this.commentRepository.findOneDetailComment(commentId);
   }
 
   async createNewComment(userId: number, comic: Comic, content: string) {
-    const newComment = await this.commentRepository.save({ userId, comic, content });
+    const newComment = await this.commentRepository
+      .getRepository()
+      .save({ userId, comic, content });
     const newDetailComment = await this.getCommentById(newComment.id);
 
     return {
@@ -22,17 +28,48 @@ export class CommentService {
     };
   }
 
-  async getCommentsOfComic(comicId: number) {
-    return this.commentRepository.findAllDetailCommentsOfComic(comicId);
-  }
+  async createComment(userId: number, inputData: CommandCommentRequest) {
+    const newComment = await this.commentRepository.getRepository().save({
+      userId,
+      comicId: inputData.comicId,
+      content: inputData.content,
+      parentCommentId: inputData.targetCommentId ?? null,
+    });
 
-  async addAnswerToComment(answer: IAnswer) {
-    const comment = await this.getCommentById(answer.commentId);
-
-    if (!comment) {
-      throw new HttpException('Bình luận không tồn tại!', HttpStatus.NOT_FOUND);
+    if (inputData.mentionedUserId) {
+      await this.mentionedUserRepository.getRepository().save({
+        commentId: newComment.id,
+        mentionedUserId: inputData.mentionedUserId,
+      });
     }
 
-    return this.answerService.createNewAnswerForComment(answer);
+    return newComment;
+  }
+
+  async getCommentsOfComic(comicId: number): Promise<UserCommentResponse[]> {
+    const listCommentIncludingAnswer = await this.commentRepository.getCommentsByComicId(comicId);
+    const commentMap: Map<number, UserCommentResponse> = new Map();
+    const commentTree: Map<number, UserCommentResponse> = new Map();
+    listCommentIncludingAnswer.forEach((comment) => {
+      if (!comment.answers) {
+        comment.answers = [];
+      }
+
+      commentMap.set(comment.id, comment);
+    });
+
+    listCommentIncludingAnswer.forEach((comment) => {
+      if (!comment.parentCommentId) {
+        commentTree.set(comment.id, comment);
+        return;
+      }
+
+      const parentComment = commentMap.get(comment.parentCommentId);
+      if (parentComment) {
+        parentComment.answers.push(comment);
+      }
+    });
+
+    return Array.from(commentTree.values());
   }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ComicInteraction } from './comicInteraction.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Comic } from '../comic/comic.entity';
+import { Comic } from '../comic.entity';
 
 @Injectable()
 export class ComicInteractionRepository extends Repository<ComicInteraction> {
@@ -36,7 +36,7 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
   }
 
   async listFollowingComicsOfUser(userId: number) {
-    const queryBuilder = await this.createQueryBuilder('interaction')
+    const queryBuilder = this.createQueryBuilder('interaction')
       .where('interaction.user = :userId', { userId })
       .andWhere('interaction.isFollowed = true')
       .leftJoinAndMapOne('interaction.comic', Comic, 'comic', 'interaction.comic = comic.id')
@@ -74,16 +74,26 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
     comicId: number,
     userInteraction: UserInteraction,
   ): Promise<ComicInteraction> {
-    await this.createQueryBuilder()
-      .insert()
-      .into(ComicInteraction)
-      .values({
-        comic: { id: comicId },
-        user: { id: userId },
-        ...userInteraction,
-      })
-      .execute();
+    await this.save({
+      userId,
+      comicId,
+      ...userInteraction,
+    });
 
     return this.getInteractionByPK(userId, comicId);
+  }
+
+  async countLikeOfComic(comicId: number) {
+    return this.countBy({
+      comicId,
+      isLiked: true,
+    });
+  }
+
+  async countFollowOfComic(comicId: number) {
+    return this.countBy({
+      comicId,
+      isFollowed: true,
+    });
   }
 }

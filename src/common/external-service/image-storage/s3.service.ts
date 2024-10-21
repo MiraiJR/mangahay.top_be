@@ -32,7 +32,7 @@ export class S3Service implements IImageStorage {
     folder: string,
     imageName?: string,
   ): Promise<UploadedFile> {
-    this.createIfNotExistBucket();
+    await this.createIfNotExistBucket();
 
     try {
       imageName ??= `${Date.now()}.jpeg`;

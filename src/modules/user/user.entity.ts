@@ -1,12 +1,12 @@
 import { AfterLoad, Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
 import { Exclude } from 'class-transformer';
-import { Comment } from '../comment/comment.entity';
-import { Answer } from '../answer-comment/answer.entity';
-import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
+import { CommentEntity } from '../comment/comment.entity';
 import { Notification } from '../notification/notification.entity';
 import { UserSettingEntity } from '../user-setting/user-setting.entity';
 import { buildImageUrl } from 'src/common/utils/helper';
+import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
+import { MentionedUser } from '@modules/comment/mentioned-user/mentioned-user.entity';
 
 @Entity()
 export class User {
@@ -75,11 +75,8 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'now()' })
   updatedAt: Date;
 
-  @OneToMany(() => Comment, (comment) => comment.user, { lazy: true })
-  comments: Comment[];
-
-  @OneToMany(() => Answer, (answer) => answer.user, { lazy: true })
-  answers: Answer[];
+  @OneToMany(() => CommentEntity, (comment) => comment.user, { lazy: true })
+  comments: CommentEntity[];
 
   @OneToMany(() => ComicInteraction, (comicInteraction) => comicInteraction.user, { lazy: true })
   comicInteractions: ComicInteraction[];
@@ -91,6 +88,9 @@ export class User {
     eager: true,
   })
   setting: UserSettingEntity;
+
+  @OneToMany(() => MentionedUser, (mentionedUser) => mentionedUser.mentionedUser)
+  mentionedUsers: MentionedUser[];
 
   @AfterLoad()
   updateImage() {
