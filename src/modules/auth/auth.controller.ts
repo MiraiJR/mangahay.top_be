@@ -1,20 +1,8 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Put,
-  Query,
-  Res,
-  UseGuards,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginUserDTO } from './dto/login.dto';
-import { Response } from 'express';
 import { RegisterUserDTO } from './dto/register.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { UserRole } from '../user/user.role';
 import UserId from '../../common/decorators/userId';
 
 @Controller('api/auth')

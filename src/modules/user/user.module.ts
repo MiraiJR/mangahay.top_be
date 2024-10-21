@@ -6,12 +6,12 @@ import { User } from './user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { NotificationModule } from '../notification/notification.module';
 import { UserResolver } from './user.resolver';
-import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
 import { ComicModule } from '../comic/comic.module';
 import { UserSettingModule } from '../user-setting/user-setting.module';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
+import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicInteraction.module';
 
 @Module({
   imports: [

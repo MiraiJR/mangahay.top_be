@@ -6,7 +6,9 @@ type AuthErrorCode =
   | 'AUTH_ERROR_0002'
   | 'AUTH_ERROR_0003'
   | 'AUTH_ERROR_0004'
-  | 'AUTH_ERROR_0005';
+  | 'AUTH_ERROR_0005'
+  | 'AUTH_ERROR_0006'
+  | 'AUTH_ERROR_0007';
 
 const AuthError: Record<AuthErrorCode, ApplicationExceptionModel> = {
   AUTH_ERROR_0001: {
@@ -31,7 +33,17 @@ const AuthError: Record<AuthErrorCode, ApplicationExceptionModel> = {
   },
   AUTH_ERROR_0005: {
     errorCode: 'AUTH_ERROR_0005',
-    message: 'Token đã hết hạn',
+    message: 'Access token đã hết hạn',
+    statusCode: HttpStatus.UNAUTHORIZED,
+  },
+  AUTH_ERROR_0006: {
+    errorCode: 'AUTH_ERROR_0006',
+    message: 'Token quên mật khẩu đã hết hạn',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  AUTH_ERROR_0007: {
+    errorCode: 'AUTH_ERROR_0007',
+    message: 'Refresh token đã hết hạn',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };

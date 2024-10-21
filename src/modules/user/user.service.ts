@@ -2,14 +2,14 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './user.entity';
 import { IUser } from './user.interface';
 import { UserRole } from './user.role';
-import { ComicInteractionService } from '../comic-interaction/comicInteraction.service';
-import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
 import { ComicService } from '../comic/comic.service';
 import { UserSettingRepository } from '../user-setting/user-setting.repository';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { hashPassword } from '@common/utils/password.util';
+import { ComicInteractionService } from '@modules/comic/comic-interaction/comicInteraction.service';
+import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
 
 @Injectable()
 export class UserService {
@@ -23,7 +23,7 @@ export class UserService {
 
   async create(user: IUser) {
     const newUser = await this.userRepository.save(user);
-    await this.userSettingRepository.insert({
+    await this.userSettingRepository.save({
       user: newUser,
       chapterSetting: {
         type: ChapterViewType.DEFAULT,
@@ -93,32 +93,16 @@ export class UserService {
   ): Promise<ComicInteraction> {
     switch (interactionType) {
       case 'like':
-        await Promise.all([
-          await this.comicInteractionService.likeComic(userId, comicId),
-          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'like', 1),
-        ]);
-
+        await this.comicInteractionService.likeComic(userId, comicId);
         break;
       case 'unlike':
-        await Promise.all([
-          await this.comicInteractionService.unlikeComic(userId, comicId),
-          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'like', -1),
-        ]);
-
+        await this.comicInteractionService.unlikeComic(userId, comicId);
         break;
       case 'follow':
-        await Promise.all([
-          await this.comicInteractionService.followComic(userId, comicId),
-          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'follow', 1),
-        ]);
-
+        await this.comicInteractionService.followComic(userId, comicId);
         break;
       case 'unfollow':
-        await Promise.all([
-          await this.comicInteractionService.unfollowComic(userId, comicId),
-          await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, 'follow', -1),
-        ]);
-
+        await this.comicInteractionService.unfollowComic(userId, comicId);
         break;
       default:
         throw new HttpException('Hành vi không hợp lệ!', HttpStatus.BAD_REQUEST);
@@ -133,12 +117,12 @@ export class UserService {
 
     if (!interaction) {
       interaction = {
-        user: await this.getUserById(userId),
-        comic: comic,
+        userId,
+        comicId,
         isLiked: false,
         isFollowed: false,
         score: null,
-      };
+      } as ComicInteraction;
     }
 
     return interaction;

@@ -1,21 +1,23 @@
-import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { Comment } from './comment.entity';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Inject, Injectable, Scope } from '@nestjs/common';
+import { CommentEntity } from './comment.entity';
 import { User } from '../user/user.entity';
-import { Answer } from '../answer-comment/answer.entity';
+import { BaseRepository } from '@common/database/base.repository';
+import { DataSource } from 'typeorm';
+import { REQUEST } from '@nestjs/core';
 
-@Injectable()
-export class CommentRepository extends Repository<Comment> {
-  constructor(
-    @InjectRepository(Comment)
-    repository: Repository<Comment>,
-  ) {
-    super(repository.target, repository.manager, repository.queryRunner);
+@Injectable({ scope: Scope.REQUEST })
+export class CommentRepository extends BaseRepository<CommentEntity> {
+  constructor(dataSource: DataSource, @Inject(REQUEST) req: Request) {
+    super(dataSource, req);
+  }
+
+  protected getEntityClass(): new () => CommentEntity {
+    return CommentEntity;
   }
 
   async findOneDetailComment(commentId: number) {
-    const queryBuilder = this.createQueryBuilder('comment')
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('comment')
       .where('comment.id = :commentId', { commentId })
       .leftJoinAndMapOne('comment.user', User, 'user', 'comment.userId = user.id')
       .select(['comment'])
@@ -26,24 +28,44 @@ export class CommentRepository extends Repository<Comment> {
     return comment;
   }
 
-  async findAllDetailCommentsOfComic(comicId: number) {
-    const queryBuilder = this.createQueryBuilder('comment')
+  async getCommentsByComicId(comicId: number): Promise<UserComment[]> {
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('comment')
       .where('comment.comicId = :comicId', { comicId })
-      .leftJoinAndMapOne('comment.user', User, 'user', 'comment.userId = user.id')
-      .leftJoinAndMapMany('comment.answers', Answer, 'answer', 'answer.comment_id = comment.id')
-      .leftJoinAndMapOne('answer.user', User, 'user_answer', 'user_answer.id = answer.user_id')
-      .select(['comment'])
-      .addSelect(['user.id', 'user.fullname', 'user.avatar'])
-      .addSelect([
-        'answer.id',
-        'answer.content',
-        'answer.createdAt',
-        'answer.updatedAt',
-        'answer.mentionedPerson',
+      .leftJoinAndSelect('comment.user', 'user') // Join the user who made the comment
+      .leftJoinAndSelect('comment.mentionedUser', 'mentionedUser') // Assuming you have a collection of mentioned users
+      .leftJoinAndSelect('mentionedUser.mentionedUser', 'mentionedUserDetails') // Join the user details of the mentioned users
+      .select([
+        'comment',
+        'user.id',
+        'user.fullname',
+        'user.avatar',
+        'mentionedUser',
+        'mentionedUserDetails.id',
+        'mentionedUserDetails.fullname',
       ])
-      .addSelect(['user_answer.id', 'user_answer.fullname', 'user_answer.avatar']);
+      .orderBy('comment.updatedAt', 'DESC');
 
-    const comments = await queryBuilder.orderBy('comment.updatedAt', 'DESC').getMany();
-    return comments;
+    const comments = await queryBuilder.getMany();
+    return this.convertToUserComment(comments);
+  }
+
+  private convertToUserComment(comments: CommentEntity[]): UserComment[] {
+    const result = [];
+
+    comments.map((comment) => {
+      result.push({
+        id: comment.id,
+        parentCommentId: comment.parentCommentId,
+        comicId: comment.comicId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.createdAt,
+        user: comment.user,
+        mentionedUser: comment.mentionedUser?.mentionedUser ?? null,
+      });
+    });
+
+    return result;
   }
 }

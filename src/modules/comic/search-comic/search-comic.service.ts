@@ -16,27 +16,7 @@ export class SearchComicService {
       sort: this.buildSort(inputData.orderBy) as SortCombinations[],
       query: {
         bool: {
-          must: [
-            {
-              multi_match: {
-                query: inputData.name,
-                fields: ['name', 'anotherName', 'briefDescription'],
-                fuzziness: 'AUTO',
-              },
-            },
-            {
-              match: {
-                state: {
-                  query: inputData.status,
-                },
-              },
-            },
-            {
-              terms: {
-                genres: inputData.genres,
-              },
-            },
-          ],
+          must: this.buildConditionQuery(inputData),
         },
       },
     });
@@ -70,5 +50,37 @@ export class SearchComicService {
     }
 
     return [];
+  }
+
+  private buildConditionQuery(inputData: SearchComicRequest) {
+    const conditions: any = [
+      {
+        multi_match: {
+          query: inputData.name,
+          fields: ['name', 'anotherName', 'briefDescription'],
+          fuzziness: 'AUTO',
+        },
+      },
+    ];
+
+    if (inputData.status) {
+      conditions.push({
+        match: {
+          state: {
+            query: inputData.status,
+          },
+        },
+      });
+    }
+
+    if (inputData.genres) {
+      conditions.push({
+        terms: {
+          genres: inputData.genres,
+        },
+      });
+    }
+
+    return conditions;
   }
 }

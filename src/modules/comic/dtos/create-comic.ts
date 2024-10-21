@@ -1,5 +1,5 @@
 import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { StatusComic } from '../enums/StatusComic';
+import { StatusComic } from '../enums/status-comic';
 
 export class CreateComicDTO {
   @IsNotEmpty()

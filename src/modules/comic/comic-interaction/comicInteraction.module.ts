@@ -8,6 +8,6 @@ import { ComicInteractionRepository } from './comicInteraction.repository';
   imports: [TypeOrmModule.forFeature([ComicInteraction])],
   controllers: [],
   providers: [ComicInteractionService, ComicInteractionRepository],
-  exports: [ComicInteractionService],
+  exports: [ComicInteractionService, ComicInteractionRepository],
 })
 export class ComicInteractionModule {}

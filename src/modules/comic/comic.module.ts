@@ -9,7 +9,6 @@ import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
 import { ComicResolver } from './comic.resolver';
 import { ComicRepository } from './comic.repository';
-import { ComicInteractionModule } from '../comic-interaction/comicInteraction.module';
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
@@ -20,6 +19,7 @@ import { ExternalServiceModule } from '@common/external-service/external-service
 import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
 import { SearchComicController } from './search-comic/search-comic.controller';
 import { SearchComicService } from './search-comic/search-comic.service';
+import { ComicInteractionModule } from './comic-interaction/comicInteraction.module';
 
 @Module({
   imports: [

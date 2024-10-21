@@ -28,8 +28,6 @@ import { GetComicsDTO } from './dtos/get-comics';
 import { ScoreDTO } from './dtos/evaluate-comic';
 import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
-import { CreateAnswerDTO } from '../answer-comment/dtos/create-answer';
-import { IncreaseFieldDTO } from './dtos/increase-field';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
@@ -129,7 +127,7 @@ export class ComicController {
 
   @Get('/:comicId/comments')
   async handleGetListComment(@Param('comicId') comicId: number) {
-    return this.comicService.getListComment(comicId);
+    return this.comicService.getListCommentOfComic(comicId);
   }
 
   @UseGuards(AuthGuard)
@@ -195,14 +193,11 @@ export class ComicController {
     return 'Cào dữ liệu thành công!';
   }
 
-  @Patch(':comicId/increment')
-  async handleIncreament(
-    @Query(new ValidationPipe()) query: IncreaseFieldDTO,
-    @Param('comicId') comicId: number,
-  ) {
-    await this.comicService.increaseTheNumberViewOrFollowOrLike(comicId, query.field, query.jump);
+  @Patch(':comicId/viewed')
+  async handleIncreament(@Param('comicId') comicId: number) {
+    await this.comicService.increaseViewForComic(comicId);
 
-    return `Tăng [${query.field}] cho truyện thành công!`;
+    return `Tăng lượt xem cho truyện thành công!`;
   }
 
   @UseGuards(AuthGuard)
@@ -254,25 +249,5 @@ export class ComicController {
     const newComment = await this.comicService.commentOnComic(userId, comicId, content);
 
     return newComment;
-  }
-
-  @UseGuards(AuthGuard)
-  @Post(':comicId/comments/:commentId/answer')
-  async handleReplyComment(
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-    @Param('commentId', new ParseIntPipe()) commentId: number,
-    @UserId() userId: number,
-    @Body(new ValidationPipe()) data: CreateAnswerDTO,
-  ) {
-    const { content, mentionedPerson } = data;
-    await this.comicService.addAnswerToCommentOfComic(
-      userId,
-      comicId,
-      commentId,
-      content,
-      mentionedPerson,
-    );
-
-    return `Trả lời bình luận thành công!`;
   }
 }

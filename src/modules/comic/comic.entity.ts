@@ -12,11 +12,11 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Chapter } from '../chapter/chapter.entity';
-import { ComicInteraction } from '../comic-interaction/comicInteraction.entity';
-import { Comment } from '../comment/comment.entity';
+import { CommentEntity } from '../comment/comment.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
-import { StatusComic } from './enums/StatusComic';
+import { StatusComic } from './enums/status-comic';
 import { buildImageUrl } from 'src/common/utils/helper';
+import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -51,12 +51,6 @@ export class Comic {
   @Column({ default: 0 })
   view: number;
 
-  @Column({ default: 0 })
-  like: number;
-
-  @Column({ default: 0 })
-  follow: number;
-
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   star: number;
 
@@ -86,10 +80,10 @@ export class Comic {
   })
   comicInteractions: ComicInteraction[];
 
-  @OneToMany(() => Comment, (comment) => comment.comic, {
+  @OneToMany(() => CommentEntity, (comment) => comment.comic, {
     eager: true,
   })
-  comments: Comment[];
+  comments: CommentEntity[];
 
   @BeforeUpdate()
   updateTimeStamp() {
