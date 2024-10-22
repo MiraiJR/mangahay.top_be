@@ -12,6 +12,9 @@ import { UserSettingModule } from '../user-setting/user-setting.module';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicInteraction.module';
+import { UserSession } from './user-sessions/user-session.entity';
+import { UserSessionRepository } from './user-sessions/user-session.repository';
+import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
 
 @Module({
   imports: [
@@ -21,10 +24,11 @@ import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicIn
     ReadingHistoryModule,
     UserSettingModule,
     forwardRef(() => ComicModule),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserSession]),
+    ElasticsearchAdapterModule,
   ],
   controllers: [UserController],
-  providers: [UserService, UserResolver, Logger, UserRepository, S3Service],
-  exports: [UserService, UserRepository],
+  providers: [UserService, UserResolver, Logger, UserRepository, S3Service, UserSessionRepository],
+  exports: [UserService, UserRepository, UserSessionRepository],
 })
 export class UserModule {}

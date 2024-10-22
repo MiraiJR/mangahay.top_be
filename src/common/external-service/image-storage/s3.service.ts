@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IImageStorage } from './IImageStorage';
 import {
   CreateBucketCommand,
@@ -8,6 +8,8 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import axios from 'axios';
+import { ApplicationException } from '@common/exception/application.exception';
+import CommonError from '@common/resources/error/error';
 
 @Injectable()
 export class S3Service implements IImageStorage {
@@ -51,7 +53,7 @@ export class S3Service implements IImageStorage {
       };
     } catch (error: any) {
       this.logger.error(error);
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new ApplicationException(CommonError.COMMON_ERROR_0001);
     }
   }
 
@@ -91,10 +93,10 @@ export class S3Service implements IImageStorage {
         const command = new CreateBucketCommand(input);
         const response = await this.s3Client.send(command);
         if (response.$metadata?.httpStatusCode !== 200) {
-          throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+          throw new ApplicationException(CommonError.COMMON_ERROR_0001);
         }
       } else {
-        throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new ApplicationException(CommonError.COMMON_ERROR_0001);
       }
     }
   }

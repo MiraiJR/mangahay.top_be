@@ -18,12 +18,11 @@ export class CommentEntity {
   @JoinColumn({ name: 'parent_comment_id' })
   parentComment: CommentEntity;
 
-  @Column({ name: 'user_id', type: 'int' })
+  @Column({ name: 'user_id', type: 'int', nullable: true })
   userId: number;
 
   @ManyToOne(() => User, (user) => user.comments, {
     eager: true,
-    cascade: ['remove'],
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'user_id' })

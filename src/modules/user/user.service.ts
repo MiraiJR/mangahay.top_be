@@ -3,13 +3,16 @@ import { User } from './user.entity';
 import { IUser } from './user.interface';
 import { UserRole } from './user.role';
 import { ComicService } from '../comic/comic.service';
-import { UserSettingRepository } from '../user-setting/user-setting.repository';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { hashPassword } from '@common/utils/password.util';
 import { ComicInteractionService } from '@modules/comic/comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
+import { UserSessionRepository } from './user-sessions/user-session.repository';
+import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
+import { DataSource } from 'typeorm';
+import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
 
 @Injectable()
 export class UserService {
@@ -17,21 +20,26 @@ export class UserService {
     private comicService: ComicService,
     private comicInteractionService: ComicInteractionService,
     private userRepository: UserRepository,
-    private userSettingRepository: UserSettingRepository,
     private s3Service: S3Service,
+    private userSessionRepository: UserSessionRepository,
+    private elasticsearchAdapter: ElasticsearchAdapterService,
+    private databaseConnection: DataSource,
   ) {}
 
-  async create(user: IUser) {
-    const newUser = await this.userRepository.save(user);
-    await this.userSettingRepository.save({
-      user: newUser,
-      chapterSetting: {
-        type: ChapterViewType.DEFAULT,
-        amount: 1,
-      },
-    });
+  create(user: IUser) {
+    return this.databaseConnection.transaction(async (manager) => {
+      const newUser = await manager.getRepository(User).save(user);
+      this.elasticsearchAdapter.addRecord<User>('users', newUser);
+      await manager.getRepository(UserSettingEntity).save({
+        user: newUser,
+        chapterSetting: {
+          type: ChapterViewType.DEFAULT,
+          amount: 1,
+        },
+      });
 
-    return newUser;
+      return newUser;
+    });
   }
 
   async getAll() {

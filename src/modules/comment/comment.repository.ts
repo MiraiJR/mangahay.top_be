@@ -1,23 +1,20 @@
-import { Inject, Injectable, Scope } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CommentEntity } from './comment.entity';
 import { User } from '../user/user.entity';
-import { BaseRepository } from '@common/database/base.repository';
-import { DataSource } from 'typeorm';
-import { REQUEST } from '@nestjs/core';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
-@Injectable({ scope: Scope.REQUEST })
-export class CommentRepository extends BaseRepository<CommentEntity> {
-  constructor(dataSource: DataSource, @Inject(REQUEST) req: Request) {
-    super(dataSource, req);
-  }
-
-  protected getEntityClass(): new () => CommentEntity {
-    return CommentEntity;
+@Injectable()
+export class CommentRepository extends Repository<CommentEntity> {
+  constructor(
+    @InjectRepository(CommentEntity)
+    repository: Repository<CommentEntity>,
+  ) {
+    super(repository.target, repository.manager, repository.queryRunner);
   }
 
   async findOneDetailComment(commentId: number) {
-    const queryBuilder = this.getRepository()
-      .createQueryBuilder('comment')
+    const queryBuilder = this.createQueryBuilder('comment')
       .where('comment.id = :commentId', { commentId })
       .leftJoinAndMapOne('comment.user', User, 'user', 'comment.userId = user.id')
       .select(['comment'])
@@ -29,12 +26,11 @@ export class CommentRepository extends BaseRepository<CommentEntity> {
   }
 
   async getCommentsByComicId(comicId: number): Promise<UserComment[]> {
-    const queryBuilder = this.getRepository()
-      .createQueryBuilder('comment')
+    const queryBuilder = this.createQueryBuilder('comment')
       .where('comment.comicId = :comicId', { comicId })
-      .leftJoinAndSelect('comment.user', 'user') // Join the user who made the comment
-      .leftJoinAndSelect('comment.mentionedUser', 'mentionedUser') // Assuming you have a collection of mentioned users
-      .leftJoinAndSelect('mentionedUser.mentionedUser', 'mentionedUserDetails') // Join the user details of the mentioned users
+      .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('comment.mentionedUser', 'mentionedUser')
+      .leftJoinAndSelect('mentionedUser.mentionedUser', 'mentionedUserDetails')
       .select([
         'comment',
         'user.id',
@@ -44,7 +40,7 @@ export class CommentRepository extends BaseRepository<CommentEntity> {
         'mentionedUserDetails.id',
         'mentionedUserDetails.fullname',
       ])
-      .orderBy('comment.updatedAt', 'DESC');
+      .orderBy('comment.updatedAt', 'ASC');
 
     const comments = await queryBuilder.getMany();
     return this.convertToUserComment(comments);

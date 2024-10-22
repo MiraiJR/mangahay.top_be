@@ -7,6 +7,7 @@ import { UserSettingEntity } from '../user-setting/user-setting.entity';
 import { buildImageUrl } from 'src/common/utils/helper';
 import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
 import { MentionedUser } from '@modules/comment/mentioned-user/mentioned-user.entity';
+import { UserSession } from './user-sessions/user-session.entity';
 
 @Entity()
 export class User {
@@ -91,6 +92,9 @@ export class User {
 
   @OneToMany(() => MentionedUser, (mentionedUser) => mentionedUser.mentionedUser)
   mentionedUsers: MentionedUser[];
+
+  @OneToOne(() => UserSession, (userSession) => userSession.user, { eager: true })
+  userSession: UserSession;
 
   @AfterLoad()
   updateImage() {
