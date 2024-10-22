@@ -1,11 +1,4 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueError,
-  OnQueueFailed,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { OnQueueActive, OnQueueCompleted, OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { ComicService } from './comic.service';
@@ -16,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 @Processor('crawl-chapters')
 export class CrawlChaptersProcessor {
   private readonly logger = new Logger(CrawlChaptersProcessor.name);
+
   constructor(
     private readonly comicService: ComicService,
     private readonly notifyService: NotificationService,

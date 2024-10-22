@@ -107,15 +107,15 @@ export class ComicController {
 
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @UseInterceptors(FileInterceptor('thumb'))
   @Put('/:comicId')
-  @UseInterceptors(FileInterceptor('file'))
   async handleUpdateComic(
-    @Body(new ValidationPipe()) data: UpdateComicDTO,
+    @Body(new ValidationPipe()) inputData: UpdateComicDTO,
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() thumb: Express.Multer.File,
   ) {
-    const updatedComic = await this.comicService.updateComic(userId, comicId, data, file);
+    const updatedComic = await this.comicService.updateComic(userId, comicId, inputData, thumb);
 
     return updatedComic;
   }
