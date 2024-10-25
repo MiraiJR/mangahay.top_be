@@ -25,11 +25,13 @@ import { ComicInteractionRepository } from './comic-interaction/comicInteraction
 import { ApplicationException } from '@common/exception/application.exception';
 import ComicError from './resources/error/error';
 import { CommentRepository } from '@modules/comment/comment.repository';
+import { ChapterRepository } from '@modules/chapter/chapter.repository';
 
 @Injectable()
 export class ComicService {
   constructor(
     @InjectEntityManager() private readonly manager: EntityManager,
+    private readonly chapterRepository: ChapterRepository,
     private readonly notifyService: NotificationService,
     private readonly chapterService: ChapterService,
     private readonly comicRepository: ComicRepository,
@@ -257,7 +259,7 @@ export class ComicService {
   }
 
   async getChapters(comicId: number) {
-    return this.chapterService.getChaptersOfComic(comicId);
+    return this.chapterRepository.getListChapterByComicId(comicId);
   }
 
   async delete(comicId: number) {
@@ -294,8 +296,14 @@ export class ComicService {
       this.comicInteractionRepository.countFollowOfComic(comic.id),
     ]);
 
+    const translators =
+      comic.translators.length !== 0
+        ? comic.translators
+        : [comic.creator?.fullname ?? 'Đang cập nhật'];
+
     return {
       ...comic,
+      translators,
       like,
       follow,
     };
@@ -461,10 +469,12 @@ export class ComicService {
     }
   }
 
-  async getASpecificChapterOfComic(comicId: number, chapterId: number) {
+  async getSpecificChapterOfComicWithPreviousAndNextChapter(comicId: number, chapterId: number) {
     await this.getComicById(comicId);
-    const chapters = await this.chapterService.getChaptersOfComic(comicId);
-    const chapter = this.chapterService.getNextAndPreChapter(chapterId, chapters);
+    const chapter = this.chapterService.getSpecificChapterOfComicWithPreviousAndNextChapter(
+      comicId,
+      chapterId,
+    );
 
     return chapter;
   }

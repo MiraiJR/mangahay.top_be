@@ -8,6 +8,7 @@ export class ElasticsearchAdapterService {
 
   async addRecord<T>(index: string, document: T) {
     const id = uuidv4();
+
     return this.elasticsearchService.index({
       index,
       id,

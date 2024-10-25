@@ -62,14 +62,6 @@ export class User {
   })
   role: UserRole;
 
-  @Exclude()
-  @Column({ nullable: true, name: 'refresh_token' })
-  refreshToken: string;
-
-  @Exclude()
-  @Column({ nullable: true, name: 'access_token' })
-  accessToken: string;
-
   @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
 

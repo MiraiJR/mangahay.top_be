@@ -12,12 +12,35 @@ export class ChapterRepository extends Repository<Chapter> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
-  async getChaperByOrder(comicId: number, orderChapter: number): Promise<Chapter> {
+  getChaperByOrder(comicId: number, orderChapter: number): Promise<Chapter> {
     return this.findOne({
       where: {
         comicId,
         order: orderChapter,
       },
     });
+  }
+
+  getChapterById(chapterId: number) {
+    return this.findOne({
+      where: {
+        id: chapterId,
+      },
+    });
+  }
+
+  getListChapterByComicId(comicId: number) {
+    return this.createQueryBuilder('chapter')
+      .select([
+        'chapter.id',
+        'chapter.name',
+        'chapter.slug',
+        'chapter.updatedAt',
+        'chapter.images',
+        'chapter.order',
+      ])
+      .where('chapter.comic = :comicId', { comicId })
+      .orderBy('chapter.order', 'DESC')
+      .getMany();
   }
 }
