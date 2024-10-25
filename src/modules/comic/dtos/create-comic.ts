@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 import { StatusComic } from '../enums/status-comic';
 
 export class CreateComicDTO {
@@ -22,7 +22,9 @@ export class CreateComicDTO {
   @IsString()
   briefDescription: string;
 
-  @IsNotEmpty()
+  @ValidateIf((inputData) => {
+    return !!inputData.translators;
+  })
   @IsArray()
   translators: string[];
 

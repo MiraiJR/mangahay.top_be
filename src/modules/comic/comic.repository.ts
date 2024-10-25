@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Chapter } from '../chapter/chapter.entity';
 import StringUtil from 'src/common/utils/StringUtil';
 import { PagingComics } from 'src/common/types/Paging';
+import { User } from '@modules/user/user.entity';
 
 @Injectable()
 export class ComicRepository extends Repository<Comic> {
@@ -148,16 +149,12 @@ export class ComicRepository extends Repository<Comic> {
   }
 
   getComicBySlug(slug: string) {
-    return this.findOne({
-      where: {
-        slug,
-      },
-      order: {
-        chapters: {
-          order: 'DESC',
-        },
-      },
-    });
+    return this.createQueryBuilder('comic')
+      .where('comic.slug = :slug', { slug })
+      .leftJoinAndSelect('comic.creator', 'user')
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .select(['comic', 'user.id', 'user.fullname', 'chapters'])
+      .getOne();
   }
 
   getComicById(id: number) {

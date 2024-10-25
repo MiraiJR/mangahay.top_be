@@ -228,16 +228,6 @@ export class ComicController {
     return `Tạo chapter với cho truyện id [${comicId}] thành công!`;
   }
 
-  @Get(':comicId/chapters/:chapterId')
-  async getOneChapter(
-    @Param('chapterId', new ParseIntPipe()) chapterId: number,
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
-    const chapter = await this.comicService.getASpecificChapterOfComic(comicId, chapterId);
-
-    return chapter;
-  }
-
   @UseGuards(AuthGuard)
   @Post(':comicId/comments')
   async handleCommentComic(

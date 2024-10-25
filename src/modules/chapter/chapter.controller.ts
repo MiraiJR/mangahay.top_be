@@ -10,7 +10,7 @@ export class ChapterController {
 
   @Get('/:id')
   async handleGetChapter(@Param('id') chapterId) {
-    return this.chapterService.getChapter(chapterId);
+    return this.chapterService.getChapterById(chapterId);
   }
 
   @UseGuards(AuthGuard)

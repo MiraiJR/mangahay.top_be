@@ -4,6 +4,8 @@ import { EntityManager } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { ChapterRepository } from './chapter.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
+import { ApplicationException } from '@common/exception/application.exception';
+import ChapterError from './resources/error/error';
 
 @Injectable()
 export class ChapterService {
@@ -22,12 +24,14 @@ export class ChapterService {
     });
   }
 
-  async getChapter(chapterId: number) {
-    return this.chapterRepository.findOne({
-      where: {
-        id: chapterId,
-      },
-    });
+  async getChapterById(chapterId: number) {
+    const matchedChapter = await this.chapterRepository.getChapterById(chapterId);
+
+    if (!matchedChapter) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0001);
+    }
+
+    return matchedChapter;
   }
 
   async reorderChapters() {
@@ -47,38 +51,21 @@ export class ChapterService {
     });
   }
 
-  async getChaptersOfComic(comicId: number) {
-    return await this.chapterRepository
-      .createQueryBuilder('chapter')
-      .select([
-        'chapter.id',
-        'chapter.name',
-        'chapter.slug',
-        'chapter.updatedAt',
-        'chapter.images',
-        'chapter.order',
-      ])
-      .where('chapter.comic = :comicId', { comicId })
-      .orderBy('chapter.order', 'DESC')
-      .getMany();
-  }
+  async getSpecificChapterOfComicWithPreviousAndNextChapter(comicId: number, chapterId: number) {
+    const chapters = await this.chapterRepository.getListChapterByComicId(comicId);
+    const indexOfCurrentChapter = chapters.findIndex((chapter) => chapter.id === chapterId);
 
-  getNextAndPreChapter(chapterId: number, chapters: Array<Chapter>) {
-    let previousChapter = null;
-    let nextChapter = null;
-    let currentChapter = null;
-
-    for (let i = 0; i < chapters.length; i++) {
-      if (chapters[i].id === chapterId) {
-        nextChapter = chapters[i - 1] ? chapters[i - 1] : null;
-        currentChapter = chapters[i];
-        previousChapter = chapters[i + 1] ? chapters[i + 1] : null;
-      }
+    if (indexOfCurrentChapter === -1) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0001);
     }
 
-    if (currentChapter === null) {
-      throw new HttpException('Chapter không tồn tại!', HttpStatus.NOT_FOUND);
-    }
+    const nextChapter = chapters[indexOfCurrentChapter - 1]
+      ? chapters[indexOfCurrentChapter - 1]
+      : null;
+    const currentChapter = chapters[indexOfCurrentChapter];
+    const previousChapter = chapters[indexOfCurrentChapter + 1]
+      ? chapters[indexOfCurrentChapter + 1]
+      : null;
 
     return {
       previousChapter,
