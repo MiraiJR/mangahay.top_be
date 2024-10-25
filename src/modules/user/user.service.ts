@@ -13,6 +13,7 @@ import { UserSessionRepository } from './user-sessions/user-session.repository';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { DataSource } from 'typeorm';
 import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
+import { UserSession } from './user-sessions/user-session.entity';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,9 @@ export class UserService {
     return this.databaseConnection.transaction(async (manager) => {
       const newUser = await manager.getRepository(User).save(user);
       this.elasticsearchAdapter.addRecord<User>('users', newUser);
+      await manager.getRepository(UserSession).save({
+        userId: newUser.id,
+      });
       await manager.getRepository(UserSettingEntity).save({
         user: newUser,
         chapterSetting: {
