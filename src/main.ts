@@ -1,7 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
-import { TransactionInterceptor } from './common/interceptor/transaction.interceptor';
 import { ApplicationExceptionFilter } from '@common/exception/application.exception.filter';
 import { UnknownExceptionFilter } from '@common/exception/unknown.exception.filter';
 import { DataSource } from 'typeorm';
