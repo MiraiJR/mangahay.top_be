@@ -1,14 +1,14 @@
 import { ApplicationException } from '@common/exception/application.exception';
 import { JwtAdapterService } from '@common/external-service/jwt/jwt.adapter';
 import CommonError from '@common/resources/error/error';
+import { UserSessionRepository } from '@modules/user/user-sessions/user-session.repository';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtAdapterService,
-    private readonly userService: UserService,
+    private readonly userSessionRepository: UserSessionRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -40,10 +40,11 @@ export class AuthGuard implements CanActivate {
   }
 
   private async validateUser(userId: number, token: string) {
-    const currentUser = await this.userService.getUserById(userId);
-    if (!currentUser || token !== currentUser.accessToken) {
+    const sessionOfUser = await this.userSessionRepository.findSessionByUserId(userId);
+    if (!sessionOfUser || token !== sessionOfUser.accessToken) {
       return null;
     }
-    return currentUser;
+
+    return sessionOfUser;
   }
 }

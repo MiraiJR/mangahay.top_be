@@ -1,5 +1,5 @@
 import {
-  BeforeUpdate,
+  AfterUpdate,
   Column,
   Entity,
   Index,
@@ -15,7 +15,10 @@ export class UserSession {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User, (user) => user.id)
+  @OneToOne(() => User, (user) => user.userSession, {
+    cascade: ['remove'],
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
@@ -34,7 +37,7 @@ export class UserSession {
   @Column({ type: 'timestamp', default: () => 'now()' })
   updatedAt: Date;
 
-  @BeforeUpdate()
+  @AfterUpdate()
   updateTime() {
     this.updatedAt = new Date();
   }

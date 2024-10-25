@@ -12,6 +12,7 @@ import { hashPassword, isMatchedPassword } from '@common/utils/password.util';
 import UserError from '@modules/user/resources/error/error';
 import { JwtAdapterService } from '@common/external-service/jwt/jwt.adapter';
 import { LoginResponse } from './models/responses/login.reponse';
+import { UserSessionRepository } from '@modules/user/user-sessions/user-session.repository';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,7 @@ export class AuthService {
     private userService: UserService,
     private mailService: MailService,
     private userRepository: UserRepository,
+    private userSessionRepository: UserSessionRepository,
   ) {}
 
   async register(inputData: RegisterUserDTO): Promise<User> {
@@ -46,7 +48,7 @@ export class AuthService {
       throw new ApplicationException(UserError.USER_ERROR_0001);
     }
 
-    await this.userRepository.updatePairToken(userId, {
+    await this.userSessionRepository.updatePairToken(matchedUser.id, {
       accessToken: null,
       refreshToken: null,
     });
@@ -74,7 +76,7 @@ export class AuthService {
       role: matchedUser.role,
     });
 
-    await this.userRepository.updatePairToken(matchedUser.id, {
+    await this.userSessionRepository.updatePairToken(matchedUser.id, {
       accessToken,
       refreshToken,
     });
@@ -104,23 +106,23 @@ export class AuthService {
 
   async resignToken(token: string): Promise<PairToken> {
     const payload = await this.jwtService.verifyRefreshToken(token);
-    const userId = payload.userId;
-    const matchedUser = await this.userService.getUserById(userId);
+    const { userId, role } = payload;
+    const sessions = await this.userSessionRepository.findSessionByUserId(userId);
 
-    if (matchedUser.refreshToken !== token) {
+    if (sessions.refreshToken !== token) {
       throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
 
     const accessToken = this.jwtService.signAccessToken({
-      userId: matchedUser.id,
-      role: matchedUser.role,
+      userId: sessions.id,
+      role: role,
     });
     const refreshToken = this.jwtService.signRefreshToken({
-      userId: matchedUser.id,
-      role: matchedUser.role,
+      userId: sessions.id,
+      role: role,
     });
 
-    await this.userRepository.updatePairToken(userId, {
+    await this.userSessionRepository.updatePairToken(sessions.id, {
       accessToken,
       refreshToken,
     });
