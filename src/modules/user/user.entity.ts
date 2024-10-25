@@ -93,7 +93,7 @@ export class User {
   @OneToMany(() => MentionedUser, (mentionedUser) => mentionedUser.mentionedUser)
   mentionedUsers: MentionedUser[];
 
-  @OneToOne(() => UserSession, (userSession) => userSession.user, { eager: true })
+  @OneToOne(() => UserSession, (userSession) => userSession.user, { eager: false })
   userSession: UserSession;
 
   @AfterLoad()
