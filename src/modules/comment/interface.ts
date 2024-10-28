@@ -16,5 +16,5 @@ interface UserComment {
   updatedAt: Date;
   user: CreatorComment;
   mentionedUser: MentionedUserComment;
-  answers: UserComment[];
+  theNumberOfAnswer: number;
 }

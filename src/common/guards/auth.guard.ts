@@ -1,6 +1,6 @@
 import { ApplicationException } from '@common/exception/application.exception';
 import { JwtAdapterService } from '@common/external-service/jwt/jwt.adapter';
-import CommonError from '@common/resources/error/error';
+import AuthError from '@modules/auth/resources/error/error';
 import { UserSessionRepository } from '@modules/user/user-sessions/user-session.repository';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 
@@ -30,11 +30,11 @@ export class AuthGuard implements CanActivate {
   private extractToken(request: any): string {
     const authorizationHeader: string = request.header('Authorization');
     if (!authorizationHeader) {
-      throw new ApplicationException(CommonError.COMMON_ERROR_0003);
+      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
     const token = authorizationHeader.split(' ')[1];
     if (!token) {
-      throw new ApplicationException(CommonError.COMMON_ERROR_0003);
+      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
     return token;
   }
@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
   private async validateUser(userId: number, token: string) {
     const sessionOfUser = await this.userSessionRepository.findSessionByUserId(userId);
     if (!sessionOfUser || token !== sessionOfUser.accessToken) {
-      return null;
+      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
 
     return sessionOfUser;

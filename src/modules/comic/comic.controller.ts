@@ -32,6 +32,7 @@ import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
 import { CrawlChaptersReq } from './dtos/crawl-chapters.request';
+import { CommentQuery } from './models/requests/comments.query';
 
 @Controller('api/comics')
 export class ComicController {
@@ -126,8 +127,11 @@ export class ComicController {
   }
 
   @Get('/:comicId/comments')
-  async handleGetListComment(@Param('comicId') comicId: number) {
-    return this.comicService.getListCommentOfComic(comicId);
+  async handleGetListComment(
+    @Param('comicId') comicId: number,
+    @Query(new ValidationPipe()) inputQuery: CommentQuery,
+  ) {
+    return this.comicService.getListCommentOfComic(comicId, inputQuery);
   }
 
   @UseGuards(AuthGuard)

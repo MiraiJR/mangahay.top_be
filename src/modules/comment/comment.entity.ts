@@ -52,4 +52,6 @@ export class CommentEntity {
 
   @OneToOne(() => MentionedUser, (mentionedUser) => mentionedUser.comment, { eager: true })
   mentionedUser: MentionedUser;
+
+  theNumberOfAnswer: number;
 }
