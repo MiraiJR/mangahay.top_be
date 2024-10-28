@@ -5,6 +5,7 @@ import { CommandCommentRequest } from './models/requests/command-comment.request
 import { CommentEntity } from './comment.entity';
 import { DataSource } from 'typeorm';
 import { MentionedUser } from './mentioned-user/mentioned-user.entity';
+import { ListAnswerQuery } from './models/requests/list-answer.query';
 
 @Injectable()
 export class CommentService {
@@ -47,30 +48,30 @@ export class CommentService {
     });
   }
 
-  async getCommentsOfComic(comicId: number): Promise<UserCommentResponse[]> {
-    const listCommentIncludingAnswer = await this.commentRepository.getCommentsByComicId(comicId);
-    const commentMap: Map<number, UserCommentResponse> = new Map();
-    const commentTree: Map<number, UserCommentResponse> = new Map();
-    listCommentIncludingAnswer.forEach((comment) => {
-      if (!comment.answers) {
-        comment.answers = [];
-      }
+  async getListAnswerOfComment(commentId: number, inputQuery: ListAnswerQuery) {
+    const { lastAnswerId, limit } = inputQuery;
+    const answers = await this.commentRepository.getListAnswerOfComment(
+      commentId,
+      limit,
+      lastAnswerId,
+    );
 
-      commentMap.set(comment.id, comment);
-    });
+    let hasPrevious = false;
 
-    listCommentIncludingAnswer.forEach((comment) => {
-      if (!comment.parentCommentId) {
-        commentTree.set(comment.id, comment);
-        return;
-      }
+    if (lastAnswerId) {
+      const totalAnswerBeforeLast = await this.commentRepository.countAnswersBefore(
+        commentId,
+        lastAnswerId,
+      );
+      hasPrevious = totalAnswerBeforeLast > limit;
+    } else {
+      const totalAnswer = await this.commentRepository.countAnswerOfComment(commentId);
+      hasPrevious = totalAnswer > limit;
+    }
 
-      const parentComment = commentMap.get(comment.parentCommentId);
-      if (parentComment) {
-        parentComment.answers.push(comment);
-      }
-    });
-
-    return Array.from(commentTree.values());
+    return {
+      answers,
+      hasPrevious,
+    };
   }
 }

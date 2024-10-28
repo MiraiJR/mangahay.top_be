@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ChapterService } from '../chapter/chapter.service';
 import { ComicRepository } from './comic.repository';
 import { Comic } from './comic.entity';
@@ -26,6 +26,7 @@ import { ApplicationException } from '@common/exception/application.exception';
 import ComicError from './resources/error/error';
 import { CommentRepository } from '@modules/comment/comment.repository';
 import { ChapterRepository } from '@modules/chapter/chapter.repository';
+import { CommentQuery } from './models/requests/comments.query';
 
 @Injectable()
 export class ComicService {
@@ -48,8 +49,18 @@ export class ComicService {
     @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
   ) {}
 
-  async getListCommentOfComic(comicId: number) {
-    return this.commentService.getCommentsOfComic(comicId);
+  async getListCommentOfComic(comicId: number, inputQuery: CommentQuery) {
+    const { size, page } = inputQuery;
+    const totalAnswer = await this.commentRepository.countCommentParentOfComic(comicId);
+    const hasPrevious = totalAnswer > page * size;
+
+    const comments = await this.commentRepository.getCommentParentsByComicId(comicId, page, size);
+
+    return {
+      comments,
+      hasPrevious,
+      total: totalAnswer,
+    };
   }
 
   async getComicsWithChapters() {
