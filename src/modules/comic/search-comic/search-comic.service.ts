@@ -8,12 +8,13 @@ export class SearchComicService {
   constructor(private readonly elasticsearchService: ElasticsearchAdapterService) {}
 
   async searchComic(inputData: SearchComicRequest) {
+    const { page, limit, orderBy } = inputData;
     const elasticsearch = this.elasticsearchService.getInstance();
 
     const { hits } = await elasticsearch.search({
-      from: (inputData.page - 1) * inputData.limit,
-      size: inputData.limit,
-      sort: this.buildSort(inputData.orderBy) as SortCombinations[],
+      from: (page - 1) * limit,
+      size: limit,
+      sort: this.buildSort(orderBy) as SortCombinations[],
       query: {
         bool: {
           must: this.buildConditionQuery(inputData),
@@ -27,6 +28,7 @@ export class SearchComicService {
       },
       total: hits.total['value'],
       comics: hits.hits.map((record) => record._source),
+      hasNext: hits.total['value'] > page * limit,
     };
   }
 
@@ -66,9 +68,7 @@ export class SearchComicService {
     if (inputData.status) {
       conditions.push({
         match: {
-          state: {
-            query: inputData.status,
-          },
+          'state.keyword': inputData.status,
         },
       });
     }
@@ -76,7 +76,18 @@ export class SearchComicService {
     if (inputData.genres) {
       conditions.push({
         terms: {
-          genres: inputData.genres,
+          'genres.keyword': inputData.genres,
+        },
+      });
+    }
+
+    if (inputData.author) {
+      conditions.push({
+        match: {
+          authors: {
+            query: inputData.author,
+            fuzziness: 'AUTO',
+          },
         },
       });
     }
