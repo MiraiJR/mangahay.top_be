@@ -12,7 +12,6 @@ import {
   Put,
   Query,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -52,11 +51,11 @@ export class ComicController {
   @UseInterceptors(FileInterceptor('thumb'))
   @Post()
   async handleCreateComic(
-    @Body(new ValidationPipe()) comic: CreateComicDTO,
+    @Body(new ValidationPipe()) inputData: CreateComicDTO,
     @UserId() creatorId: number,
     @UploadedFile() thumb: Express.Multer.File,
   ) {
-    const newComic = await this.comicService.createComic(creatorId, comic, thumb);
+    const newComic = await this.comicService.createComic(creatorId, inputData, thumb);
 
     return newComic;
   }
@@ -74,17 +73,6 @@ export class ComicController {
     return this.comicService.ranking(query);
   }
 
-  @Get('/search')
-  async handleSearch(@Query() query: QuerySearch) {
-    const result = await this.comicService.searchComics(query);
-
-    return {
-      page: query.page ?? 1,
-      limit: query.limit,
-      ...result,
-    };
-  }
-
   @Get('/chapters')
   async getComicsWithChapters() {
     const comicsWithChapters = await this.comicService.getComicsWithChapters();
@@ -98,10 +86,13 @@ export class ComicController {
   }
 
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Delete(':comicId')
-  async handleDeleteComic(@Param('comicId', new ParseIntPipe()) comicId: number) {
-    await this.comicService.delete(comicId);
+  async handleDeleteComic(
+    @UserId() userId: number,
+    @Param('comicId', new ParseIntPipe()) comicId: number,
+  ) {
+    await this.comicService.delete(userId, comicId);
 
     return `Xóa truyện với id ${comicId} thành công!`;
   }
@@ -215,21 +206,6 @@ export class ComicController {
     await this.comicService.evaluateComic(userId, comicId, score);
 
     return `Đánh giá truyện thành công!`;
-  }
-
-  @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @UseInterceptors(FilesInterceptor('files'))
-  @Post(':comicId/chapters')
-  async handleCreateChapterForComic(
-    @Body(new ValidationPipe()) data: CreateChapterDTO,
-    @UserId() userId: number,
-    @UploadedFiles() files: Express.Multer.File[],
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
-    const { nameChapter } = data;
-    await this.comicService.addNewChapterForComic(userId, comicId, nameChapter, files);
-    return `Tạo chapter với cho truyện id [${comicId}] thành công!`;
   }
 
   @UseGuards(AuthGuard)

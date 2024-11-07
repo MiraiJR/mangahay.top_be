@@ -8,7 +8,8 @@ type AuthErrorCode =
   | 'AUTH_ERROR_0004'
   | 'AUTH_ERROR_0005'
   | 'AUTH_ERROR_0006'
-  | 'AUTH_ERROR_0007';
+  | 'AUTH_ERROR_0007'
+  | 'AUTH_ERROR_0008';
 
 const AuthError: Record<AuthErrorCode, ApplicationExceptionModel> = {
   AUTH_ERROR_0001: {
@@ -44,6 +45,11 @@ const AuthError: Record<AuthErrorCode, ApplicationExceptionModel> = {
   AUTH_ERROR_0007: {
     errorCode: 'AUTH_ERROR_0007',
     message: 'Refresh token đã hết hạn',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  AUTH_ERROR_0008: {
+    errorCode: 'AUTH_ERROR_0008',
+    message: 'Quá trình đăng nhập bằng tài khoản Google xảy ra lỗi!',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };

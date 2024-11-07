@@ -4,6 +4,7 @@ import { LoginUserDTO } from './dto/login.dto';
 import { RegisterUserDTO } from './dto/register.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import UserId from '../../common/decorators/userId';
+import { LoginWithGoogleBody } from './models/requests/login-with-google.body';
 
 @Controller('api/auth')
 export class AuthController {
@@ -47,5 +48,10 @@ export class AuthController {
     await this.authService.changePassword(token, newPassword);
 
     return 'Đổi mật khẩu thành công!';
+  }
+
+  @Post('/login/google')
+  async handleLoginWithGoogle(@Body(new ValidationPipe()) data: LoginWithGoogleBody) {
+    return this.authService.loginWithGoogle(data);
   }
 }

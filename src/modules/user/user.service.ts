@@ -6,7 +6,6 @@ import { ComicService } from '../comic/comic.service';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
-import { hashPassword } from '@common/utils/password.util';
 import { ComicInteractionService } from '@modules/comic/comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
 import { UserSessionRepository } from './user-sessions/user-session.repository';
@@ -14,6 +13,8 @@ import { ElasticsearchAdapterService } from '@common/external-service/elasticsea
 import { DataSource } from 'typeorm';
 import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
 import { UserSession } from './user-sessions/user-session.entity';
+import { ApplicationException } from '@common/exception/application.exception';
+import UserError from './resources/error/error';
 
 @Injectable()
 export class UserService {
@@ -22,7 +23,6 @@ export class UserService {
     private comicInteractionService: ComicInteractionService,
     private userRepository: UserRepository,
     private s3Service: S3Service,
-    private userSessionRepository: UserSessionRepository,
     private elasticsearchAdapter: ElasticsearchAdapterService,
     private databaseConnection: DataSource,
   ) {}
@@ -30,7 +30,7 @@ export class UserService {
   create(user: IUser) {
     return this.databaseConnection.transaction(async (manager) => {
       const newUser = await manager.getRepository(User).save(user);
-      this.elasticsearchAdapter.addRecord<User>('users', newUser);
+      this.elasticsearchAdapter.addRecord<User>('users', newUser, newUser.id);
       await manager.getRepository(UserSession).save({
         userId: newUser.id,
       });
@@ -73,12 +73,14 @@ export class UserService {
     });
   }
 
-  async getUserById(id: any) {
-    return await this.userRepository.findOne({
-      where: {
-        id,
-      },
-    });
+  async getUserById(id: number) {
+    const matchedUser = await this.userRepository.getUserById(id);
+
+    if (!matchedUser) {
+      throw new ApplicationException(UserError.USER_ERROR_0001);
+    }
+
+    return matchedUser;
   }
 
   async updateActive(id_user: number, active: boolean) {
@@ -87,15 +89,6 @@ export class UserService {
       ...user,
       active: active,
     });
-  }
-
-  async updatePassword(email: string, newRawPassword: string) {
-    return await this.userRepository
-      .createQueryBuilder()
-      .update(User)
-      .set({ password: await hashPassword(newRawPassword) })
-      .where('email = :email', { email: email })
-      .execute();
   }
 
   async interactWithComic(

@@ -15,6 +15,8 @@ import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicIn
 import { UserSession } from './user-sessions/user-session.entity';
 import { UserSessionRepository } from './user-sessions/user-session.repository';
 import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
+import { UserSocialEntity } from './user-social/user-social.entity';
+import { UserSocialRepository } from './user-social/user-social.repository';
 
 @Module({
   imports: [
@@ -24,11 +26,19 @@ import { ElasticsearchAdapterModule } from '@common/external-service/elasticsear
     ReadingHistoryModule,
     UserSettingModule,
     forwardRef(() => ComicModule),
-    TypeOrmModule.forFeature([User, UserSession]),
+    TypeOrmModule.forFeature([User, UserSession, UserSocialEntity]),
     ElasticsearchAdapterModule,
   ],
   controllers: [UserController],
-  providers: [UserService, UserResolver, Logger, UserRepository, S3Service, UserSessionRepository],
-  exports: [UserService, UserRepository, UserSessionRepository],
+  providers: [
+    UserService,
+    UserResolver,
+    Logger,
+    UserRepository,
+    S3Service,
+    UserSessionRepository,
+    UserSocialRepository,
+  ],
+  exports: [UserService, UserRepository, UserSessionRepository, UserSocialRepository],
 })
 export class UserModule {}

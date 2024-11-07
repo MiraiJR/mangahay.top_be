@@ -8,7 +8,6 @@ export class SearchComicController {
 
   @Get()
   async handleSearchComic(@Query() queryData: SearchComicRequest) {
-    console.log(queryData);
     return this.searchComicService.searchComic(queryData);
   }
 }

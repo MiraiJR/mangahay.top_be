@@ -3,9 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpException,
-  HttpStatus,
-  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -30,7 +27,6 @@ import UserId from '@common/decorators/userId';
 @Controller('api/users')
 export class UserController {
   constructor(
-    private logger: Logger = new Logger(UserController.name),
     private userService: UserService,
     private notifyService: NotificationService,
     private readingHistoryService: ReadingHistoryService,
@@ -38,14 +34,8 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('/me')
-  async handleGetUserInformation(@UserId() userId: number) {
-    const user = await this.userService.getUserById(userId);
-
-    if (!user) {
-      throw new HttpException('Người dùng không tồn tại!', HttpStatus.NOT_FOUND);
-    }
-
-    return user;
+  handleGetUserInformation(@UserId() userId: number) {
+    return this.userService.getUserById(userId);
   }
 
   @UseGuards(AuthGuard)

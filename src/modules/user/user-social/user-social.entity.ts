@@ -4,18 +4,19 @@ import {
   Entity,
   Index,
   JoinColumn,
-  OneToOne,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user.entity';
+import { ProviderType } from './social.enum';
 
-@Entity({ name: 'user_sessions' })
-@Index(['id', 'userId'], { unique: true })
-export class UserSession {
+@Entity({ name: 'user_socials' })
+@Index(['id'], { unique: true })
+export class UserSocialEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User, (user) => user.userSession, {
+  @ManyToOne(() => User, (user) => user.userSession, {
     cascade: ['remove'],
     onDelete: 'CASCADE',
   })
@@ -25,11 +26,11 @@ export class UserSession {
   @Column({ name: 'user_id' })
   userId: number;
 
-  @Column({ nullable: true, name: 'refresh_token' })
-  refreshToken: string;
+  @Column({ name: 'provider_type', enum: ProviderType, type: 'enum' })
+  providerType: ProviderType;
 
-  @Column({ nullable: true, name: 'access_token' })
-  accessToken: string;
+  @Column({ name: 'provider_id' })
+  providerId: string;
 
   @Column({ name: 'created_at', type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
