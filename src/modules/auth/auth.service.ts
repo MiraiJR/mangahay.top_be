@@ -5,14 +5,19 @@ import { UserService } from '../user/user.service';
 import { LoginUserDTO } from './dto/login.dto';
 import { UserRole } from '../user/user.role';
 import { MailService } from '../../common/external-service/mail/mail.service';
-import { UserRepository } from '../user/user.repository';
 import { ApplicationException } from '@common/exception/application.exception';
 import AuthError from './resources/error/error';
-import { hashPassword, isMatchedPassword } from '@common/utils/password.util';
+import { isMatchedPassword } from '@common/utils/password.util';
 import UserError from '@modules/user/resources/error/error';
 import { JwtAdapterService } from '@common/external-service/jwt/jwt.adapter';
 import { LoginResponse } from './models/responses/login.reponse';
 import { UserSessionRepository } from '@modules/user/user-sessions/user-session.repository';
+import { LoginWithGoogleBody } from './models/requests/login-with-google.body';
+import { OAuth2Service } from '@common/external-service/oauth2/oauth2.service';
+import { UserSocialRepository } from '@modules/user/user-social/user-social.repository';
+import { AccountRepository } from './account/account.repository';
+import { ProviderType } from '@modules/user/user-social/social.enum';
+import { CreateAccoutUserFacade } from './facade/create-account-user.facade';
 
 @Injectable()
 export class AuthService {
@@ -20,25 +25,21 @@ export class AuthService {
     private jwtService: JwtAdapterService,
     private userService: UserService,
     private mailService: MailService,
-    private userRepository: UserRepository,
     private userSessionRepository: UserSessionRepository,
+    private oauth2Service: OAuth2Service,
+    private userSocialRepository: UserSocialRepository,
+    private accountRepository: AccountRepository,
+    private readonly createAccountFacade: CreateAccoutUserFacade,
   ) {}
 
   async register(inputData: RegisterUserDTO): Promise<User> {
-    const isUsedEmail = await this.userService.isExistedEmail(inputData.email);
+    const isUsedEmail = await this.accountRepository.findByEmail(inputData.email);
 
     if (isUsedEmail) {
       throw new ApplicationException(AuthError.AUTH_ERROR_0001);
     }
 
-    const newUser = await this.userService.create({
-      ...inputData,
-      password: await hashPassword(inputData.password),
-      active: true,
-      role: UserRole.VIEWER,
-    });
-
-    return newUser;
+    return this.createAccountFacade.createAccount(inputData);
   }
 
   async logout(userId: number): Promise<void> {
@@ -55,28 +56,34 @@ export class AuthService {
   }
 
   async login(inputData: LoginUserDTO): Promise<LoginResponse> {
-    let matchedUser = await this.userService.getUserByEmail(inputData.email);
+    let matchedAccount = await this.accountRepository.findByEmail(inputData.email);
 
-    if (!matchedUser) {
+    if (!matchedAccount) {
       throw new ApplicationException(AuthError.AUTH_ERROR_0002);
     }
 
-    const checkPassword = await isMatchedPassword(inputData.password, matchedUser.password);
+    const checkPassword = await isMatchedPassword(inputData.password, matchedAccount.password);
 
     if (!checkPassword) {
       throw new ApplicationException(AuthError.AUTH_ERROR_0003);
     }
 
+    const matchedUser = await this.userService.getUserByEmail(matchedAccount.email);
+
+    return this.updateTokenForUser(matchedUser.id, matchedUser.role);
+  }
+
+  private async updateTokenForUser(userId: number, userRole: UserRole) {
     const accessToken = this.jwtService.signAccessToken({
-      userId: matchedUser.id,
-      role: matchedUser.role,
+      userId: userId,
+      role: userRole,
     });
     const refreshToken = this.jwtService.signRefreshToken({
-      userId: matchedUser.id,
-      role: matchedUser.role,
+      userId: userId,
+      role: userRole,
     });
 
-    await this.userSessionRepository.updatePairToken(matchedUser.id, {
+    await this.userSessionRepository.updatePairToken(userId, {
       accessToken,
       refreshToken,
     });
@@ -135,6 +142,37 @@ export class AuthService {
 
   async changePassword(token: string, newPassword: string): Promise<void> {
     const payload = await this.jwtService.verifyTokenForgetPassword(token);
-    await this.userService.updatePassword(payload.email, newPassword);
+    await this.accountRepository.updatePassword(payload.email, newPassword);
+  }
+
+  async loginWithGoogle(inputData: LoginWithGoogleBody) {
+    const { authCode } = inputData;
+
+    const {
+      email,
+      name: fullname,
+      picture,
+      sub: googleId,
+    } = await this.oauth2Service.getGoogleUserProfile(authCode);
+
+    const matchedSocialAccount = await this.userSocialRepository.findBySocialIdAndType(
+      googleId,
+      ProviderType.GOOGLE,
+    );
+
+    if (matchedSocialAccount) {
+      const matchedUser = await this.userService.getUserById(matchedSocialAccount.userId);
+      return this.updateTokenForUser(matchedUser.id, matchedUser.role);
+    }
+
+    const newUser = await this.createAccountFacade.createAccountSocial(
+      email,
+      fullname,
+      picture,
+      ProviderType.GOOGLE,
+      googleId,
+    );
+
+    return this.updateTokenForUser(newUser.id, newUser.role);
   }
 }

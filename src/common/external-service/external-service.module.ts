@@ -4,12 +4,13 @@ import { JwtAdapterService } from './jwt/jwt.adapter';
 import { MailService } from './mail/mail.service';
 import { S3Service } from './image-storage/s3.service';
 import { MailModule } from './mail/mail.module';
+import { OAuth2Service } from './oauth2/oauth2.service';
 
 @Global()
 @Module({
   imports: [JwtModule.register({}), MailModule],
   controllers: [],
-  providers: [JwtAdapterService, JwtService, MailService, S3Service],
-  exports: [JwtAdapterService, JwtService, MailService, S3Service],
+  providers: [JwtAdapterService, JwtService, MailService, S3Service, OAuth2Service],
+  exports: [JwtAdapterService, JwtService, MailService, S3Service, OAuth2Service],
 })
 export class ExternalServiceModule {}

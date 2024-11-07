@@ -7,9 +7,9 @@ import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
 import Helper, { buildSlug } from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
-import { Paging, PagingComics } from 'src/common/types/Paging';
+import { Paging } from 'src/common/types/Paging';
 import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
-import { EntityManager } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
 import { CrawlerService } from './crawler.service';
@@ -19,7 +19,6 @@ import { InjectQueue } from '@nestjs/bull';
 import { S3Service } from '@common/external-service/image-storage/s3.service';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { CreateComicDTO } from './dtos/create-comic';
-import { UserRepository } from '@modules/user/user.repository';
 import { ComicInteractionService } from './comic-interaction/comicInteraction.service';
 import { ComicInteractionRepository } from './comic-interaction/comicInteraction.repository';
 import { ApplicationException } from '@common/exception/application.exception';
@@ -27,6 +26,8 @@ import ComicError from './resources/error/error';
 import { CommentRepository } from '@modules/comment/comment.repository';
 import { ChapterRepository } from '@modules/chapter/chapter.repository';
 import { CommentQuery } from './models/requests/comments.query';
+import { Chapter } from '@modules/chapter/chapter.entity';
+import { StatusComic } from './enums/status-comic';
 
 @Injectable()
 export class ComicService {
@@ -44,8 +45,8 @@ export class ComicService {
     private readonly googleApiService: GoogleApiService,
     private readonly crawlerService: CrawlerService,
     private readonly elasticsearchAdapter: ElasticsearchAdapterService,
-    private readonly userRepository: UserRepository,
     private readonly commentRepository: CommentRepository,
+    private readonly datasource: DataSource,
     @InjectQueue('crawl-chapters') private readonly crawlChaptersQueue: Queue,
   ) {}
 
@@ -273,9 +274,15 @@ export class ComicService {
     return this.chapterRepository.getListChapterByComicId(comicId);
   }
 
-  async delete(comicId: number) {
-    await this.getComicById(comicId);
-    return await this.comicRepository.delete(comicId);
+  async delete(userId: number, comicId: number) {
+    const matchedComic = await this.getComicById(comicId);
+
+    this.checkCreatorOfComic(userId, matchedComic);
+
+    await this.datasource.transaction(async (manager) => {
+      await manager.getRepository(Comic).delete(comicId);
+      this.elasticsearchAdapter.deleteRecord('comics', comicId);
+    });
   }
 
   async getComics(query: Paging) {
@@ -330,28 +337,46 @@ export class ComicService {
     return comic;
   }
 
-  async createComic(
+  createComic(
     creatorId: number,
     comic: CreateComicDTO,
     thumb: Express.Multer.File,
   ): Promise<Comic> {
-    const creator = await this.userRepository.getUserById(creatorId);
-    const { id: comicId, slug } = await this.comicRepository.save({
-      ...comic,
-      creator,
-      slug: buildSlug(comic.name),
-    });
-    const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${slug}`;
-    this.googleApiService.indexingUrl(urlOfNewComic);
-
-    const createdComic = await this.s3Service
-      .uploadFileFromBuffer(thumb.buffer, `comics/${comicId}/thumb`, `${comicId}.jpeg`)
-      .then((uploadedFile) => {
-        return this.updateThumb(comicId, uploadedFile.relativePath);
+    return this.datasource.transaction(async (manager) => {
+      const { id: comicId, slug } = await manager.getRepository(Comic).save({
+        ...comic,
+        creatorId,
+        slug: buildSlug(comic.name),
       });
-    this.elasticsearchAdapter.addRecord('comics', createdComic);
 
-    return createdComic;
+      const urlOfNewComic = `${this.configService.get<string>('HOST_FE')}/truyen/${slug}`;
+      this.googleApiService.indexingUrl(urlOfNewComic);
+
+      const { relativePath } = await this.s3Service.uploadFileFromBuffer(
+        thumb.buffer,
+        `comics/${comicId}`,
+        `${comicId}.jpeg`,
+      );
+
+      await manager.getRepository(Comic).update(
+        {
+          id: comicId,
+        },
+        {
+          thumb: relativePath,
+        },
+      );
+
+      const createdComic = await manager.getRepository(Comic).findOne({
+        where: {
+          id: comicId,
+        },
+      });
+
+      this.elasticsearchAdapter.addRecord('comics', createdComic, createdComic.id);
+
+      return createdComic;
+    });
   }
 
   async checkCreatorOfComic(userId: number, comic: Comic): Promise<boolean> {
@@ -391,18 +416,18 @@ export class ComicService {
       updatedComic.thumb = relativePath;
     }
 
-    updatedComic = await this.comicRepository.save(updatedComic);
+    return this.datasource.transaction(async (manager) => {
+      const comic = await manager.getRepository(Comic).save(updatedComic);
 
-    return updatedComic;
+      this.elasticsearchAdapter.updateRecord<Comic>('comics', comic.id, comic);
+
+      return comic;
+    });
   }
 
   async increaseViewForComic(comicId: number) {
     await this.getComicById(comicId);
     await this.comicRepository.increamentView(comicId);
-  }
-
-  async searchComics(query: QuerySearch): Promise<PagingComics> {
-    return this.comicRepository.searchComics(query);
   }
 
   async ranking(query: { field: string; limit: number }) {
@@ -432,41 +457,9 @@ export class ComicService {
     });
   }
 
-  async addNewChapterForComic(
-    userId: number,
-    comicId: number,
-    nameChapter: string,
-    files: Express.Multer.File[],
-  ) {
-    const comic = await this.getComicById(comicId);
-    this.checkCreatorOfComic(userId, comic);
-
-    let chapterType = ChapterType.NORMAL;
-    let order = nameChapter.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
-
-    if (!order) {
-      chapterType = ChapterType.EXTRA;
-      order = '0';
-    }
-
-    const newChapter = await this.chapterService.createNewChapter(
-      {
-        name: nameChapter,
-        comicId,
-        creator: userId,
-        order: parseFloat(order),
-        type: chapterType,
-      },
-      files,
-    );
-    const newChapterUrl = `${this.configService.get<string>('HOST_FE')}/truyen/${comic.slug}/${
-      newChapter.slug
-    }`;
-    this.googleApiService.indexingUrl(newChapterUrl);
-
-    await this.comicRepository.updateTimeForComic(comicId);
-
-    const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comicId);
+  async updateTimeAndNotifyToFollowingUsersAfterCreatingChapter(comic: Comic, newChapter: Chapter) {
+    await this.comicRepository.updateTimeForComic(comic.id);
+    const listUserId = await this.comicInteractionService.getListUserIdFollowedComic(comic.id);
     for (const userId of listUserId) {
       const notify: INotification = {
         userId: userId,

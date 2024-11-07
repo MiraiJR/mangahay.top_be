@@ -8,6 +8,7 @@ import { buildImageUrl } from 'src/common/utils/helper';
 import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
 import { MentionedUser } from '@modules/comment/mentioned-user/mentioned-user.entity';
 import { UserSession } from './user-sessions/user-session.entity';
+import { UserSocialEntity } from './user-social/user-social.entity';
 
 @Entity()
 export class User {
@@ -20,10 +21,6 @@ export class User {
   @Column({ nullable: false })
   fullname: string;
 
-  @Exclude({ toPlainOnly: true })
-  @Column({ nullable: false })
-  password: string;
-
   @Column({
     nullable: true,
   })
@@ -35,22 +32,6 @@ export class User {
   @Exclude()
   @Column({ default: false })
   active: boolean;
-
-  @Exclude()
-  @Column({ default: false })
-  facebook: boolean;
-
-  @Exclude()
-  @Column({ nullable: true })
-  facebookId: string;
-
-  @Exclude()
-  @Column({ default: false })
-  google: boolean;
-
-  @Exclude()
-  @Column({ nullable: true })
-  googleId: string;
 
   @Column({ nullable: true })
   phone: string;
@@ -87,6 +68,9 @@ export class User {
 
   @OneToOne(() => UserSession, (userSession) => userSession.user, { eager: false })
   userSession: UserSession;
+
+  @OneToMany(() => UserSocialEntity, (userSocial) => userSocial.user, { eager: false })
+  socials: UserSocialEntity[];
 
   @AfterLoad()
   updateImage() {

@@ -52,11 +52,13 @@ export class Chapter {
   @Column({ type: 'enum', enum: ChapterType, default: ChapterType.NORMAL })
   type: ChapterType;
 
+  @Column({ name: 'creator_id', nullable: true })
+  creatorId: number;
+
   @ManyToOne(() => User, (user) => user.id, {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'creator_id' })
-  @Column({ name: 'creator_id', nullable: true })
   creator: number;
 
   @BeforeInsert()

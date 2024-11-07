@@ -53,6 +53,7 @@
     "cloudinary": "^1.35.0",
     "comic_backend": "file:",
     "cors": "^2.8.5",
+    "google-auth-library": "^9.14.2",
     "googleapis": "^134.0.0",
     "graphql": "^16.6.0",
     "ioredis": "^5.4.1",
@@ -68,6 +69,7 @@
     "socket.io": "^4.6.1",
     "streamifier": "^0.1.1",
     "typeorm": "^0.3.12",
+    "unique-slug": "^5.0.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
@@ -80,6 +82,7 @@
     "@types/node": "^22.7.5",
     "@types/nodemailer": "^6.4.16",
     "@types/supertest": "^6.0.2",
+    "@types/unique-slug": "^4.0.0",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",

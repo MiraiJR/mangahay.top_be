@@ -3,7 +3,6 @@ import { AppModule } from './app/app.module';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { ApplicationExceptionFilter } from '@common/exception/application.exception.filter';
 import { UnknownExceptionFilter } from '@common/exception/unknown.exception.filter';
-import { DataSource } from 'typeorm';
 import { ValidationErrorFilter } from '@common/exception/valiation.error.filter';
 
 async function bootstrap() {

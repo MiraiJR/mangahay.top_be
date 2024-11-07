@@ -1,15 +1,20 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
-import { EntityManager } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { ChapterRepository } from './chapter.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { ApplicationException } from '@common/exception/application.exception';
 import ChapterError from './resources/error/error';
+import { CreateChapterDTO } from './dtos/create-chapter';
 
 @Injectable()
 export class ChapterService {
-  constructor(private chapterRepository: ChapterRepository, private s3Service: S3Service) {}
+  constructor(
+    private chapterRepository: ChapterRepository,
+    private s3Service: S3Service,
+    private readonly datasource: DataSource,
+  ) {}
 
   async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
@@ -96,27 +101,6 @@ export class ChapterService {
     return newChapter;
   }
 
-  async createNewChapter(chapter: IChapter, files: Express.Multer.File[]) {
-    let newChapter = this.chapterRepository.create(chapter);
-    newChapter = await this.chapterRepository.save(newChapter);
-    newChapter = await this.chapterRepository.save({
-      ...newChapter,
-      slug: `${newChapter.slug}-${newChapter.id}`,
-      images: [],
-    });
-
-    this.s3Service
-      .uploadMultipleFile(files, `comics/${newChapter.comicId}/${newChapter.id}`)
-      .then((uploadedFiles) =>
-        this.updateImages(
-          newChapter.id,
-          uploadedFiles.map((uploadedFile) => uploadedFile.relativePath),
-        ),
-      );
-
-    return newChapter;
-  }
-
   async update(chapter: IChapter, manager?: EntityManager) {
     const update_chapter = manager
       ? manager.getRepository(Chapter).create(chapter)
@@ -169,5 +153,19 @@ export class ChapterService {
       id: id_chapter,
       images: chapter_images,
     });
+  }
+
+  async getChapterBySlug(slug: string) {
+    const matchedChapter = await this.chapterRepository.findOne({
+      where: {
+        slug,
+      },
+    });
+
+    if (!matchedChapter) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0001);
+    }
+
+    return matchedChapter;
   }
 }

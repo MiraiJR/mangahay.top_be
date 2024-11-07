@@ -8,18 +8,19 @@ export class SearchComicService {
   constructor(private readonly elasticsearchService: ElasticsearchAdapterService) {}
 
   async searchComic(inputData: SearchComicRequest) {
-    const { page, limit, orderBy } = inputData;
+    const { page, size, orderBy } = inputData;
     const elasticsearch = this.elasticsearchService.getInstance();
 
     const { hits } = await elasticsearch.search({
-      from: (page - 1) * limit,
-      size: limit,
+      from: (page - 1) * size,
+      size: size,
       sort: this.buildSort(orderBy) as SortCombinations[],
       query: {
         bool: {
           must: this.buildConditionQuery(inputData),
         },
       },
+      index: 'comics',
     });
 
     return {
@@ -28,7 +29,7 @@ export class SearchComicService {
       },
       total: hits.total['value'],
       comics: hits.hits.map((record) => record._source),
-      hasNext: hits.total['value'] > page * limit,
+      hasNext: hits.total['value'] > page * size,
     };
   }
 
@@ -55,15 +56,31 @@ export class SearchComicService {
   }
 
   private buildConditionQuery(inputData: SearchComicRequest) {
-    const conditions: any = [
-      {
-        multi_match: {
-          query: inputData.name,
-          fields: ['name', 'anotherName', 'briefDescription'],
-          fuzziness: 'AUTO',
+    const conditions: any = [];
+
+    if (inputData.name !== '') {
+      conditions.push({
+        bool: {
+          should: [
+            {
+              multi_match: {
+                query: inputData.name,
+                fields: ['name', 'anotherName', 'briefDescription'],
+                fuzziness: 'AUTO',
+              },
+            },
+            {
+              wildcard: {
+                name: {
+                  value: `*${inputData.name}*`,
+                  case_insensitive: true,
+                },
+              },
+            },
+          ],
         },
-      },
-    ];
+      });
+    }
 
     if (inputData.status) {
       conditions.push({
@@ -74,10 +91,12 @@ export class SearchComicService {
     }
 
     if (inputData.genres) {
-      conditions.push({
-        terms: {
-          'genres.keyword': inputData.genres,
-        },
+      inputData.genres.forEach((genre) => {
+        conditions.push({
+          term: {
+            'genres.keyword': genre,
+          },
+        });
       });
     }
 

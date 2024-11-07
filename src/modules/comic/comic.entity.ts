@@ -39,7 +39,7 @@ export class Comic {
   @Column('text', { array: true, default: ['Đang cập nhật'] })
   authors: string[];
 
-  @Column({ default: StatusComic.PROCESSING })
+  @Column({ default: StatusComic.PROCESSING, enum: StatusComic, type: 'enum' })
   state: StatusComic;
 
   @Column({ nullable: true })
@@ -87,13 +87,13 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = `${customSlugify(this.name)}-${Date.now()}`;
+    this.slug = customSlugify(this.name);
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
-    this.slug = `${customSlugify(this.name)}-${Date.now()}`;
+    this.slug = customSlugify(this.name);
   }
 
   @AfterLoad()

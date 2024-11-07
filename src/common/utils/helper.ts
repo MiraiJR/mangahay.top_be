@@ -30,11 +30,16 @@ export const buildImageUrl = (relativePath?: string) => {
   if (!relativePath) {
     return '';
   }
+
+  if (relativePath.startsWith('https://')) {
+    return relativePath;
+  }
+
   return `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${relativePath}`;
 };
 
 export const buildSlug = (name: string): string => {
-  return `${customSlugify(name)}-${Date.now()}`;
+  return `${customSlugify(name)}`;
 };
 
 export default Helper;

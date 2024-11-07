@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { ApplicationException } from './application.exception';
 import { Request, Response } from 'express';
+import { EnvironmentUtil } from '@common/utils/EnvironmentUtil';
 
 @Catch(ApplicationException)
 export class ApplicationExceptionFilter implements ExceptionFilter {
@@ -16,6 +17,7 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
       message: exception.message,
       timestamp: new Date().toISOString(),
       path: request.url,
+      backTrace: EnvironmentUtil.isDevMode() ? exception.stack.split('\n') : [],
     });
   }
 }
