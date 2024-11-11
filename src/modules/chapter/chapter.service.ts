@@ -1,20 +1,14 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Chapter } from './chapter.entity';
-import { DataSource, EntityManager } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { IChapter } from './chapter.interface';
 import { ChapterRepository } from './chapter.repository';
-import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { ApplicationException } from '@common/exception/application.exception';
 import ChapterError from './resources/error/error';
-import { CreateChapterDTO } from './dtos/create-chapter';
 
 @Injectable()
 export class ChapterService {
-  constructor(
-    private chapterRepository: ChapterRepository,
-    private s3Service: S3Service,
-    private readonly datasource: DataSource,
-  ) {}
+  constructor(private chapterRepository: ChapterRepository) {}
 
   async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
@@ -111,38 +105,21 @@ export class ChapterService {
       : this.chapterRepository.save(update_chapter);
   }
 
-  async delete(id_chapter: number) {
+  async delete(chapterId: number) {
     return await this.chapterRepository.delete({
-      id: id_chapter,
+      id: chapterId,
     });
   }
 
-  async deleteAllChapterOfComic(comicId: number) {
-    return await this.chapterRepository
-      .createQueryBuilder('chapters')
-      .delete()
-      .from(Chapter)
-      .where('comicId = :comicId', { comicId })
-      .execute();
-  }
-
-  async getOne(id_chapter: number) {
-    return await this.chapterRepository.findOne({
-      where: {
-        id: id_chapter,
-      },
-    });
-  }
-
-  async updateImages(id_chapter: number, images: string[]) {
+  async updateImages(chapterId: number, images: string[]) {
     return await this.chapterRepository.save({
-      id: id_chapter,
+      id: chapterId,
       images: images,
     });
   }
 
-  async updateImagesAtSpecificPosition(id_chapter: number, positions: number[], images: string[]) {
-    const chapter = await this.getOne(id_chapter);
+  async updateImagesAtSpecificPosition(chapterId: number, positions: number[], images: string[]) {
+    const chapter = await this.chapterRepository.getChapterById(chapterId);
     const chapter_images = chapter.images;
 
     for (const i in positions) {
@@ -150,7 +127,7 @@ export class ChapterService {
     }
 
     return await this.chapterRepository.save({
-      id: id_chapter,
+      id: chapterId,
       images: chapter_images,
     });
   }

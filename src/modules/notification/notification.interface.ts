@@ -9,3 +9,12 @@ export interface INotification {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface NotificationEvent {
+  userId: number;
+  title: string;
+  body: string;
+  module: string;
+  redirectUrl: string;
+  thumb: string;
+}

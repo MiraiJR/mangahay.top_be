@@ -19,19 +19,19 @@ import { ExternalServiceModule } from '@common/external-service/external-service
 import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
 import { SearchComicController } from './search-comic/search-comic.controller';
 import { SearchComicService } from './search-comic/search-comic.service';
-import { ComicInteractionModule } from './comic-interaction/comicInteraction.module';
+import { ComicInteractionRepository } from './comic-interaction/comicInteraction.repository';
+import { ComicInteractionService } from './comic-interaction/comicInteraction.service';
+import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
 
 @Module({
   imports: [
     GoogleApiModule,
     JwtModule,
     ChapterModule,
-    UserModule,
     NotificationModule,
-    ComicInteractionModule,
     CommentModule,
     HttpModule,
-    TypeOrmModule.forFeature([Comic]),
+    TypeOrmModule.forFeature([Comic, ComicInteraction]),
     BullModule.registerQueue({
       name: 'crawl-chapters',
     }),
@@ -48,7 +48,9 @@ import { ComicInteractionModule } from './comic-interaction/comicInteraction.mod
     CrawlerService,
     CrawlChaptersProcessor,
     SearchComicService,
+    ComicInteractionRepository,
+    ComicInteractionService,
   ],
-  exports: [ComicService],
+  exports: [ComicService, ComicInteractionRepository, ComicInteractionService],
 })
 export class ComicModule {}

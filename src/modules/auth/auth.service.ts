@@ -68,7 +68,7 @@ export class AuthService {
       throw new ApplicationException(AuthError.AUTH_ERROR_0003);
     }
 
-    const matchedUser = await this.userService.getUserByEmail(matchedAccount.email);
+    const matchedUser = await this.userService.getUserById(matchedAccount.id);
 
     return this.updateTokenForUser(matchedUser.id, matchedUser.role);
   }

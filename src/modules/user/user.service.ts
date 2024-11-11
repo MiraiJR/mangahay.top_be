@@ -8,7 +8,6 @@ import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
 import { ComicInteractionService } from '@modules/comic/comic-interaction/comicInteraction.service';
 import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
-import { UserSessionRepository } from './user-sessions/user-session.repository';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { DataSource } from 'typeorm';
 import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';

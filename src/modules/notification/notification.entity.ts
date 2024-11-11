@@ -32,6 +32,9 @@ export class Notification {
   @Column({ nullable: true })
   thumb: string;
 
+  @Column()
+  module: string;
+
   @Column({ type: 'timestamp', default: () => 'now()' })
   createdAt: Date;
 

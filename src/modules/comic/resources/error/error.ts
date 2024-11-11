@@ -1,7 +1,11 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApplicationExceptionModel } from 'src/common/exception/type';
 
-type ComicErrorCode = 'COMIC_ERROR_0001' | 'COMIC_ERROR_0002' | 'COMIC_ERROR_0003';
+type ComicErrorCode =
+  | 'COMIC_ERROR_0001'
+  | 'COMIC_ERROR_0002'
+  | 'COMIC_ERROR_0003'
+  | 'SEARCH_COMIC_ERROR_0001';
 
 const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
   COMIC_ERROR_0001: {
@@ -18,6 +22,11 @@ const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
     errorCode: 'COMIC_ERROR_0003',
     message:
       'Không thể thực hiện thao tác trên truyện đang ở trạng thái "Tạm ngưng" hoặc "Hoàn thành"! Đưa về trạng thái "Đang tiến hành" để tiếp tục.',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  SEARCH_COMIC_ERROR_0001: {
+    errorCode: 'SEARCH_COMIC_ERROR_0001',
+    message: 'Quá trình tìm kiếm xảy ra lỗi',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };
