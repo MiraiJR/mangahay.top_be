@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bull';
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
@@ -7,7 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService): Promise<any> => ({
+      useFactory: async (configService: ConfigService) => ({
         redis: {
           host: configService.get('REDIS_HOST'),
           port: configService.get('REDIS_PORT'),

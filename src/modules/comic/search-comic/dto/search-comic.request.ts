@@ -11,7 +11,7 @@ export class SearchComicRequest {
   name: string = '';
   author: string = '';
   status: string;
-  orderBy: 'asc' | 'desc' | 'updatedAt' | 'view' | 'follow' | 'like' = 'updatedAt';
+  orderBy: 'asc' | 'desc' | 'updatedAt' | 'view' = 'updatedAt';
   @Type(() => Array)
   genres: string[];
 }

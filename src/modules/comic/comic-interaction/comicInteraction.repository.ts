@@ -19,7 +19,7 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
       .getMany();
   }
 
-  async evaluatedComic(userId: number, comicId: number) {
+  evaluatedComic(userId: number, comicId: number) {
     return this.createQueryBuilder('interaction')
       .where('interaction.user = :userId', { userId })
       .andWhere('interaction.comic = :comicId', { comicId })
@@ -28,11 +28,14 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
   }
 
   async getUsersFollowedComic(comicId: number) {
-    return this.createQueryBuilder('interaction')
-      .where('interaction.comic = :comicId', { comicId })
-      .andWhere('interaction.isFollowed = true')
-      .select(['interaction.user'])
-      .getMany();
+    const interactions = await this.find({
+      where: {
+        comicId,
+        isFollowed: true,
+      },
+    });
+
+    return interactions.map((interaction) => interaction.userId);
   }
 
   async listFollowingComicsOfUser(userId: number) {

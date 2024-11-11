@@ -19,6 +19,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateChapterDTO } from './dtos/create-chapter';
 import UserId from '@common/decorators/userId';
 import { ChapterComicFacade } from './facades/chapter-comic.facade';
+import { MAX_FILE_SIZE } from '@common/constant/Constant';
 
 @Controller('api/chapters')
 export class ChapterController {
@@ -29,7 +30,13 @@ export class ChapterController {
 
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @UseInterceptors(FilesInterceptor('images'))
+  @UseInterceptors(
+    FilesInterceptor('images', 1000, {
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
+    }),
+  )
   @Post()
   async handleCreateChapter(
     @Body(new ValidationPipe()) inputData: CreateChapterDTO,

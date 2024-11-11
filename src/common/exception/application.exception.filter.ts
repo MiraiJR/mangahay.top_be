@@ -18,6 +18,7 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       backTrace: EnvironmentUtil.isDevMode() ? exception.stack.split('\n') : [],
+      rootCause: exception?.getRootCause(),
     });
   }
 }

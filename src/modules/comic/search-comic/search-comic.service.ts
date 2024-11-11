@@ -2,6 +2,8 @@ import { ElasticsearchAdapterService } from '@common/external-service/elasticsea
 import { Injectable } from '@nestjs/common';
 import { SearchComicRequest } from './dto/search-comic.request';
 import { SortCombinations } from '@elastic/elasticsearch/lib/api/types';
+import { CanNotSearchException } from './exceptions/can-not-search.exception';
+import ComicError from '../resources/error/error';
 
 @Injectable()
 export class SearchComicService {
@@ -9,28 +11,35 @@ export class SearchComicService {
 
   async searchComic(inputData: SearchComicRequest) {
     const { page, size, orderBy } = inputData;
-    const elasticsearch = this.elasticsearchService.getInstance();
+    try {
+      const elasticsearch = this.elasticsearchService.getInstance();
 
-    const { hits } = await elasticsearch.search({
-      from: (page - 1) * size,
-      size: size,
-      sort: this.buildSort(orderBy) as SortCombinations[],
-      query: {
-        bool: {
-          must: this.buildConditionQuery(inputData),
+      const { hits } = await elasticsearch.search({
+        from: (page - 1) * size,
+        size: size,
+        sort: this.buildSort(orderBy) as SortCombinations[],
+        query: {
+          bool: {
+            must: this.buildConditionQuery(inputData),
+          },
         },
-      },
-      index: 'comics',
-    });
+        index: 'comics',
+      });
 
-    return {
-      query: {
-        ...inputData,
-      },
-      total: hits.total['value'],
-      comics: hits.hits.map((record) => record._source),
-      hasNext: hits.total['value'] > page * size,
-    };
+      return {
+        query: {
+          ...inputData,
+        },
+        total: hits.total['value'],
+        comics: hits.hits.map((record) => record._source),
+        hasNext: hits.total['value'] > page * size,
+      };
+    } catch (error) {
+      throw new CanNotSearchException({
+        ...ComicError.SEARCH_COMIC_ERROR_0001,
+        rootCause: error.message,
+      });
+    }
   }
 
   private buildSort(orderBy?: string) {
@@ -44,7 +53,7 @@ export class SearchComicService {
     };
 
     if (['asc', 'desc'].includes(orderBy)) {
-      return [{ name: { order: orderBy } }];
+      return [{ 'name.keyword': { order: orderBy } }];
     }
 
     const sortOrder = sortableFields[orderBy];

@@ -23,7 +23,6 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new ValidationErrorFilter());
   app.useGlobalFilters(new ApplicationExceptionFilter());
-  // app.useGlobalFilters(new UnknownExceptionFilter());
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   const PORT = process.env.PORT || 3000;

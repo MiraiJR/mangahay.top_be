@@ -17,18 +17,16 @@ import {
 import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { NotificationService } from '../notification/notification.service';
 import { ReadingHistoryService } from '../reading-history/readingHistory.service';
 import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
 import { UpdateProfileDTO } from './dtos/updateProfile.dto';
-import { toNotificationType } from './types/NotificationType';
 import UserId from '@common/decorators/userId';
+import { MAX_FILE_SIZE } from '@common/constant/Constant';
 
 @Controller('api/users')
 export class UserController {
   constructor(
     private userService: UserService,
-    private notifyService: NotificationService,
     private readingHistoryService: ReadingHistoryService,
   ) {}
 
@@ -78,7 +76,13 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
+    }),
+  )
   @Put('/me/profile/avatar')
   async handleUpdateAvatar(@UserId() userId: number, @UploadedFile() file: Express.Multer.File) {
     const user = await this.userService.updateAvatar(userId, file);
@@ -96,14 +100,6 @@ export class UserController {
     const user = await this.userService.updateProfile(userId, fullname, phone);
 
     return user;
-  }
-
-  @UseGuards(AuthGuard)
-  @Get('/me/notifies')
-  async getNotifies(@Query('type') type: string = '2', @UserId() userId: number) {
-    const notifies = await this.notifyService.getNotifiesOfUser(userId, toNotificationType(type));
-
-    return notifies;
   }
 
   @UseGuards(AuthGuard)

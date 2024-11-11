@@ -20,9 +20,8 @@ import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory
 import { GenreModule } from 'src/modules/genre/genre.module';
 import { GoogleApiModule } from 'src/modules/google-api/google-api.module';
 import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
-import { QueueHandlerModule } from 'src/modules/queue-handler/queue-handler.module';
+import { QueueHandlerModule } from '@common/external-service/queue-handler/queue-handler.module';
 import { ExternalServiceModule } from '@common/external-service/external-service.module';
-import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicInteraction.module';
 
 @Module({
   imports: [
@@ -37,7 +36,6 @@ import { ComicInteractionModule } from '@modules/comic/comic-interaction/comicIn
     AdminModule,
     ReportModule,
     ChapterModule,
-    ComicInteractionModule,
     ReadingHistoryModule,
     GenreModule,
     GoogleApiModule,

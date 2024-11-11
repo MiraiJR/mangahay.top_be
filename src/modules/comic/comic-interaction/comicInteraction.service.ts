@@ -86,16 +86,6 @@ export class ComicInteractionService {
     });
   }
 
-  async listUsersLikeComic(comicId: number) {
-    const users = await this.comicInteractionRepository.find({
-      where: {
-        comic: { id: comicId },
-      },
-    });
-
-    return users;
-  }
-
   async followComic(userId: number, comicId: number) {
     const interaction = await this.getInteractionOfWithComic(userId, comicId);
 
@@ -135,11 +125,8 @@ export class ComicInteractionService {
     });
   }
 
-  async getListUserIdFollowedComic(comicId: number): Promise<number[]> {
-    const objectUsers = await this.comicInteractionRepository.getUsersFollowedComic(comicId);
-    const arrayUserId = objectUsers.map((objectUser) => objectUser.user.id);
-
-    return arrayUserId;
+  getListUserIdFollowedComic(comicId: number): Promise<number[]> {
+    return this.comicInteractionRepository.getUsersFollowedComic(comicId);
   }
 
   async getFollowingComicOfUser(userId: number) {

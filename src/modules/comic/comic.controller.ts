@@ -18,20 +18,20 @@ import {
 } from '@nestjs/common';
 import { ComicService } from './comic.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles, RoleGuard } from '../../common/guards/role.guard';
 import { UserRole } from '../user/user.role';
 import { CreateComicDTO } from './dtos/create-comic';
 import UserId from '../../common/decorators/userId';
 import { GetComicsDTO } from './dtos/get-comics';
 import { ScoreDTO } from './dtos/evaluate-comic';
-import { CreateChapterDTO } from '../chapter/dtos/create-chapter';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
 import { CrawlChapterDTO } from './dtos/crawlChapter';
 import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
 import { CrawlChaptersReq } from './dtos/crawl-chapters.request';
 import { CommentQuery } from './models/requests/comments.query';
+import { MAX_FILE_SIZE } from '@common/constant/Constant';
 
 @Controller('api/comics')
 export class ComicController {
@@ -48,7 +48,13 @@ export class ComicController {
 
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @UseInterceptors(FileInterceptor('thumb'))
+  @UseInterceptors(
+    FileInterceptor('thumb', {
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
+    }),
+  )
   @Post()
   async handleCreateComic(
     @Body(new ValidationPipe()) inputData: CreateComicDTO,
@@ -99,7 +105,13 @@ export class ComicController {
 
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
-  @UseInterceptors(FileInterceptor('thumb'))
+  @UseInterceptors(
+    FileInterceptor('thumb', {
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
+    }),
+  )
   @Put('/:comicId')
   async handleUpdateComic(
     @Body(new ValidationPipe()) inputData: UpdateComicDTO,
