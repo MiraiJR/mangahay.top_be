@@ -10,17 +10,12 @@ import ChapterError from './resources/error/error';
 export class ChapterService {
   constructor(private chapterRepository: ChapterRepository) {}
 
-  async checkChapterWithOrderExisted(comicId: number, orderChapter: number): Promise<boolean> {
+  async checkChapterWithOrderExisted(comicId: number, orderChapter: number) {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
-    return !!matchedChapter;
-  }
 
-  async getChapters() {
-    return this.chapterRepository.find({
-      select: {
-        slug: true,
-      },
-    });
+    if (matchedChapter) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0002);
+    }
   }
 
   async getChapterById(chapterId: number) {

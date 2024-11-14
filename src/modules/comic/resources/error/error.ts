@@ -5,7 +5,8 @@ type ComicErrorCode =
   | 'COMIC_ERROR_0001'
   | 'COMIC_ERROR_0002'
   | 'COMIC_ERROR_0003'
-  | 'SEARCH_COMIC_ERROR_0001';
+  | 'SEARCH_COMIC_ERROR_0001'
+  | 'CRAWLER_CHAPTER_ERROR_0001';
 
 const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
   COMIC_ERROR_0001: {
@@ -27,6 +28,11 @@ const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
   SEARCH_COMIC_ERROR_0001: {
     errorCode: 'SEARCH_COMIC_ERROR_0001',
     message: 'Quá trình tìm kiếm xảy ra lỗi',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  CRAWLER_CHAPTER_ERROR_0001: {
+    errorCode: 'CRAWLER_CHAPTER_ERROR_0001',
+    message: 'Không thể cào dữ liệu chương từ đường dẫn!',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };

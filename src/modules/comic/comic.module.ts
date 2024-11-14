@@ -12,7 +12,7 @@ import { ComicRepository } from './comic.repository';
 import { CommentModule } from '../comment/comment.module';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiModule } from '../google-api/google-api.module';
-import { CrawlerService } from './crawler.service';
+import { CrawlerService } from '../../common/external-service/crawler/crawler.service';
 import { BullModule } from '@nestjs/bull';
 import { CrawlChaptersProcessor } from './comic.prossessor';
 import { ExternalServiceModule } from '@common/external-service/external-service.module';
@@ -30,7 +30,6 @@ import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
     ChapterModule,
     NotificationModule,
     CommentModule,
-    HttpModule,
     TypeOrmModule.forFeature([Comic, ComicInteraction]),
     BullModule.registerQueue({
       name: 'crawl-chapters',
@@ -45,7 +44,6 @@ import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
     Logger,
     ComicResolver,
     ComicRepository,
-    CrawlerService,
     CrawlChaptersProcessor,
     SearchComicService,
     ComicInteractionRepository,

@@ -22,14 +22,14 @@ export class CrawlChaptersProcessor {
       `Hệ thống đang crawl dữ liệu từ ${job.data.chapterUrl} - ${job.data.chapterName}. Request - userId: ${job.data.userId}`,
     );
 
-    await this.comicService.crawlImagesForChapter(
-      job.data.userId,
-      job.data.comic,
-      job.data.chapterName,
-      job.data.chapterUrl,
-      job.data.querySelectorImageUrl,
-      job.data.attributeImageUrl,
-    );
+    // await this.comicService.crawlImagesForChapter(
+    //   job.data.userId,
+    //   job.data.comic,
+    //   job.data.chapterName,
+    //   job.data.chapterUrl,
+    //   job.data.querySelectorImageUrl,
+    //   job.data.attributeImageUrl,
+    // );
   }
 
   @OnQueueActive()

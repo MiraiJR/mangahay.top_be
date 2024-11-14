@@ -16,16 +16,21 @@ import { Job, Queue } from 'bull';
 import { QueueName } from '@common/constant/queue-channel';
 import { ComicInteractionRepository } from '@modules/comic/comic-interaction/comicInteraction.repository';
 import { NotificationEvent } from '@modules/notification/notification.interface';
-import { title } from 'process';
+import { CrawlerService } from '@common/external-service/crawler/crawler.service';
+import { IChapter } from '../chapter.interface';
+import { ChapterService } from '../chapter.service';
+import { CrawlChapterDTO } from '../dtos/crawl-chapter';
 
 @Injectable()
 export class ChapterComicFacade {
   constructor(
+    private readonly crawlerService: CrawlerService,
     private readonly datasource: DataSource,
     private readonly s3Service: S3Service,
     private readonly configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly comicInteractionRepository: ComicInteractionRepository,
+    private readonly chapterService: ChapterService,
     @InjectQueue(QueueName.NOTIFICAION) private notificationQueue: Queue,
   ) {}
 
@@ -38,23 +43,15 @@ export class ChapterComicFacade {
     const matchedComic = await this.getComicById(comicId);
     this.canOperationOnComic(creatorId, matchedComic);
 
-    let chapterType = ChapterType.NORMAL;
-    let order = name.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
-
-    if (!order) {
-      chapterType = ChapterType.EXTRA;
-      order = '0';
-    }
+    const { chapterType, order } = this.getChapterTypeAndOrder(name);
 
     return this.datasource.transaction(async (manager) => {
-      const newChapter = await manager.getRepository(Chapter).save({
+      const newChapter = await this.createNewChapterWithoutImages(manager, {
         name,
         comicId,
-        slug: customSlugify(name),
-        images: [],
-        order: parseFloat(order),
-        type: chapterType,
         creatorId,
+        order,
+        type: chapterType,
       });
 
       if (isEnd === 1) {
@@ -65,23 +62,110 @@ export class ChapterComicFacade {
         .uploadMultipleFile(imageFiles, `comics/${newChapter.comicId}/${newChapter.id}`)
         .then((uploadedFiles) => uploadedFiles.map((uploadedFile) => uploadedFile.relativePath));
 
-      await manager.getRepository(Chapter).update(
-        {
-          id: newChapter.id,
-        },
-        {
-          images,
-        },
-      );
-
+      await this.updateImagesForCreatedChapter(manager, newChapter.id, images);
       this.indexingUrl(matchedComic.slug, newChapter.slug);
+      this.updateUpdatedTimeForComic(manager, comicId);
 
-      this.sendNotifyToListFollowedUser(comicId, matchedComic, newChapter);
+      this.sendNotifyToListFollowedUser(matchedComic, newChapter);
 
       return {
         ...newChapter,
         images,
       };
+    });
+  }
+
+  async crawlSingleChapter(userId: number, inputData: CrawlChapterDTO) {
+    const { comicId, nameChapter, urlPost, querySelector, attribute } = inputData;
+    const matchedComic = await this.getComicById(comicId);
+    this.canOperationOnComic(userId, matchedComic);
+
+    const { chapterType, order } = this.getChapterTypeAndOrder(nameChapter);
+    await this.chapterService.checkChapterWithOrderExisted(comicId, order);
+
+    await this.datasource.transaction(async (manager) => {
+      const imageUrls = await this.crawlImageUrls(urlPost, querySelector, attribute);
+      const newChapter = await this.createNewChapterWithoutImages(manager, {
+        name: nameChapter,
+        comicId,
+        creatorId: userId,
+        order: order,
+        type: chapterType,
+      });
+
+      const images = await this.uploadCrawledImageUrlToStorage(comicId, newChapter.id, imageUrls);
+
+      if (images.length !== imageUrls.length) {
+        throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
+      }
+
+      await this.updateImagesForCreatedChapter(manager, newChapter.id, images);
+      this.indexingUrl(matchedComic.slug, newChapter.slug);
+      await this.updateUpdatedTimeForComic(manager, comicId);
+
+      this.sendNotifyToListFollowedUser(matchedComic, newChapter);
+
+      return {
+        ...newChapter,
+        images,
+      };
+    });
+  }
+
+  private async updateUpdatedTimeForComic(manager: EntityManager, comicId: number) {
+    await manager.getRepository(Comic).update(
+      {
+        id: comicId,
+      },
+      {
+        updatedAt: new Date(),
+      },
+    );
+  }
+
+  private async updateImagesForCreatedChapter(
+    manager: EntityManager,
+    chapterId: number,
+    images: string[],
+  ) {
+    return manager.getRepository(Chapter).update(
+      {
+        id: chapterId,
+      },
+      {
+        images,
+        updatedAt: new Date(),
+      },
+    );
+  }
+
+  private async uploadCrawledImageUrlToStorage(
+    comicId: number,
+    chapterId: number,
+    imageUrls: string[],
+  ): Promise<string[]> {
+    const folder = `comics/${comicId}/${chapterId}`;
+
+    const images = await Promise.all(
+      imageUrls.map(async (imageUrl, index) => {
+        const fileName = index.toString();
+        const { relativePath } = await this.s3Service.uploadImageFromUrl(
+          imageUrl,
+          folder,
+          fileName,
+        );
+        return relativePath;
+      }),
+    );
+
+    return images;
+  }
+
+  private createNewChapterWithoutImages(manager: EntityManager, chapter: IChapter) {
+    return manager.getRepository(Chapter).save({
+      ...chapter,
+      slug: customSlugify(chapter.name),
+      images: [],
     });
   }
 
@@ -128,13 +212,16 @@ export class ChapterComicFacade {
     );
   }
 
-  private async sendNotifyToListFollowedUser(comicId: number, comic: Comic, chapter: Chapter) {
-    const listFollowedUserId = await this.comicInteractionRepository.getUsersFollowedComic(comicId);
+  private async sendNotifyToListFollowedUser(comic: Comic, chapter: Chapter) {
+    const listFollowedUserId = await this.comicInteractionRepository.getUsersFollowedComic(
+      comic.id,
+    );
+    const userIdsWithoutCreator = listFollowedUserId.filter((userId) => userId !== comic.creatorId);
     if (listFollowedUserId.length === 0) {
       return;
     }
 
-    const notificationJobs = this.buildBulkNotificationEvent(listFollowedUserId, comic, chapter);
+    const notificationJobs = this.buildBulkNotificationEvent(userIdsWithoutCreator, comic, chapter);
 
     this.notificationQueue.addBulk(notificationJobs);
   }
@@ -161,5 +248,40 @@ export class ChapterComicFacade {
         },
       } as Job;
     });
+  }
+
+  private async crawlImageUrls(url: string, querySelector: string, attribute: string) {
+    let imageUrls = [];
+
+    if (url.includes('facebook')) {
+      imageUrls = await this.crawlerService.crawlImagesFromFacebookPost(url);
+    } else {
+      imageUrls = await this.crawlerService.crawlImagesFromLinkWebsite(
+        url,
+        querySelector,
+        attribute,
+      );
+    }
+
+    if (imageUrls.length === 0) {
+      throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
+    }
+
+    return imageUrls;
+  }
+
+  private getChapterTypeAndOrder(chapterName: string) {
+    let chapterType = ChapterType.NORMAL;
+    let order = chapterName.match(/[+-]?\d+(\.\d+)?/g)[0] ?? null;
+
+    if (!order) {
+      chapterType = ChapterType.EXTRA;
+      order = '0';
+    }
+
+    return {
+      chapterType,
+      order: parseFloat(order),
+    };
   }
 }

@@ -13,6 +13,7 @@ import { NotificationService } from './notification.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import UserId from '../../common/decorators/userId';
 import { toNotificationType } from '@modules/user/types/NotificationType';
+import { User } from '@modules/user/user.entity';
 
 @Controller('api/notifies')
 export class NotificationController {
@@ -31,20 +32,7 @@ export class NotificationController {
   async handleChangeStateNotify(
     @Param('notifyId', new ParseIntPipe()) notifyId: number,
     @UserId() userId: number,
-  ): Promise<
-    {
-      isRead: true;
-      id: number;
-      userId: number;
-      user: import('d:/Personal_Project/mangahay/back-end/src/modules/user/user.entity').User;
-      title: string;
-      body: string;
-      redirectUrl: string;
-      thumb: string;
-      createdAt: Date;
-      updatedAt: Date;
-    } & import('d:/Personal_Project/mangahay/back-end/src/modules/notification/notification.entity').Notification
-  > {
+  ) {
     const notify = await this.notifyService.changeStateNotify(userId, notifyId);
 
     return notify;
