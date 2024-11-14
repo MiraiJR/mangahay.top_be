@@ -1,5 +1,8 @@
+import { ApplicationException } from '@common/exception/application.exception';
+import ComicError from '@modules/comic/resources/error/error';
+import { SystemDataRepository } from '@modules/system-data/system-data.repository';
 import { HttpService } from '@nestjs/axios';
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
@@ -7,7 +10,11 @@ import * as cheerio from 'cheerio';
 @Injectable()
 export class CrawlerService {
   private readonly logger: Logger;
-  constructor(private httpService: HttpService, private configService: ConfigService) {
+  constructor(
+    private httpService: HttpService,
+    private configService: ConfigService,
+    private systemDataRepository: SystemDataRepository,
+  ) {
     this.logger = new Logger(CrawlerService.name);
   }
 
@@ -38,24 +45,55 @@ export class CrawlerService {
     const convertedURL = new URL(urlPost);
     const pageId = convertedURL.searchParams.get('id');
     const postId = convertedURL.searchParams.get('story_fbid');
-    const accessToken = this.configService.get<string>('FACEBOOK_TOKEN');
+    const accessToken = await this.getFacebookToken();
 
-    const { data } = await this.httpService
-      .get(
-        `https://graph.facebook.com/v18.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
-      )
-      .toPromise();
+    try {
+      const { data } = await this.httpService
+        .get(
+          `https://graph.facebook.com/v19.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
+        )
+        .toPromise();
 
-    if (data.attachments === undefined) {
-      throw new HttpException('Cannot crawl data from this link!', HttpStatus.BAD_REQUEST);
+      if (data.attachments === undefined) {
+        throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
+      }
+
+      const images: string[] = [];
+      data.attachments.data[0].subattachments.data.map((ele: any) => {
+        images.push(ele.media.image.src);
+      });
+
+      return images;
+    } catch (error) {
+      const { code, type, error_subcode } = error.response.data.error;
+      if (type === 'OAuthException' && code === 190 && error_subcode === 463) {
+        const newFacebookToken = await this.resetTokenWhenExpired();
+        await this.updateFacebookToken(newFacebookToken);
+        return this.crawlImagesFromFacebookPost(urlPost);
+      }
     }
+  }
 
-    const images: string[] = [];
-    data.attachments.data[0].subattachments.data.map((ele: any) => {
-      images.push(ele.media.image.src);
+  private async resetTokenWhenExpired() {
+    const url = 'https://graph.facebook.com/oauth/access_token';
+    const { data } = await axios.get(url, {
+      params: {
+        client_id: this.configService.get<string>('APP_FACEBOOK_ID'),
+        client_secret: this.configService.get<string>('APP_FACEBOOK_SECRET'),
+        grant_type: 'client_credentials',
+      },
     });
 
-    return images;
+    return data.access_token;
+  }
+
+  private async getFacebookToken() {
+    const { value } = await this.systemDataRepository.getValueByKey('facebook_token');
+    return value;
+  }
+
+  private async updateFacebookToken(newToken: string) {
+    await this.systemDataRepository.updateValueByKey('facebook_token', newToken);
   }
 
   async crawlChapters(

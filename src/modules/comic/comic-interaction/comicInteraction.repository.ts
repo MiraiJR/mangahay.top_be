@@ -99,4 +99,15 @@ export class ComicInteractionRepository extends Repository<ComicInteraction> {
       isFollowed: true,
     });
   }
+
+  async calculateRatingOfComic(comicId: number) {
+    const interactions = await this.getInteractionsOfComic(comicId);
+
+    let totalRating = 0;
+    interactions.forEach((interaction) => {
+      totalRating += interaction.score;
+    });
+
+    return (totalRating / interactions.length).toPrecision(2);
+  }
 }

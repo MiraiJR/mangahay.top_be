@@ -20,6 +20,7 @@ import { CreateChapterDTO } from './dtos/create-chapter';
 import UserId from '@common/decorators/userId';
 import { ChapterComicFacade } from './facades/chapter-comic.facade';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
+import { CrawlChapterDTO } from './dtos/crawl-chapter';
 
 @Controller('api/chapters')
 export class ChapterController {
@@ -59,5 +60,17 @@ export class ChapterController {
     await this.chapterService.reorderChapters();
 
     return 'Sắp xếp lại các chapter thành công!';
+  }
+
+  @UseGuards(AuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Post('crawl/single')
+  async handleCrawlChapterForComic(
+    @Body(new ValidationPipe()) incomingData: CrawlChapterDTO,
+    @UserId() userId: number,
+  ) {
+    await this.chapterComicFacade.crawlSingleChapter(userId, incomingData);
+
+    return 'Cào dữ liệu thành công!';
   }
 }

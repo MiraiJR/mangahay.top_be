@@ -137,68 +137,68 @@ export class ComicController {
     return this.comicService.getListCommentOfComic(comicId, inputQuery);
   }
 
-  @UseGuards(AuthGuard)
-  @Roles(UserRole.ADMIN)
-  @Post(':comicId/crawl-chapter')
-  async handleCrawlChapterForComic(
-    @UserId() userId: number,
-    @Body(new ValidationPipe()) data: CrawlChapterDTO,
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
-    const { nameChapter, urlPost, querySelector, attribute } = data;
-    await this.comicService.crawlChapterForComic(
-      userId,
-      comicId,
-      nameChapter,
-      urlPost,
-      querySelector,
-      attribute,
-    );
+  // @UseGuards(AuthGuard)
+  // @Roles(UserRole.ADMIN)
+  // @Post(':comicId/crawl-chapter')
+  // async handleCrawlChapterForComic(
+  //   @UserId() userId: number,
+  //   @Body(new ValidationPipe()) data: CrawlChapterDTO,
+  //   @Param('comicId', new ParseIntPipe()) comicId: number,
+  // ) {
+  //   const { nameChapter, urlPost, querySelector, attribute } = data;
+  //   await this.comicService.crawlChapterForComic(
+  //     userId,
+  //     comicId,
+  //     nameChapter,
+  //     urlPost,
+  //     querySelector,
+  //     attribute,
+  //   );
 
-    return 'Cào dữ liệu thành công!';
-  }
+  //   return 'Cào dữ liệu thành công!';
+  // }
 
-  @UseGuards(AuthGuard)
-  @Roles(UserRole.ADMIN)
-  @Post(':comicId/crawl-chapters')
-  async handleCrawlChaptersForComic(
-    @UserId() userId: number,
-    @Body(new ValidationPipe()) data: CrawlChaptersReq,
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
-    this.comicService.crawlChaptersForComic(
-      userId,
-      comicId,
-      data.urlComic,
-      data.querySelectorChapterUrl,
-      data.attributeChapterUrl,
-      data.querySelectorChapterName,
-      data.querySelectorImageUrl,
-      data.attributeImageUrl,
-    );
+  // @UseGuards(AuthGuard)
+  // @Roles(UserRole.ADMIN)
+  // @Post(':comicId/crawl-chapters')
+  // async handleCrawlChaptersForComic(
+  //   @UserId() userId: number,
+  //   @Body(new ValidationPipe()) data: CrawlChaptersReq,
+  //   @Param('comicId', new ParseIntPipe()) comicId: number,
+  // ) {
+  //   this.comicService.crawlChaptersForComic(
+  //     userId,
+  //     comicId,
+  //     data.urlComic,
+  //     data.querySelectorChapterUrl,
+  //     data.attributeChapterUrl,
+  //     data.querySelectorChapterName,
+  //     data.querySelectorImageUrl,
+  //     data.attributeImageUrl,
+  //   );
 
-    return 'Quá trình cào dữ liệu đang được tiến hành và chúng tối sẽ gửi thông báo cho bạn khi thành công!';
-  }
+  //   return 'Quá trình cào dữ liệu đang được tiến hành và chúng tối sẽ gửi thông báo cho bạn khi thành công!';
+  // }
 
-  @UseGuards(AuthGuard)
-  @Roles(UserRole.ADMIN)
-  @Post(':comicId/crawl-all-chapters')
-  async handleCrawlAllChaptersForComic(
-    @UserId() userId: number,
-    @Body(new ValidationPipe()) data: CrawlAllChaptersDTO,
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-  ) {
-    const { querySelector, attribute, urls } = data;
-    await this.comicService.crawlChaptersFromWebsite(
-      userId,
-      comicId,
-      urls,
-      querySelector,
-      attribute,
-    );
+  // @UseGuards(AuthGuard)
+  // @Roles(UserRole.ADMIN)
+  // @Post(':comicId/crawl-all-chapters')
+  // async handleCrawlAllChaptersForComic(
+  //   @UserId() userId: number,
+  //   @Body(new ValidationPipe()) data: CrawlAllChaptersDTO,
+  //   @Param('comicId', new ParseIntPipe()) comicId: number,
+  // ) {
+  //   const { querySelector, attribute, urls } = data;
+  //   await this.comicService.crawlChaptersFromWebsite(
+  //     userId,
+  //     comicId,
+  //     urls,
+  //     querySelector,
+  //     attribute,
+  //   );
 
-    return 'Cào dữ liệu thành công!';
-  }
+  //   return 'Cào dữ liệu thành công!';
+  // }
 
   @Patch(':comicId/viewed')
   async handleIncreament(@Param('comicId') comicId: number) {

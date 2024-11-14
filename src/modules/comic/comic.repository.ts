@@ -43,14 +43,25 @@ export class ComicRepository extends Repository<Comic> {
     return queryBuilder.getMany();
   }
 
-  async updateTimeForComic(comicId: number): Promise<void> {
-    await this.createQueryBuilder()
+  updateTimeForComic(comicId: number) {
+    return this.createQueryBuilder()
       .update(Comic)
       .set({
         updatedAt: new Date(),
       })
       .where('id = :comicId', { comicId })
       .execute();
+  }
+
+  updateThumb(comicId: number, thumb: string) {
+    return this.update(
+      {
+        id: comicId,
+      },
+      {
+        thumb,
+      },
+    );
   }
 
   async getComicsByCreator(creatorId: number): Promise<Comic[]> {

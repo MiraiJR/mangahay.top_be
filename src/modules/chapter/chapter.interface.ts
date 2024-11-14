@@ -7,6 +7,7 @@ export interface IChapter {
   comicId?: number;
   slug?: string;
   creator?: number;
+  creatorId?: number;
   order?: number;
   type?: ChapterType;
 }
