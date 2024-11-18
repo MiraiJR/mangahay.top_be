@@ -42,4 +42,10 @@ export const buildSlug = (name: string): string => {
   return `${customSlugify(name)}`;
 };
 
+export const removeArrayFieldOfObject = <T>(objectRoot: T, fields: Array<keyof T>) => {
+  fields.forEach((field) => {
+    delete objectRoot[field];
+  });
+};
+
 export default Helper;

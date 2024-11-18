@@ -20,6 +20,7 @@ import { CrawlerService } from '@common/external-service/crawler/crawler.service
 import { IChapter } from '../chapter.interface';
 import { ChapterService } from '../chapter.service';
 import { CrawlChapterDTO } from '../dtos/crawl-chapter';
+import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -32,6 +33,7 @@ export class ChapterComicFacade {
     private readonly comicInteractionRepository: ComicInteractionRepository,
     private readonly chapterService: ChapterService,
     @InjectQueue(QueueName.NOTIFICAION) private notificationQueue: Queue,
+    @InjectQueue(QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER) private comicElasticsearchQueue: Queue,
   ) {}
 
   async createChapter(
@@ -67,6 +69,7 @@ export class ChapterComicFacade {
       this.updateUpdatedTimeForComic(manager, comicId);
 
       this.sendNotifyToListFollowedUser(matchedComic, newChapter);
+      this.updateComicOnElasticsearch(comicId);
 
       return {
         ...newChapter,
@@ -104,11 +107,19 @@ export class ChapterComicFacade {
       await this.updateUpdatedTimeForComic(manager, comicId);
 
       this.sendNotifyToListFollowedUser(matchedComic, newChapter);
+      this.updateComicOnElasticsearch(comicId);
 
       return {
         ...newChapter,
         images,
       };
+    });
+  }
+
+  private updateComicOnElasticsearch(comicId: number) {
+    this.comicElasticsearchQueue.add(comicId, {
+      removeOnComplete: true,
+      attempts: 3,
     });
   }
 
@@ -191,7 +202,7 @@ export class ChapterComicFacade {
   }
 
   private canOperationOnComic(userId: number, comic: Comic) {
-    if ((comic.creator && comic.creatorId !== userId) || comic.creator === null) {
+    if ((comic.creatorId && comic.creatorId !== userId) || comic.creatorId === null) {
       throw new ApplicationException(ComicError.COMIC_ERROR_0002);
     }
 
@@ -262,6 +273,8 @@ export class ChapterComicFacade {
         attribute,
       );
     }
+
+    console.log(imageUrls);
 
     if (imageUrls.length === 0) {
       throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
