@@ -30,6 +30,7 @@ export class ElasticsearchAdapterService {
       index,
       id,
       doc: document,
+      doc_as_upsert: true,
     });
   }
 

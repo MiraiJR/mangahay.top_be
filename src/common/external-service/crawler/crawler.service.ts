@@ -71,6 +71,8 @@ export class CrawlerService {
         await this.updateFacebookToken(newFacebookToken);
         return this.crawlImagesFromFacebookPost(urlPost);
       }
+
+      return [];
     }
   }
 

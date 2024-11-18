@@ -4,6 +4,7 @@ import { SearchComicRequest } from './dto/search-comic.request';
 import { SortCombinations } from '@elastic/elasticsearch/lib/api/types';
 import { CanNotSearchException } from './exceptions/can-not-search.exception';
 import ComicError from '../resources/error/error';
+import { IndexName } from '@common/external-service/elasticsearch/index-name.enum';
 
 @Injectable()
 export class SearchComicService {
@@ -23,7 +24,7 @@ export class SearchComicService {
             must: this.buildConditionQuery(inputData),
           },
         },
-        index: 'comics',
+        index: IndexName.COMICS,
       });
 
       return {

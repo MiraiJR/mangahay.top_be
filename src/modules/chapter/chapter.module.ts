@@ -16,9 +16,14 @@ import { ComicModule } from '@modules/comic/comic.module';
     TypeOrmModule.forFeature([Chapter]),
     JwtModule,
     GoogleApiModule,
-    BullModule.registerQueue({
-      name: QueueName.NOTIFICAION,
-    }),
+    BullModule.registerQueue(
+      {
+        name: QueueName.NOTIFICAION,
+      },
+      {
+        name: QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER,
+      },
+    ),
     forwardRef(() => ComicModule),
   ],
   controllers: [ChapterController],
