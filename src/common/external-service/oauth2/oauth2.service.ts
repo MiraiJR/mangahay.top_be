@@ -29,7 +29,6 @@ export class OAuth2Service {
 
       return userProfile.data;
     } catch (error) {
-      console.log(error);
       throw new ApplicationException(AuthError.AUTH_ERROR_0008);
     }
   }

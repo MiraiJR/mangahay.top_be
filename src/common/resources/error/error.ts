@@ -5,7 +5,8 @@ type CommonErrorCode =
   | 'COMMON_ERROR_0001'
   | 'COMMON_ERROR_0002'
   | 'COMMON_ERROR_0003'
-  | 'COMMON_ERROR_0004';
+  | 'COMMON_ERROR_0004'
+  | 'COMMON_ERROR_0005';
 
 const CommonError: Record<CommonErrorCode, ApplicationExceptionModel> = {
   COMMON_ERROR_0001: {
@@ -27,6 +28,11 @@ const CommonError: Record<CommonErrorCode, ApplicationExceptionModel> = {
     errorCode: 'COMMON_ERROR_0004',
     message: 'ValidationError',
     statusCode: HttpStatus.UNAUTHORIZED,
+  },
+  COMMON_ERROR_0005: {
+    errorCode: 'COMMON_ERROR_0005',
+    message: 'Quá trình tìm kiếm xảy ra lỗi!',
+    statusCode: HttpStatus.BAD_REQUEST,
   },
 };
 

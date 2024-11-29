@@ -14,6 +14,10 @@ import { UserSessionRepository } from './user-sessions/user-session.repository';
 import { ElasticsearchAdapterModule } from '@common/external-service/elasticsearch/elasticsearch.module';
 import { UserSocialEntity } from './user-social/user-social.entity';
 import { UserSocialRepository } from './user-social/user-social.repository';
+import { UserManageComicFacade } from './facades/user-manage-comic.facade';
+import { UserManagementController } from './user-management/user-management.controller';
+import { SearchUserController } from './search-user/search-user.controller';
+import { SearchUserService } from './search-user/search-user.service';
 
 @Global()
 @Module({
@@ -25,7 +29,7 @@ import { UserSocialRepository } from './user-social/user-social.repository';
     TypeOrmModule.forFeature([User, UserSession, UserSocialEntity]),
     ElasticsearchAdapterModule,
   ],
-  controllers: [UserController],
+  controllers: [UserController, UserManagementController, SearchUserController],
   providers: [
     UserService,
     Logger,
@@ -33,6 +37,8 @@ import { UserSocialRepository } from './user-social/user-social.repository';
     S3Service,
     UserSessionRepository,
     UserSocialRepository,
+    UserManageComicFacade,
+    SearchUserService,
   ],
   exports: [UserService, UserRepository, UserSessionRepository, UserSocialRepository],
 })

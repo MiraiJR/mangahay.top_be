@@ -64,12 +64,25 @@ export class ComicRepository extends Repository<Comic> {
     );
   }
 
-  async getComicsByCreator(creatorId: number): Promise<Comic[]> {
-    return this.createQueryBuilder('comics')
-      .where('comics.creator = :creatorId', { creatorId })
-      .orderBy('comics.updatedAt', 'ASC')
-      .addOrderBy('comics.id', 'ASC')
+  async getComicsByCreator(creatorId: number) {
+    const comics = await this.createQueryBuilder('comic')
+      .where('comic.creatorId = :creatorId', { creatorId })
+      .leftJoinAndSelect('comic.creator', 'user')
+      .leftJoinAndSelect(
+        'comic.privileges',
+        'privileges',
+        'comic.id = privileges.comicId and privileges.userId = :creatorId',
+        { creatorId },
+      )
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .select(['comic', 'user.id', 'user.fullname', 'chapters', 'privileges.permissions'])
+      .orderBy('comic.createdAt', 'DESC')
       .getMany();
+
+    return comics.map((comic) => ({
+      ...comic,
+      privileges: comic.privileges.map((privilege) => privilege.permissions).flat(),
+    }));
   }
 
   getComicBySlug(slug: string) {
@@ -102,5 +115,30 @@ export class ComicRepository extends Repository<Comic> {
       'view',
       1,
     );
+  }
+
+  async getComicByIdsOfUserId(userId: number, comicIds: number[]) {
+    if (comicIds.length === 0) {
+      return [];
+    }
+
+    const comics = await this.createQueryBuilder('comic')
+      .where('comic.id IN (:...comicIds)', { comicIds })
+      .leftJoinAndSelect('comic.creator', 'user')
+      .leftJoinAndSelect(
+        'comic.privileges',
+        'privileges',
+        'comic.id = privileges.comicId and privileges.userId = :userId',
+        { userId },
+      )
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .select(['comic', 'user.id', 'user.fullname', 'chapters', 'privileges.permissions'])
+      .orderBy('comic.createdAt', 'DESC')
+      .getMany();
+
+    return comics.map((comic) => ({
+      ...comic,
+      privileges: (comic.privileges || []).map((privilege) => privilege.permissions).flat(),
+    }));
   }
 }

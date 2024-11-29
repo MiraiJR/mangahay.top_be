@@ -22,6 +22,12 @@ import { ComicInteractionService } from './comic-interaction/comicInteraction.se
 import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
 import { UpdateComicAfterCreatingNewChapterConsumer } from './elasticsearch/update-after-creating-new-chapter.consumer';
 import { QueueName } from '@common/constant/queue-channel';
+import { ComicPrivilegeEntity } from './comic-privilege/comic-privilege.entity';
+import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
+import { ComicNotificationService } from './notification/comic.notifcation';
+import { ComicPrivilegeService } from './comic-privilege/comic-privilege.service';
+import { ComicPrivilegeController } from './comic-privilege/comic-privilege.controller';
+import { ComicUtilService } from './shared/comic.util';
 
 @Module({
   imports: [
@@ -30,7 +36,7 @@ import { QueueName } from '@common/constant/queue-channel';
     ChapterModule,
     NotificationModule,
     CommentModule,
-    TypeOrmModule.forFeature([Comic, ComicInteraction]),
+    TypeOrmModule.forFeature([Comic, ComicInteraction, ComicPrivilegeEntity]),
     BullModule.registerQueue(
       {
         name: 'crawl-chapters',
@@ -38,12 +44,15 @@ import { QueueName } from '@common/constant/queue-channel';
       {
         name: QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER,
       },
+      {
+        name: QueueName.NOTIFICAION,
+      },
     ),
     ExternalServiceModule,
     ElasticsearchAdapterModule,
     UserModule,
   ],
-  controllers: [ComicController, SearchComicController],
+  controllers: [ComicController, SearchComicController, ComicPrivilegeController],
   providers: [
     ComicService,
     Logger,
@@ -54,7 +63,17 @@ import { QueueName } from '@common/constant/queue-channel';
     ComicInteractionRepository,
     ComicInteractionService,
     UpdateComicAfterCreatingNewChapterConsumer,
+    ComicPrivilegeRepository,
+    ComicNotificationService,
+    ComicPrivilegeService,
+    ComicUtilService,
   ],
-  exports: [ComicService, ComicInteractionRepository, ComicInteractionService],
+  exports: [
+    ComicService,
+    ComicInteractionRepository,
+    ComicInteractionService,
+    ComicPrivilegeRepository,
+    ComicRepository,
+  ],
 })
 export class ComicModule {}

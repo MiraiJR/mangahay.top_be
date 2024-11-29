@@ -8,7 +8,7 @@ import { CommentService } from '../comment/comment.service';
 import { buildSlug } from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
 import { Paging } from 'src/common/types/Paging';
-import { UPDATE_IMAGE_WITH_FILE_OR_NOT, UpdateComicDTO } from './dtos/update-comic';
+import { UpdateComicDTO } from './dtos/update-comic';
 import { DataSource, EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { GoogleApiService } from '../google-api/google-api.service';
@@ -25,6 +25,9 @@ import { CommentQuery } from './models/requests/comments.query';
 import { Chapter } from '@modules/chapter/chapter.entity';
 import { StatusComic } from './enums/status-comic';
 import { IndexName } from '@common/external-service/elasticsearch/index-name.enum';
+import { ComicNotificationService } from './notification/comic.notifcation';
+import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
+import { ComicPrivilegePermission } from './comic-privilege/comic-privilege.enum';
 
 @Injectable()
 export class ComicService {
@@ -43,6 +46,8 @@ export class ComicService {
     private readonly elasticsearchAdapter: ElasticsearchAdapterService,
     private readonly commentRepository: CommentRepository,
     private readonly datasource: DataSource,
+    private readonly comicNotificationService: ComicNotificationService,
+    private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
   ) {}
 
   async getListCommentOfComic(comicId: number, inputQuery: CommentQuery) {
@@ -70,12 +75,33 @@ export class ComicService {
   async delete(userId: number, comicId: number) {
     const matchedComic = await this.getComicById(comicId);
 
-    this.checkCreatorOfComic(userId, matchedComic);
+    await this.canProcessComicWithUserRight(
+      userId,
+      matchedComic,
+      ComicPrivilegePermission.REMOVE_COMIC,
+    );
 
     await this.datasource.transaction(async (manager) => {
       await manager.getRepository(Comic).delete(comicId);
       this.elasticsearchAdapter.deleteRecord(IndexName.COMICS, comicId);
     });
+  }
+
+  private async canProcessComicWithUserRight(
+    userId: number,
+    comic: Comic,
+    targetPrivilege: ComicPrivilegePermission,
+  ) {
+    const listManagerWithPermissions =
+      await this.comicPrivilegeRepository.getManagersWithTheirPermissionsOfComic(comic.id);
+
+    const matchedManager = listManagerWithPermissions.find((manager) => manager.user.id === userId);
+    if (
+      (userId !== comic.creatorId && !matchedManager) ||
+      !matchedManager.permissions.includes(targetPrivilege)
+    ) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
   }
 
   async getComics(query: Paging) {
@@ -183,27 +209,29 @@ export class ComicService {
   async updateComic(
     userId: number,
     comicId: number,
-    data: UpdateComicDTO,
-    file?: Express.Multer.File,
+    inputData: UpdateComicDTO,
+    thumb?: Express.Multer.File,
   ): Promise<Comic> {
+    const { changedFields, changedData } = inputData;
     let updatedComic = await this.getComicById(comicId);
     this.checkCreatorOfComic(userId, updatedComic);
 
-    updatedComic.name = data.name;
-    updatedComic.anotherName = data.anotherName;
-    updatedComic.genres = data.genres;
-    updatedComic.authors = data.authors;
-    updatedComic.briefDescription = data.briefDescription;
-    updatedComic.translators = data.translators;
-    updatedComic.state = data.state;
+    changedFields.forEach((changedField, index) => {
+      if (['genres', 'authors', 'translators'].includes(changedField)) {
+        updatedComic[changedField] = JSON.parse(changedData[index]);
+      } else {
+        updatedComic[changedField] = changedData[index];
+      }
+    });
     updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
-    if (file && data.isUpdateImage === UPDATE_IMAGE_WITH_FILE_OR_NOT.YES) {
+    if (!!thumb) {
+      changedFields.push('thumb');
       const { relativePath } = await this.s3Service.uploadFileFromBuffer(
-        file.buffer,
+        thumb.buffer,
         `comics/${updatedComic.id}`,
-        'thumb.jpeg',
+        thumb.filename,
       );
 
       updatedComic.thumb = relativePath;
@@ -212,7 +240,12 @@ export class ComicService {
     return this.datasource.transaction(async (manager) => {
       const comic = await manager.getRepository(Comic).save(updatedComic);
 
-      this.elasticsearchAdapter.updateRecord<Comic>('comics', comic.id, comic);
+      this.comicNotificationService.sendNotifyToListManagerAfterUpdatingComic(
+        userId,
+        comic,
+        changedFields,
+      );
+      this.elasticsearchAdapter.updateRecord<Comic>(IndexName.COMICS, comic.id, comic);
 
       return comic;
     });

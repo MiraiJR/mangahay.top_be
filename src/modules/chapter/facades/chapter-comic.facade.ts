@@ -20,7 +20,9 @@ import { CrawlerService } from '@common/external-service/crawler/crawler.service
 import { IChapter } from '../chapter.interface';
 import { ChapterService } from '../chapter.service';
 import { CrawlChapterDTO } from '../dtos/crawl-chapter';
-import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
+import { UserRepository } from '@modules/user/user.repository';
+import { ComicPrivilegeRepository } from '@modules/comic/comic-privilege/comic-privilege.repository';
+import { ComicPrivilegePermission } from '@modules/comic/comic-privilege/comic-privilege.enum';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -31,7 +33,9 @@ export class ChapterComicFacade {
     private readonly configService: ConfigService,
     private readonly googleApiService: GoogleApiService,
     private readonly comicInteractionRepository: ComicInteractionRepository,
+    private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
     private readonly chapterService: ChapterService,
+    private readonly userRepository: UserRepository,
     @InjectQueue(QueueName.NOTIFICAION) private notificationQueue: Queue,
     @InjectQueue(QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER) private comicElasticsearchQueue: Queue,
   ) {}
@@ -43,7 +47,7 @@ export class ChapterComicFacade {
   ) {
     const { name, comicId, isEnd } = inputData;
     const matchedComic = await this.getComicById(comicId);
-    this.canOperationOnComic(creatorId, matchedComic);
+    await this.canOperationOnComic(creatorId, matchedComic);
 
     const { chapterType, order } = this.getChapterTypeAndOrder(name);
 
@@ -69,6 +73,7 @@ export class ChapterComicFacade {
       this.updateUpdatedTimeForComic(manager, comicId);
 
       this.sendNotifyToListFollowedUser(matchedComic, newChapter);
+      this.sendNotifyToListManager(matchedComic, newChapter);
       this.updateComicOnElasticsearch(comicId);
 
       return {
@@ -81,7 +86,7 @@ export class ChapterComicFacade {
   async crawlSingleChapter(userId: number, inputData: CrawlChapterDTO) {
     const { comicId, nameChapter, urlPost, querySelector, attribute } = inputData;
     const matchedComic = await this.getComicById(comicId);
-    this.canOperationOnComic(userId, matchedComic);
+    await this.canOperationOnComic(userId, matchedComic);
 
     const { chapterType, order } = this.getChapterTypeAndOrder(nameChapter);
     await this.chapterService.checkChapterWithOrderExisted(comicId, order);
@@ -107,6 +112,7 @@ export class ChapterComicFacade {
       await this.updateUpdatedTimeForComic(manager, comicId);
 
       this.sendNotifyToListFollowedUser(matchedComic, newChapter);
+      this.sendNotifyToListManager(matchedComic, newChapter);
       this.updateComicOnElasticsearch(comicId);
 
       return {
@@ -201,8 +207,9 @@ export class ChapterComicFacade {
     return matchedComic;
   }
 
-  private canOperationOnComic(userId: number, comic: Comic) {
-    if ((comic.creatorId && comic.creatorId !== userId) || comic.creatorId === null) {
+  private async canOperationOnComic(userId: number, comic: Comic) {
+    const canUpdate = await this.canUpdateChapter(userId, comic);
+    if (!canUpdate) {
       throw new ApplicationException(ComicError.COMIC_ERROR_0002);
     }
 
@@ -228,23 +235,69 @@ export class ChapterComicFacade {
       comic.id,
     );
     const userIdsWithoutCreator = listFollowedUserId.filter((userId) => userId !== comic.creatorId);
-    if (listFollowedUserId.length === 0) {
+    if (userIdsWithoutCreator.length === 0) {
       return;
     }
 
-    const notificationJobs = this.buildBulkNotificationEvent(userIdsWithoutCreator, comic, chapter);
+    const notificationJobs = this.buildBulkNotificationEventToListFollowingUser(
+      listFollowedUserId,
+      comic,
+      chapter,
+    );
 
     this.notificationQueue.addBulk(notificationJobs);
   }
 
-  private buildBulkNotificationEvent(
+  private async sendNotifyToListManager(comic: Comic, chapter: Chapter) {
+    const listManagerIdsOfComic = await this.comicPrivilegeRepository.getManagerIdsOfComicId(
+      comic.id,
+    );
+
+    if (!listManagerIdsOfComic.includes(comic.creatorId)) {
+      listManagerIdsOfComic.push(comic.creatorId);
+    }
+
+    const notificationJobs = await this.buildBulkNotificationEventToListManager(
+      listManagerIdsOfComic.filter((managerId) => managerId !== chapter.creatorId), // not send to creator of chapter
+      comic,
+      chapter,
+    );
+
+    this.notificationQueue.addBulk(notificationJobs);
+  }
+
+  private async buildBulkNotificationEventToListManager(
+    managerIds: number[],
+    comic: Comic,
+    chapter: Chapter,
+  ): Promise<Job<NotificationEvent>[]> {
+    const creator = await this.userRepository.getUserById(chapter.creatorId);
+
+    return managerIds.map((managerId) => {
+      return {
+        data: {
+          userId: managerId,
+          title: `Truyện ${comic.name} vừa cập nhật thêm chương mới!`,
+          body: `Người dùng <strong>${creator.fullname}</strong> vừa thêm chương ${chapter.name} vào truyện!`,
+          module: 'chapter',
+          redirectUrl: `/truyen/${comic.slug}/${chapter.slug}`,
+          thumb: comic.thumb,
+        },
+        opts: {
+          removeOnComplete: true,
+          attempts: 3,
+        },
+      } as Job;
+    });
+  }
+
+  private buildBulkNotificationEventToListFollowingUser(
     userIds: number[],
     comic: Comic,
     chapter: Chapter,
   ): Job<NotificationEvent>[] {
     return userIds.map((userId) => {
       return {
-        name: 'notification-chapter',
         data: {
           userId,
           title: `Truyện ${comic.name} vừa cập nhật thêm chương mới!`,
@@ -274,8 +327,6 @@ export class ChapterComicFacade {
       );
     }
 
-    console.log(imageUrls);
-
     if (imageUrls.length === 0) {
       throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
     }
@@ -296,5 +347,26 @@ export class ChapterComicFacade {
       chapterType,
       order: parseFloat(order),
     };
+  }
+
+  private async canUpdateChapter(userId: number, comic: Comic) {
+    if (!comic.creatorId) {
+      return false;
+    }
+
+    if (userId === comic.creatorId) {
+      return true;
+    }
+
+    const permissions = await this.comicPrivilegeRepository.getPermissionOfUserByComicId(
+      userId,
+      comic.id,
+    );
+
+    if (permissions.includes(ComicPrivilegePermission.UPDATE_CHAPTER)) {
+      return true;
+    }
+
+    return false;
   }
 }

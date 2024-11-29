@@ -10,6 +10,7 @@ import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
 import { ChapterViewType } from '@modules/user-setting/enums/chapter-view-type';
 import { UserSocialEntity } from '@modules/user/user-social/user-social.entity';
 import { ProviderType } from '@modules/user/user-social/social.enum';
+import { IndexName } from '@common/external-service/elasticsearch/index-name.enum';
 
 @Injectable()
 export class CreateAccoutUserFacade {
@@ -27,7 +28,7 @@ export class CreateAccoutUserFacade {
       });
 
       await Promise.all([
-        this.elasticsearchAdapter.addRecord<User>('users', newUser, newUser.id),
+        this.elasticsearchAdapter.addRecord<User>(IndexName.USERS, newUser, newUser.id),
         manager.getRepository(UserSession).save({
           userId: newUser.id,
         }),
@@ -79,7 +80,7 @@ export class CreateAccoutUserFacade {
             amount: 1,
           },
         }),
-        this.elasticsearchAdapter.addRecord<User>('users', newUser, newUser.id),
+        this.elasticsearchAdapter.addRecord<User>(IndexName.USERS, newUser, newUser.id),
       ]);
 
       return newUser;

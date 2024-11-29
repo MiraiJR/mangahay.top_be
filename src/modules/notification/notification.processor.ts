@@ -10,7 +10,7 @@ export class NotificationProcessor {
   private readonly logger = new Logger(NotificationProcessor.name);
   constructor(private readonly notificationRepository: NotificationRepository) {}
 
-  @Process('notification-chapter')
+  @Process()
   async sendNotificationForCreatedNewChapter(job: Job<NotificationEvent>) {
     this.notificationRepository.save({
       ...job.data,

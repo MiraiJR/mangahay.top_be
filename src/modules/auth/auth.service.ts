@@ -116,6 +116,10 @@ export class AuthService {
     const { userId, role } = payload;
     const sessions = await this.userSessionRepository.findSessionByUserId(userId);
 
+    if (!sessions) {
+      throw new ApplicationException(AuthError.AUTH_ERROR_0004);
+    }
+
     if (sessions.refreshToken !== token) {
       throw new ApplicationException(AuthError.AUTH_ERROR_0004);
     }
