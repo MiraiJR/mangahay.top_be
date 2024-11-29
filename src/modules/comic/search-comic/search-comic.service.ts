@@ -2,9 +2,9 @@ import { ElasticsearchAdapterService } from '@common/external-service/elasticsea
 import { Injectable } from '@nestjs/common';
 import { SearchComicRequest } from './dto/search-comic.request';
 import { SortCombinations } from '@elastic/elasticsearch/lib/api/types';
-import { CanNotSearchException } from './exceptions/can-not-search.exception';
-import ComicError from '../resources/error/error';
 import { IndexName } from '@common/external-service/elasticsearch/index-name.enum';
+import { CanNotSearchException } from '@common/exception/common/can-not-search.exception';
+import CommonError from '@common/resources/error/error';
 
 @Injectable()
 export class SearchComicService {
@@ -28,16 +28,14 @@ export class SearchComicService {
       });
 
       return {
-        query: {
-          ...inputData,
-        },
+        query: inputData,
         total: hits.total['value'],
         comics: hits.hits.map((record) => record._source),
         hasNext: hits.total['value'] > page * size,
       };
     } catch (error) {
       throw new CanNotSearchException({
-        ...ComicError.SEARCH_COMIC_ERROR_0001,
+        ...CommonError.COMMON_ERROR_0005,
         rootCause: error.message,
       });
     }

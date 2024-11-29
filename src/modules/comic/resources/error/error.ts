@@ -5,7 +5,7 @@ type ComicErrorCode =
   | 'COMIC_ERROR_0001'
   | 'COMIC_ERROR_0002'
   | 'COMIC_ERROR_0003'
-  | 'SEARCH_COMIC_ERROR_0001'
+  | 'COMIC_ERROR_0004'
   | 'CRAWLER_CHAPTER_ERROR_0001';
 
 const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
@@ -25,14 +25,14 @@ const ComicError: Record<ComicErrorCode, ApplicationExceptionModel> = {
       'Không thể thực hiện thao tác trên truyện đang ở trạng thái "Tạm ngưng" hoặc "Hoàn thành"! Đưa về trạng thái "Đang tiến hành" để tiếp tục.',
     statusCode: HttpStatus.BAD_REQUEST,
   },
-  SEARCH_COMIC_ERROR_0001: {
-    errorCode: 'SEARCH_COMIC_ERROR_0001',
-    message: 'Quá trình tìm kiếm xảy ra lỗi',
-    statusCode: HttpStatus.BAD_REQUEST,
-  },
   CRAWLER_CHAPTER_ERROR_0001: {
     errorCode: 'CRAWLER_CHAPTER_ERROR_0001',
     message: 'Không thể cào dữ liệu chương từ đường dẫn!',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  COMIC_ERROR_0004: {
+    errorCode: 'COMIC_ERROR_0004',
+    message: 'Khổng thể thiết lập quyền cho người khởi tạo!',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };

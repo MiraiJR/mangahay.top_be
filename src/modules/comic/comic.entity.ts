@@ -17,6 +17,7 @@ import { customSlugify } from 'src/common/configs/slugify.config';
 import { StatusComic } from './enums/status-comic';
 import { buildImageUrl } from 'src/common/utils/helper';
 import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
+import { ComicPrivilegeEntity } from './comic-privilege/comic-privilege.entity';
 
 @Entity()
 @Index(['id', 'slug', 'name', 'anotherName', 'briefDescription'], { unique: true, fulltext: true })
@@ -84,6 +85,11 @@ export class Comic {
     eager: true,
   })
   comments: CommentEntity[];
+
+  @OneToMany(() => ComicPrivilegeEntity, (comicPrevilege) => comicPrevilege.comic, {
+    eager: true,
+  })
+  privileges: ComicPrivilegeEntity[];
 
   @BeforeUpdate()
   updateTimeStamp() {

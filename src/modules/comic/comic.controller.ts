@@ -26,16 +26,13 @@ import UserId from '../../common/decorators/userId';
 import { GetComicsDTO } from './dtos/get-comics';
 import { ScoreDTO } from './dtos/evaluate-comic';
 import { CreateCommentDTO } from '../comment/dtos/create-comment';
-import { CrawlChapterDTO } from './dtos/crawlChapter';
-import { CrawlAllChaptersDTO } from './dtos/crawlAllChapters';
 import { UpdateComicDTO } from './dtos/update-comic';
-import { CrawlChaptersReq } from './dtos/crawl-chapters.request';
 import { CommentQuery } from './models/requests/comments.query';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
 
 @Controller('api/comics')
 export class ComicController {
-  constructor(private comicService: ComicService) {}
+  constructor(private readonly comicService: ComicService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -136,69 +133,6 @@ export class ComicController {
   ) {
     return this.comicService.getListCommentOfComic(comicId, inputQuery);
   }
-
-  // @UseGuards(AuthGuard)
-  // @Roles(UserRole.ADMIN)
-  // @Post(':comicId/crawl-chapter')
-  // async handleCrawlChapterForComic(
-  //   @UserId() userId: number,
-  //   @Body(new ValidationPipe()) data: CrawlChapterDTO,
-  //   @Param('comicId', new ParseIntPipe()) comicId: number,
-  // ) {
-  //   const { nameChapter, urlPost, querySelector, attribute } = data;
-  //   await this.comicService.crawlChapterForComic(
-  //     userId,
-  //     comicId,
-  //     nameChapter,
-  //     urlPost,
-  //     querySelector,
-  //     attribute,
-  //   );
-
-  //   return 'Cào dữ liệu thành công!';
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @Roles(UserRole.ADMIN)
-  // @Post(':comicId/crawl-chapters')
-  // async handleCrawlChaptersForComic(
-  //   @UserId() userId: number,
-  //   @Body(new ValidationPipe()) data: CrawlChaptersReq,
-  //   @Param('comicId', new ParseIntPipe()) comicId: number,
-  // ) {
-  //   this.comicService.crawlChaptersForComic(
-  //     userId,
-  //     comicId,
-  //     data.urlComic,
-  //     data.querySelectorChapterUrl,
-  //     data.attributeChapterUrl,
-  //     data.querySelectorChapterName,
-  //     data.querySelectorImageUrl,
-  //     data.attributeImageUrl,
-  //   );
-
-  //   return 'Quá trình cào dữ liệu đang được tiến hành và chúng tối sẽ gửi thông báo cho bạn khi thành công!';
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @Roles(UserRole.ADMIN)
-  // @Post(':comicId/crawl-all-chapters')
-  // async handleCrawlAllChaptersForComic(
-  //   @UserId() userId: number,
-  //   @Body(new ValidationPipe()) data: CrawlAllChaptersDTO,
-  //   @Param('comicId', new ParseIntPipe()) comicId: number,
-  // ) {
-  //   const { querySelector, attribute, urls } = data;
-  //   await this.comicService.crawlChaptersFromWebsite(
-  //     userId,
-  //     comicId,
-  //     urls,
-  //     querySelector,
-  //     attribute,
-  //   );
-
-  //   return 'Cào dữ liệu thành công!';
-  // }
 
   @Patch(':comicId/viewed')
   async handleIncreament(@Param('comicId') comicId: number) {

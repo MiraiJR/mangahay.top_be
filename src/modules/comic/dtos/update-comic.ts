@@ -1,41 +1,14 @@
-import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { StatusComic } from '../enums/status-comic';
-
-export enum UPDATE_IMAGE_WITH_FILE_OR_NOT {
-  NO = 0,
-  YES = 1,
-}
+import { IsArray, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateComicDTO {
-  @IsNotEmpty()
-  @IsString()
-  name: string;
-
-  @IsNotEmpty()
-  @IsString()
-  anotherName: string;
-
-  @IsNotEmpty()
+  @IsOptional()
+  @Type(() => Array)
   @IsArray()
-  genres: string[];
+  changedFields?: string[] = [];
 
-  @IsNotEmpty()
+  @IsOptional()
+  @Type(() => Array)
   @IsArray()
-  authors: string[];
-
-  @IsNotEmpty()
-  @IsString()
-  briefDescription: string;
-
-  @IsNotEmpty()
-  @IsArray()
-  translators: string[];
-
-  @IsNotEmpty()
-  @IsEnum(UPDATE_IMAGE_WITH_FILE_OR_NOT)
-  isUpdateImage: UPDATE_IMAGE_WITH_FILE_OR_NOT;
-
-  @IsNotEmpty()
-  @IsEnum(StatusComic)
-  state: StatusComic;
+  changedData?: string[] = [];
 }

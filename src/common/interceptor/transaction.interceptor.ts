@@ -24,7 +24,6 @@ export class TransactionInterceptor implements NestInterceptor {
         return data;
       }),
       catchError(async (error) => {
-        console.log(error);
         await queryRunner.rollbackTransaction();
         throw new ApplicationException(CommonError.COMMON_ERROR_0001);
       }),

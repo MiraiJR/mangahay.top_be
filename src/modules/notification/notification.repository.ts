@@ -35,6 +35,9 @@ export class NotificationRepository extends Repository<Notification> {
         where: {
           userId,
         },
+        order: {
+          createdAt: 'DESC',
+        },
       });
     }
 
@@ -42,6 +45,9 @@ export class NotificationRepository extends Repository<Notification> {
       where: {
         userId,
         isRead,
+      },
+      order: {
+        createdAt: 'DESC',
       },
     });
   }

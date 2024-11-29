@@ -27,11 +27,11 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ./redis-data:/data
+      - redis-data:/data
     networks:
       - mangahay_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "bash", "-c", "echo PING | nc localhost 6379"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -123,6 +123,8 @@ volumes:
   esdata01:
     driver: local
   kibanadata:
+    driver: local
+  redis-data: 
     driver: local
 
 networks:
