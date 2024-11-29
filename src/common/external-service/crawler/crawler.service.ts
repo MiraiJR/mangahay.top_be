@@ -50,7 +50,7 @@ export class CrawlerService {
     try {
       const { data } = await this.httpService
         .get(
-          `https://graph.facebook.com/v19.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
+          `https://graph.facebook.com/v21.0/${pageId}_${postId}?fields=attachments{subattachments.limit(100)}&access_token=${accessToken}`,
         )
         .toPromise();
 
@@ -65,6 +65,7 @@ export class CrawlerService {
 
       return images;
     } catch (error) {
+      console.log(error.response);
       const { code, type, error_subcode } = error.response.data.error;
       if (type === 'OAuthException' && code === 190 && error_subcode === 463) {
         const newFacebookToken = await this.resetTokenWhenExpired();

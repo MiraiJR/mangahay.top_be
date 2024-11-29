@@ -14,11 +14,12 @@ import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
 import { UserSession } from './user-sessions/user-session.entity';
 import { ApplicationException } from '@common/exception/application.exception';
 import UserError from './resources/error/error';
+import { ComicUtilService } from '@modules/comic/shared/comic.util';
 
 @Injectable()
 export class UserService {
   constructor(
-    private comicService: ComicService,
+    private comicUtilService: ComicUtilService,
     private comicInteractionService: ComicInteractionService,
     private userRepository: UserRepository,
     private s3Service: S3Service,
@@ -116,7 +117,7 @@ export class UserService {
   }
 
   async checkInteractionWithComic(userId: number, comicId: number): Promise<ComicInteraction> {
-    const comic = await this.comicService.getComicById(comicId);
+    await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     let interaction = await this.comicInteractionService.getInteractionOfWithComic(userId, comicId);
 
     if (!interaction) {

@@ -18,6 +18,8 @@ import { UserManageComicFacade } from './facades/user-manage-comic.facade';
 import { UserManagementController } from './user-management/user-management.controller';
 import { SearchUserController } from './search-user/search-user.controller';
 import { SearchUserService } from './search-user/search-user.service';
+import { UserUtilService } from './shared/user.util';
+import { ComicUtilService } from '@modules/comic/shared/comic.util';
 
 @Global()
 @Module({
@@ -39,7 +41,15 @@ import { SearchUserService } from './search-user/search-user.service';
     UserSocialRepository,
     UserManageComicFacade,
     SearchUserService,
+    UserUtilService,
+    ComicUtilService,
   ],
-  exports: [UserService, UserRepository, UserSessionRepository, UserSocialRepository],
+  exports: [
+    UserService,
+    UserRepository,
+    UserSessionRepository,
+    UserSocialRepository,
+    UserUtilService,
+  ],
 })
 export class UserModule {}
