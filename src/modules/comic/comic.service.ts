@@ -28,6 +28,7 @@ import { IndexName } from '@common/external-service/elasticsearch/index-name.enu
 import { ComicNotificationService } from './notification/comic.notifcation';
 import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
 import { ComicPrivilegePermission } from './comic-privilege/comic-privilege.enum';
+import { ComicUtilService } from './shared/comic.util';
 
 @Injectable()
 export class ComicService {
@@ -48,6 +49,7 @@ export class ComicService {
     private readonly datasource: DataSource,
     private readonly comicNotificationService: ComicNotificationService,
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
+    private readonly comicUtilService: ComicUtilService,
   ) {}
 
   async getListCommentOfComic(comicId: number, inputQuery: CommentQuery) {
@@ -73,7 +75,7 @@ export class ComicService {
   }
 
   async delete(userId: number, comicId: number) {
-    const matchedComic = await this.getComicById(comicId);
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
 
     await this.canProcessComicWithUserRight(
       userId,
@@ -146,16 +148,6 @@ export class ComicService {
     };
   }
 
-  async getComicById(comicId: number): Promise<Comic> {
-    const comic = await this.comicRepository.getComicById(comicId);
-
-    if (!comic) {
-      throw new ApplicationException(ComicError.COMIC_ERROR_0001);
-    }
-
-    return comic;
-  }
-
   createComic(
     creatorId: number,
     comic: CreateComicDTO,
@@ -213,7 +205,7 @@ export class ComicService {
     thumb?: Express.Multer.File,
   ): Promise<Comic> {
     const { changedFields, changedData } = inputData;
-    let updatedComic = await this.getComicById(comicId);
+    let updatedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     this.checkCreatorOfComic(userId, updatedComic);
 
     changedFields.forEach((changedField, index) => {
@@ -252,7 +244,7 @@ export class ComicService {
   }
 
   async increaseViewForComic(comicId: number) {
-    await this.getComicById(comicId);
+    await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     await this.comicRepository.increamentView(comicId);
   }
 
@@ -290,7 +282,7 @@ export class ComicService {
   }
 
   async getSpecificChapterOfComicWithPreviousAndNextChapter(comicId: number, chapterId: number) {
-    await this.getComicById(comicId);
+    await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     const chapter = this.chapterService.getSpecificChapterOfComicWithPreviousAndNextChapter(
       comicId,
       chapterId,
@@ -300,7 +292,7 @@ export class ComicService {
   }
 
   async commentOnComic(userId: number, comicId: number, content: string) {
-    const comic = await this.getComicById(comicId);
+    const comic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     return this.commentService.createNewComment(userId, comic, content);
   }
 

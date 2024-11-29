@@ -6,12 +6,14 @@ import { ComicPrivilegeEntity } from './comic-privilege.entity';
 import { removeArrayFieldOfObject } from '@common/utils/helper';
 import { ComicUtilService } from '../shared/comic.util';
 import { SinglePrivilegeRequest } from '../dtos/single-privilege.request';
+import { UserUtilService } from '@modules/user/shared/user.util';
 
 @Injectable()
 export class ComicPrivilegeService {
   constructor(
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
     private readonly comicUtilService: ComicUtilService,
+    private readonly userUtilService: UserUtilService,
   ) {}
 
   async getListPrivilegesOfSpecifiedComic(userId: number, comicId: number) {
@@ -35,6 +37,8 @@ export class ComicPrivilegeService {
   ) {
     await this.comicUtilService.checkCreator(updatorId, comicId);
     const { userId: targetUserId, permissions: targetPermissions } = inputData;
+    await this.userUtilService.getExistedUserOrThrowException(targetUserId);
+
     if (updatorId === targetUserId) {
       throw new ApplicationException(ComicError.COMIC_ERROR_0004);
     }
