@@ -31,14 +31,8 @@ export class ChapterRepository extends Repository<Chapter> {
 
   getListChapterByComicId(comicId: number) {
     return this.createQueryBuilder('chapter')
-      .select([
-        'chapter.id',
-        'chapter.name',
-        'chapter.slug',
-        'chapter.updatedAt',
-        'chapter.images',
-        'chapter.order',
-      ])
+      .leftJoinAndMapOne('chapter.creator', 'User', 'creator', 'creator.id = chapter.creatorId')
+      .select(['chapter', 'creator.id', 'creator.fullname', 'creator.avatar'])
       .where('chapter.comic = :comicId', { comicId })
       .orderBy('chapter.order', 'DESC')
       .getMany();
