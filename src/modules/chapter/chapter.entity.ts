@@ -1,5 +1,4 @@
 import {
-  AfterLoad,
   BeforeInsert,
   BeforeUpdate,
   Column,
@@ -7,13 +6,14 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Comic } from '../comic/comic.entity';
 import { User } from '../user/user.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
 import { ChapterType } from './types/ChapterType';
-import { buildImageUrl } from 'src/common/utils/helper';
+import { ChapterImageEntity } from './chapter-image/chapter-image.entity';
 
 @Entity()
 export class Chapter {
@@ -23,9 +23,6 @@ export class Chapter {
 
   @Column({ nullable: false })
   name: string;
-
-  @Column('text', { array: true, nullable: true, default: () => 'ARRAY[]::text[]' })
-  images: string[];
 
   @Column({ name: 'comic_id' })
   comicId: number;
@@ -61,6 +58,9 @@ export class Chapter {
   @JoinColumn({ name: 'creator_id' })
   creator: number;
 
+  @OneToMany(() => ChapterImageEntity, (images) => images.chapter)
+  images: ChapterImageEntity[];
+
   @BeforeInsert()
   generateSlug() {
     this.slug = `${customSlugify(this.name)}`;
@@ -69,12 +69,5 @@ export class Chapter {
   @BeforeUpdate()
   changeUpdatedAt() {
     this.updatedAt = new Date();
-  }
-
-  @AfterLoad()
-  updateImage() {
-    if (this.images) {
-      this.images = this.images.map((image) => buildImageUrl(image));
-    }
   }
 }

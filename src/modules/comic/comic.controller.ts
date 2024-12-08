@@ -29,6 +29,7 @@ import { CreateCommentDTO } from '../comment/dtos/create-comment';
 import { UpdateComicDTO } from './dtos/update-comic';
 import { CommentQuery } from './models/requests/comments.query';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
+import { GetChaptersQuery } from './dtos/get-chapters.query';
 
 @Controller('api/comics')
 export class ComicController {
@@ -122,8 +123,11 @@ export class ComicController {
   }
 
   @Get('/:comicId/chapters')
-  async handleGetListChapter(@Param('comicId') comicId: number) {
-    return this.comicService.getChapters(comicId);
+  async handleGetListChapter(
+    @Param('comicId') comicId: number,
+    @Query(new ValidationPipe()) query: GetChaptersQuery,
+  ) {
+    return this.comicService.getChapters(comicId, query);
   }
 
   @Get('/:comicId/comments')

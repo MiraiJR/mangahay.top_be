@@ -10,20 +10,18 @@ export class UserManageComicFacade {
   ) {}
 
   async comicManagedByUserId(userId: number) {
-    const comicsCreatedByUserId = await this.comicRepository.getComicsByCreator(userId);
-    const comicIdsManagedByUserId = await this.comicPrivilegeRepository.getComicIdsManagedByUserId(
+    const comicIdsCreated = await this.comicRepository.getComicIdsByCreator(userId);
+    const comicIdsCanAccess = await this.comicPrivilegeRepository.getComicIdsManagedByUserId(
       userId,
     );
+
+    const comicIdsManaged = [...new Set([...comicIdsCreated, ...comicIdsCanAccess])];
 
     const comicsManagedByUserId = await this.comicRepository.getComicByIdsOfUserId(
       userId,
-      comicIdsManagedByUserId,
+      comicIdsManaged,
     );
 
-    const comicMap = new Map();
-    comicsCreatedByUserId.forEach((comic) => comicMap.set(comic.id, comic));
-    comicsManagedByUserId.forEach((comic) => comicMap.set(comic.id, comic));
-
-    return Array.from(comicMap.values());
+    return comicsManagedByUserId;
   }
 }

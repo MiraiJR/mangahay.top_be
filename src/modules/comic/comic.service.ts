@@ -7,7 +7,6 @@ import { INotification } from '../notification/notification.interface';
 import { CommentService } from '../comment/comment.service';
 import { buildSlug } from 'src/common/utils/helper';
 import { ConfigService } from '@nestjs/config';
-import { Paging } from 'src/common/types/Paging';
 import { UpdateComicDTO } from './dtos/update-comic';
 import { DataSource, EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
@@ -29,6 +28,9 @@ import { ComicNotificationService } from './notification/comic.notifcation';
 import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
 import { ComicPrivilegePermission } from './comic-privilege/comic-privilege.enum';
 import { ComicUtilService } from './shared/comic.util';
+import { GetComicsDTO } from './dtos/get-comics';
+import { GetChaptersQuery } from './dtos/get-chapters.query';
+import { ChapterUtilService } from '@modules/chapter/util/chapter.util';
 
 @Injectable()
 export class ComicService {
@@ -50,6 +52,7 @@ export class ComicService {
     private readonly comicNotificationService: ComicNotificationService,
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
     private readonly comicUtilService: ComicUtilService,
+    private readonly chapterUtilService: ChapterUtilService,
   ) {}
 
   async getListCommentOfComic(comicId: number, inputQuery: CommentQuery) {
@@ -70,8 +73,17 @@ export class ComicService {
     return this.comicRepository.findComicsWithChapters();
   }
 
-  async getChapters(comicId: number) {
-    return this.chapterRepository.getListChapterByComicId(comicId);
+  async getChapters(comicId: number, query: GetChaptersQuery) {
+    const { page, size } = query;
+    const total = await this.chapterRepository.countTotalChapterOfComic(comicId);
+    const chapters = await this.chapterRepository.getListChapterByComicId(comicId, { page, size });
+
+    return {
+      total,
+      chapters: chapters.map((chapter) =>
+        this.chapterUtilService.convertImagesOfChapterWithHostS3(chapter),
+      ),
+    };
   }
 
   async delete(userId: number, comicId: number) {
@@ -106,12 +118,9 @@ export class ComicService {
     }
   }
 
-  async getComics(query: Paging) {
-    const result = await this.comicRepository.getComicsWithPagination(
-      query.page,
-      query.limit,
-      'updatedAt',
-    );
+  async getComics(query: GetComicsDTO) {
+    const { page, size } = query;
+    const result = await this.comicRepository.getComicsWithPagination(page, size, 'updatedAt');
 
     return {
       ...query,

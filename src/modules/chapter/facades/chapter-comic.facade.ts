@@ -23,6 +23,8 @@ import { CrawlChapterDTO } from '../dtos/crawl-chapter';
 import { UserRepository } from '@modules/user/user.repository';
 import { ComicPrivilegeRepository } from '@modules/comic/comic-privilege/comic-privilege.repository';
 import { ComicPrivilegePermission } from '@modules/comic/comic-privilege/comic-privilege.enum';
+import { ChapterImageRepository } from '../chapter-image/chapter-image.repository';
+import { ComicUtilService } from '@modules/comic/shared/comic.util';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -36,6 +38,8 @@ export class ChapterComicFacade {
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
     private readonly chapterService: ChapterService,
     private readonly userRepository: UserRepository,
+    private readonly chapterImageRepository: ChapterImageRepository,
+    private readonly comicUtilService: ComicUtilService,
     @InjectQueue(QueueName.NOTIFICAION) private notificationQueue: Queue,
     @InjectQueue(QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER) private comicElasticsearchQueue: Queue,
   ) {}
@@ -46,13 +50,23 @@ export class ChapterComicFacade {
     creatorId: number,
   ) {
     const { name, comicId, isEnd } = inputData;
-    const matchedComic = await this.getComicById(comicId);
-    await this.canOperationOnComic(creatorId, matchedComic);
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
+    const canUpdate = await this.canAccessChapter(
+      creatorId,
+      matchedComic,
+      ComicPrivilegePermission.UPDATE_CHAPTER,
+    );
+
+    if (!canUpdate) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
+
+    this.canOperationOnComic(matchedComic);
 
     const { chapterType, order } = this.getChapterTypeAndOrder(name);
 
     return this.datasource.transaction(async (manager) => {
-      const newChapter = await this.createNewChapterWithoutImages(manager, {
+      const newChapter = await this.createNewChapter(manager, {
         name,
         comicId,
         creatorId,
@@ -68,7 +82,7 @@ export class ChapterComicFacade {
         .uploadMultipleFile(imageFiles, `comics/${newChapter.comicId}/${newChapter.id}`)
         .then((uploadedFiles) => uploadedFiles.map((uploadedFile) => uploadedFile.relativePath));
 
-      await this.updateImagesForCreatedChapter(manager, newChapter.id, images);
+      await this.chapterImageRepository.insertBulkImage(images, newChapter.id, manager);
       this.indexingUrl(matchedComic.slug, newChapter.slug);
       this.updateUpdatedTimeForComic(manager, comicId);
 
@@ -85,15 +99,25 @@ export class ChapterComicFacade {
 
   async crawlSingleChapter(userId: number, inputData: CrawlChapterDTO) {
     const { comicId, nameChapter, urlPost, querySelector, attribute } = inputData;
-    const matchedComic = await this.getComicById(comicId);
-    await this.canOperationOnComic(userId, matchedComic);
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
+    const canUpdate = await this.canAccessChapter(
+      userId,
+      matchedComic,
+      ComicPrivilegePermission.UPDATE_CHAPTER,
+    );
+
+    if (!canUpdate) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
+
+    this.canOperationOnComic(matchedComic);
 
     const { chapterType, order } = this.getChapterTypeAndOrder(nameChapter);
     await this.chapterService.checkChapterWithOrderExisted(comicId, order);
 
     await this.datasource.transaction(async (manager) => {
       const imageUrls = await this.crawlImageUrls(urlPost, querySelector, attribute);
-      const newChapter = await this.createNewChapterWithoutImages(manager, {
+      const newChapter = await this.createNewChapter(manager, {
         name: nameChapter,
         comicId,
         creatorId: userId,
@@ -107,7 +131,7 @@ export class ChapterComicFacade {
         throw new ApplicationException(ComicError.CRAWLER_CHAPTER_ERROR_0001);
       }
 
-      await this.updateImagesForCreatedChapter(manager, newChapter.id, images);
+      await this.chapterImageRepository.insertBulkImage(images, newChapter.id, manager);
       this.indexingUrl(matchedComic.slug, newChapter.slug);
       await this.updateUpdatedTimeForComic(manager, comicId);
 
@@ -119,6 +143,58 @@ export class ChapterComicFacade {
         ...newChapter,
         images,
       };
+    });
+  }
+
+  async deleteSingleChapter(operatorId: number, chapterId: number) {
+    const matchedChapter = await this.chapterService.getChapterById(chapterId);
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(
+      matchedChapter.comicId,
+    );
+    const canRemove = await this.canAccessChapter(
+      operatorId,
+      matchedComic,
+      ComicPrivilegePermission.REMOVE_CHAPTER,
+    );
+
+    if (!canRemove) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
+
+    this.canOperationOnComic(matchedComic);
+
+    await this.datasource.transaction(async (manager) => {
+      await manager.getRepository(Chapter).delete({ id: chapterId });
+      await this.updateUpdatedTimeForComic(manager, matchedComic.id);
+
+      this.sendNotifyToListManager(matchedComic, matchedChapter, 3);
+      this.updateComicOnElasticsearch(matchedChapter.comicId);
+    });
+  }
+
+  async updateChapter(operatorId: number, chapterId: number) {
+    const matchedChapter = await this.chapterService.getChapterById(chapterId);
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(
+      matchedChapter.comicId,
+    );
+    const canUpdate = await this.canAccessChapter(
+      operatorId,
+      matchedComic,
+      ComicPrivilegePermission.REMOVE_CHAPTER,
+    );
+
+    if (!canUpdate) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
+
+    this.canOperationOnComic(matchedComic);
+
+    await this.datasource.transaction(async (manager) => {
+      await manager.getRepository(Chapter).delete({ id: chapterId });
+      await this.updateUpdatedTimeForComic(manager, matchedComic.id);
+
+      this.sendNotifyToListManager(matchedComic, matchedChapter, 3);
+      this.updateComicOnElasticsearch(matchedChapter.comicId);
     });
   }
 
@@ -135,22 +211,6 @@ export class ChapterComicFacade {
         id: comicId,
       },
       {
-        updatedAt: new Date(),
-      },
-    );
-  }
-
-  private async updateImagesForCreatedChapter(
-    manager: EntityManager,
-    chapterId: number,
-    images: string[],
-  ) {
-    return manager.getRepository(Chapter).update(
-      {
-        id: chapterId,
-      },
-      {
-        images,
         updatedAt: new Date(),
       },
     );
@@ -178,11 +238,10 @@ export class ChapterComicFacade {
     return images;
   }
 
-  private createNewChapterWithoutImages(manager: EntityManager, chapter: IChapter) {
+  private createNewChapter(manager: EntityManager, chapter: IChapter) {
     return manager.getRepository(Chapter).save({
       ...chapter,
       slug: customSlugify(chapter.name),
-      images: [],
     });
   }
 
@@ -193,26 +252,7 @@ export class ChapterComicFacade {
     this.googleApiService.indexingUrl(newChapterUrl);
   }
 
-  private async getComicById(comicId: number) {
-    const matchedComic = await this.datasource.getRepository(Comic).findOne({
-      where: {
-        id: comicId,
-      },
-    });
-
-    if (!matchedComic) {
-      throw new ApplicationException(ComicError.COMIC_ERROR_0001);
-    }
-
-    return matchedComic;
-  }
-
-  private async canOperationOnComic(userId: number, comic: Comic) {
-    const canUpdate = await this.canUpdateChapter(userId, comic);
-    if (!canUpdate) {
-      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
-    }
-
+  private canOperationOnComic(comic: Comic) {
     if (comic.state !== StatusComic.PROCESSING) {
       throw new ApplicationException(ComicError.COMIC_ERROR_0003);
     }
@@ -248,7 +288,7 @@ export class ChapterComicFacade {
     this.notificationQueue.addBulk(notificationJobs);
   }
 
-  private async sendNotifyToListManager(comic: Comic, chapter: Chapter) {
+  private async sendNotifyToListManager(comic: Comic, chapter: Chapter, type: number = 1) {
     const listManagerIdsOfComic = await this.comicPrivilegeRepository.getManagerIdsOfComicId(
       comic.id,
     );
@@ -261,6 +301,7 @@ export class ChapterComicFacade {
       listManagerIdsOfComic.filter((managerId) => managerId !== chapter.creatorId), // not send to creator of chapter
       comic,
       chapter,
+      type,
     );
 
     this.notificationQueue.addBulk(notificationJobs);
@@ -270,17 +311,38 @@ export class ChapterComicFacade {
     managerIds: number[],
     comic: Comic,
     chapter: Chapter,
+    type: number = 1,
   ): Promise<Job<NotificationEvent>[]> {
     const creator = await this.userRepository.getUserById(chapter.creatorId);
+    let title = '';
+    let body = '';
+    let redirectUrl = '';
+
+    switch (type) {
+      case 1: // update new chapter
+        title = `Truyện ${comic.name} vừa cập nhật thêm chương mới!`;
+        body = `Người dùng <strong>${creator.fullname}</strong> vừa thêm chương ${chapter.name} vào truyện!`;
+        redirectUrl = `/truyen/${comic.slug}/${chapter.slug}`;
+        break;
+      case 2: // update the existed chapter
+        title = `Truyện ${comic.name} vừa sửa đổi chương [${chapter.name}]!`;
+        body = `Người dùng <strong>${creator.fullname}</strong> vừa sửa đổi chương ${chapter.name}!`;
+        redirectUrl = `/truyen/${comic.slug}/${chapter.slug}`;
+        break;
+      case 3: // remove chapter
+        title = `Truyện ${comic.name} vừa xoá chương [${chapter.name}]!`;
+        body = `Người dùng <strong>${creator.fullname}</strong> vừa xoá chương ${chapter.name}!`;
+        break;
+    }
 
     return managerIds.map((managerId) => {
       return {
         data: {
           userId: managerId,
-          title: `Truyện ${comic.name} vừa cập nhật thêm chương mới!`,
-          body: `Người dùng <strong>${creator.fullname}</strong> vừa thêm chương ${chapter.name} vào truyện!`,
+          title,
+          body,
           module: 'chapter',
-          redirectUrl: `/truyen/${comic.slug}/${chapter.slug}`,
+          redirectUrl,
           thumb: comic.thumb,
         },
         opts: {
@@ -349,7 +411,11 @@ export class ChapterComicFacade {
     };
   }
 
-  private async canUpdateChapter(userId: number, comic: Comic) {
+  private async canAccessChapter(
+    userId: number,
+    comic: Comic,
+    privilege: ComicPrivilegePermission,
+  ) {
     if (!comic.creatorId) {
       return false;
     }
@@ -363,7 +429,7 @@ export class ChapterComicFacade {
       comic.id,
     );
 
-    if (permissions.includes(ComicPrivilegePermission.UPDATE_CHAPTER)) {
+    if (permissions.includes(privilege)) {
       return true;
     }
 

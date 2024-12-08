@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Put,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -21,6 +23,7 @@ import UserId from '@common/decorators/userId';
 import { ChapterComicFacade } from './facades/chapter-comic.facade';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
 import { CrawlChapterDTO } from './dtos/crawl-chapter';
+import { UpdateChapterRequest } from './dtos/update-chapter.request';
 
 @Controller('api/chapters')
 export class ChapterController {
@@ -53,6 +56,43 @@ export class ChapterController {
     return this.chapterService.getChapterBySlug(slug);
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Delete('/:chapterId')
+  async handleDeleteSingleChapter(
+    @UserId() operatorId: number,
+    @Param('chapterId') chapterId: number,
+  ) {
+    await this.chapterComicFacade.deleteSingleChapter(operatorId, chapterId);
+    return `Delete chapter id [${chapterId}] successfully!`;
+  }
+
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Put('/:chapterId')
+  @UseInterceptors(
+    FilesInterceptor('newImages', 1000, {
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
+    }),
+  )
+  async handleUpdateChapter(
+    @UserId() operatorId: number,
+    @Param('chapterId') chapterId: number,
+    @UploadedFiles() newImages: Express.Multer.File[],
+    @Body(new ValidationPipe()) inputData: UpdateChapterRequest,
+  ) {
+    console.log({
+      operatorId,
+      chapterId,
+      newImages,
+      inputData,
+    });
+
+    return 'abc';
+  }
+
   @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN)
   @Patch('/reorder')
@@ -62,7 +102,7 @@ export class ChapterController {
     return 'Sắp xếp lại các chapter thành công!';
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Post('crawl/single')
   async handleCrawlChapterForComic(

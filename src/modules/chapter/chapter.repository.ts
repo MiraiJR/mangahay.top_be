@@ -29,12 +29,44 @@ export class ChapterRepository extends Repository<Chapter> {
     });
   }
 
-  getListChapterByComicId(comicId: number) {
-    return this.createQueryBuilder('chapter')
+  getListChapterByComicId(comicId: number, paging?: { page: number; size: number }) {
+    let queryBuilder = this.createQueryBuilder('chapter')
+      .leftJoinAndSelect('chapter.images', 'images')
       .leftJoinAndMapOne('chapter.creator', 'User', 'creator', 'creator.id = chapter.creatorId')
-      .select(['chapter', 'creator.id', 'creator.fullname', 'creator.avatar'])
+      .select([
+        'chapter',
+        'creator.id',
+        'creator.fullname',
+        'creator.avatar',
+        'images.relativePath',
+        'images.position',
+        'images.id',
+      ])
       .where('chapter.comic = :comicId', { comicId })
       .orderBy('chapter.order', 'DESC')
-      .getMany();
+      .addOrderBy('images.position', 'ASC');
+
+    if (paging) {
+      const { page, size } = paging;
+      queryBuilder = queryBuilder.offset((page - 1) * size).limit(size);
+    }
+
+    return queryBuilder.getMany();
+  }
+
+  countTotalChapterOfComic(comicId: number) {
+    return this.count({
+      where: {
+        comicId,
+      },
+    });
+  }
+
+  getChapterWithImagesBySlug(slug: string) {
+    return this.createQueryBuilder('chapter')
+      .leftJoinAndSelect('chapter.images', 'images')
+      .select(['chapter', 'images.relativePath', 'images.position', 'images.id'])
+      .orderBy('images.position', 'ASC')
+      .getOne();
   }
 }

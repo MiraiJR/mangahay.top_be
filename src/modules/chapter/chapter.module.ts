@@ -10,10 +10,13 @@ import { GoogleApiModule } from '@modules/google-api/google-api.module';
 import { BullModule } from '@nestjs/bull';
 import { QueueName } from '@common/constant/queue-channel';
 import { ComicModule } from '@modules/comic/comic.module';
+import { ChapterImageEntity } from './chapter-image/chapter-image.entity';
+import { ChapterImageRepository } from './chapter-image/chapter-image.repository';
+import { ChapterUtilService } from './util/chapter.util';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Chapter]),
+    TypeOrmModule.forFeature([Chapter, ChapterImageEntity]),
     JwtModule,
     GoogleApiModule,
     BullModule.registerQueue(
@@ -27,7 +30,14 @@ import { ComicModule } from '@modules/comic/comic.module';
     forwardRef(() => ComicModule),
   ],
   controllers: [ChapterController],
-  providers: [ChapterService, Logger, ChapterRepository, ChapterComicFacade],
-  exports: [ChapterService, ChapterRepository],
+  providers: [
+    ChapterService,
+    Logger,
+    ChapterRepository,
+    ChapterComicFacade,
+    ChapterImageRepository,
+    ChapterUtilService,
+  ],
+  exports: [ChapterService, ChapterRepository, ChapterImageRepository, ChapterUtilService],
 })
 export class ChapterModule {}

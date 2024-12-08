@@ -1,7 +1,6 @@
 import { QueueName } from '@common/constant/queue-channel';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
-import { ComicService } from '../comic.service';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { Comic } from '../comic.entity';
 import { Logger } from '@nestjs/common';
