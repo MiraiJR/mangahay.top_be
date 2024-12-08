@@ -20,7 +20,7 @@ import { SearchComicService } from './search-comic/search-comic.service';
 import { ComicInteractionRepository } from './comic-interaction/comicInteraction.repository';
 import { ComicInteractionService } from './comic-interaction/comicInteraction.service';
 import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
-import { UpdateComicAfterCreatingNewChapterConsumer } from './elasticsearch/update-after-creating-new-chapter.consumer';
+import { UpdateComicAfterCreatingNewChapterConsumer } from './elasticsearch/update-after-interacting-with-chapter.consumer';
 import { QueueName } from '@common/constant/queue-channel';
 import { ComicPrivilegeEntity } from './comic-privilege/comic-privilege.entity';
 import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
@@ -74,6 +74,7 @@ import { ComicUtilService } from './shared/comic.util';
     ComicInteractionService,
     ComicPrivilegeRepository,
     ComicRepository,
+    ComicUtilService,
   ],
 })
 export class ComicModule {}

@@ -85,6 +85,16 @@ export class ComicRepository extends Repository<Comic> {
     }));
   }
 
+  async getComicIdsByCreator(creatorId: number) {
+    const comics = await this.find({
+      where: {
+        creatorId,
+      },
+    });
+
+    return comics.map((comic) => comic.id);
+  }
+
   getComicBySlug(slug: string) {
     return this.createQueryBuilder('comic')
       .where('comic.slug = :slug', { slug })

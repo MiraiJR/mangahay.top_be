@@ -5,10 +5,14 @@ import { IChapter } from './chapter.interface';
 import { ChapterRepository } from './chapter.repository';
 import { ApplicationException } from '@common/exception/application.exception';
 import ChapterError from './resources/error/error';
+import { ChapterUtilService } from './util/chapter.util';
 
 @Injectable()
 export class ChapterService {
-  constructor(private chapterRepository: ChapterRepository) {}
+  constructor(
+    private chapterRepository: ChapterRepository,
+    private readonly chapterUtil: ChapterUtilService,
+  ) {}
 
   async checkChapterWithOrderExisted(comicId: number, orderChapter: number) {
     const matchedChapter = await this.chapterRepository.getChaperByOrder(comicId, orderChapter);
@@ -68,76 +72,19 @@ export class ChapterService {
     };
   }
 
-  async createNewChapterWithoutFiles(chapter: IChapter, manager?: EntityManager) {
-    if (manager) {
-      let newChapter = manager.getRepository(Chapter).create(chapter);
-      newChapter = await manager.getRepository(Chapter).save(newChapter);
-      newChapter = await manager.getRepository(Chapter).save({
-        ...newChapter,
-        slug: `${newChapter.slug}-${newChapter.id}`,
-      });
-
-      return newChapter;
-    }
-
-    let newChapter = this.chapterRepository.create(chapter);
-    newChapter = await this.chapterRepository.save(newChapter);
-    newChapter = await this.chapterRepository.save({
-      ...newChapter,
-      slug: `${newChapter.slug}-${newChapter.id}`,
-    });
-
-    return newChapter;
-  }
-
-  async update(chapter: IChapter, manager?: EntityManager) {
-    const update_chapter = manager
-      ? manager.getRepository(Chapter).create(chapter)
-      : this.chapterRepository.create(chapter);
-
-    return manager
-      ? manager.getRepository(Chapter).save(update_chapter)
-      : this.chapterRepository.save(update_chapter);
-  }
-
-  async delete(chapterId: number) {
+  async deleteById(chapterId: number) {
     return await this.chapterRepository.delete({
       id: chapterId,
     });
   }
 
-  async updateImages(chapterId: number, images: string[]) {
-    return await this.chapterRepository.save({
-      id: chapterId,
-      images: images,
-    });
-  }
-
-  async updateImagesAtSpecificPosition(chapterId: number, positions: number[], images: string[]) {
-    const chapter = await this.chapterRepository.getChapterById(chapterId);
-    const chapter_images = chapter.images;
-
-    for (const i in positions) {
-      chapter_images[positions[i]] = images[i];
-    }
-
-    return await this.chapterRepository.save({
-      id: chapterId,
-      images: chapter_images,
-    });
-  }
-
   async getChapterBySlug(slug: string) {
-    const matchedChapter = await this.chapterRepository.findOne({
-      where: {
-        slug,
-      },
-    });
+    const matchedChapter = await this.chapterRepository.getChapterWithImagesBySlug(slug);
 
     if (!matchedChapter) {
       throw new ApplicationException(ChapterError.CHAPTER_ERROR_0001);
     }
 
-    return matchedChapter;
+    return this.chapterUtil.convertImagesOfChapterWithHostS3(matchedChapter);
   }
 }
