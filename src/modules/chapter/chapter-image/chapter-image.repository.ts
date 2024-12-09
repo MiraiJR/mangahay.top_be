@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { ChapterImageEntity } from './chapter-image.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -13,22 +13,49 @@ export class ChapterImageRepository extends Repository<ChapterImageEntity> {
   }
 
   async insertBulkImage(relativePathImages: string[], chapterId: number, manager?: EntityManager) {
-    if (manager) {
-      for (const [index, relativePathImage] of relativePathImages.entries()) {
-        await manager.getRepository(ChapterImageEntity).save({
-          relativePath: relativePathImage,
-          position: index + 1,
-          chapterId,
-        });
-      }
-    } else {
-      for (const [index, relativePathImage] of relativePathImages.entries()) {
-        await this.save({
-          relativePath: relativePathImage,
-          position: index + 1,
-          chapterId,
-        });
-      }
+    const repository = manager ? manager.getRepository(ChapterImageEntity) : this;
+
+    for (const [index, relativePathImage] of relativePathImages.entries()) {
+      await repository.save({
+        relativePath: relativePathImage,
+        position: index + 1,
+        chapterId,
+      });
     }
+  }
+
+  async addMoreImageForExistedChapter(
+    chapterId: number,
+    relativePathImages: string[],
+    manager?: EntityManager,
+  ) {
+    const repository = manager ? manager.getRepository(ChapterImageEntity) : this;
+    const startPosition = (await this.getTheHighestPositionImageOfChapter(chapterId)) + 1;
+
+    for (const [index, relativePathImage] of relativePathImages.entries()) {
+      await repository.save({
+        relativePath: relativePathImage,
+        position: startPosition + index,
+        chapterId,
+      });
+    }
+  }
+
+  deleteImageByIds(imageIds: number[], manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(ChapterImageEntity) : this;
+    return repository.delete({ id: In(imageIds) });
+  }
+
+  async getTheHighestPositionImageOfChapter(chapterId: number) {
+    const matchedChapterImage = await this.findOne({
+      where: {
+        chapterId,
+      },
+      order: {
+        position: 'DESC',
+      },
+    });
+
+    return matchedChapterImage.position;
   }
 }

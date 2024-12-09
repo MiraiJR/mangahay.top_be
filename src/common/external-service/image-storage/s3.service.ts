@@ -61,7 +61,11 @@ export class S3Service implements IImageStorage {
     const result = [];
 
     for (let i = 0; i < files.length; i++) {
-      const uploadedFile = await this.uploadFileFromBuffer(files[i].buffer, folder, `${i}.jpeg`);
+      const uploadedFile = await this.uploadFileFromBuffer(
+        files[i].buffer,
+        folder,
+        `${Date.now()}.jpeg`,
+      );
       result.push(uploadedFile);
     }
 

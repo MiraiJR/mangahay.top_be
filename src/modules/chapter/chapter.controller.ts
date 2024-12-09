@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Put,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -77,20 +76,13 @@ export class ChapterController {
       },
     }),
   )
-  async handleUpdateChapter(
+  handleUpdateChapter(
     @UserId() operatorId: number,
     @Param('chapterId') chapterId: number,
     @UploadedFiles() newImages: Express.Multer.File[],
     @Body(new ValidationPipe()) inputData: UpdateChapterRequest,
   ) {
-    console.log({
-      operatorId,
-      chapterId,
-      newImages,
-      inputData,
-    });
-
-    return 'abc';
+    return this.chapterComicFacade.updateChapter(operatorId, chapterId, inputData, newImages);
   }
 
   @UseGuards(AuthGuard)
