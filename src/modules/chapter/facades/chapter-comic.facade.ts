@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateChapterDTO } from '../dtos/create-chapter';
 import { Chapter } from '../chapter.entity';
-import { customSlugify } from '@common/configs/slugify.config';
 import { S3Service } from '@common/external-service/image-storage/s3.service';
 import { ChapterType } from '../types/ChapterType';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +16,6 @@ import { QueueName } from '@common/constant/queue-channel';
 import { ComicInteractionRepository } from '@modules/comic/comic-interaction/comicInteraction.repository';
 import { NotificationEvent } from '@modules/notification/notification.interface';
 import { CrawlerService } from '@common/external-service/crawler/crawler.service';
-import { IChapter } from '../chapter.interface';
 import { ChapterService } from '../chapter.service';
 import { CrawlChapterDTO } from '../dtos/crawl-chapter';
 import { UserRepository } from '@modules/user/user.repository';
@@ -25,6 +23,8 @@ import { ComicPrivilegeRepository } from '@modules/comic/comic-privilege/comic-p
 import { ComicPrivilegePermission } from '@modules/comic/comic-privilege/comic-privilege.enum';
 import { ChapterImageRepository } from '../chapter-image/chapter-image.repository';
 import { ComicUtilService } from '@modules/comic/shared/comic.util';
+import { UpdateChapterRequest } from '../dtos/update-chapter.request';
+import { ChapterRepository } from '../chapter.repository';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -40,6 +40,7 @@ export class ChapterComicFacade {
     private readonly userRepository: UserRepository,
     private readonly chapterImageRepository: ChapterImageRepository,
     private readonly comicUtilService: ComicUtilService,
+    private readonly chapterRepository: ChapterRepository,
     @InjectQueue(QueueName.NOTIFICAION) private notificationQueue: Queue,
     @InjectQueue(QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER) private comicElasticsearchQueue: Queue,
   ) {}
@@ -66,13 +67,16 @@ export class ChapterComicFacade {
     const { chapterType, order } = this.getChapterTypeAndOrder(name);
 
     return this.datasource.transaction(async (manager) => {
-      const newChapter = await this.createNewChapter(manager, {
-        name,
-        comicId,
-        creatorId,
-        order,
-        type: chapterType,
-      });
+      const newChapter = await this.chapterRepository.createNewChapter(
+        {
+          name,
+          comicId,
+          creatorId,
+          order,
+          type: chapterType,
+        },
+        manager,
+      );
 
       if (isEnd === 1) {
         this.markComicDoneStatus(comicId, manager);
@@ -117,13 +121,16 @@ export class ChapterComicFacade {
 
     await this.datasource.transaction(async (manager) => {
       const imageUrls = await this.crawlImageUrls(urlPost, querySelector, attribute);
-      const newChapter = await this.createNewChapter(manager, {
-        name: nameChapter,
-        comicId,
-        creatorId: userId,
-        order: order,
-        type: chapterType,
-      });
+      const newChapter = await this.chapterRepository.createNewChapter(
+        {
+          name: nameChapter,
+          comicId,
+          creatorId: userId,
+          order: order,
+          type: chapterType,
+        },
+        manager,
+      );
 
       const images = await this.uploadCrawledImageUrlToStorage(comicId, newChapter.id, imageUrls);
 
@@ -172,7 +179,13 @@ export class ChapterComicFacade {
     });
   }
 
-  async updateChapter(operatorId: number, chapterId: number) {
+  async updateChapter(
+    operatorId: number,
+    chapterId: number,
+    inputData: UpdateChapterRequest,
+    newImageFiles: Express.Multer.File[],
+  ) {
+    const { chapterName: newChapterName, imageIdsNeedDelete } = inputData;
     const matchedChapter = await this.chapterService.getChapterById(chapterId);
     const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(
       matchedChapter.comicId,
@@ -189,12 +202,31 @@ export class ChapterComicFacade {
 
     this.canOperationOnComic(matchedComic);
 
-    await this.datasource.transaction(async (manager) => {
-      await manager.getRepository(Chapter).delete({ id: chapterId });
-      await this.updateUpdatedTimeForComic(manager, matchedComic.id);
+    return this.datasource.transaction(async (manager) => {
+      if (imageIdsNeedDelete.length > 0) {
+        await this.chapterImageRepository.deleteImageByIds(imageIdsNeedDelete);
+      }
 
-      this.sendNotifyToListManager(matchedComic, matchedChapter, 3);
+      if (matchedChapter.name !== newChapterName) {
+        await this.chapterRepository.updateChapterName(chapterId, newChapterName, manager);
+      }
+
+      if (newImageFiles.length > 0) {
+        const newUploadedImages = await this.s3Service
+          .uploadMultipleFile(newImageFiles, `comics/${matchedChapter.comicId}/${chapterId}`)
+          .then((uploadedFiles) => uploadedFiles.map((uploadedFile) => uploadedFile.relativePath));
+
+        await this.chapterImageRepository.addMoreImageForExistedChapter(
+          chapterId,
+          newUploadedImages,
+          manager,
+        );
+      }
+
+      this.sendNotifyToListManager(matchedComic, matchedChapter, 2);
       this.updateComicOnElasticsearch(matchedChapter.comicId);
+
+      return this.chapterService.getChapterById(chapterId);
     });
   }
 
@@ -236,13 +268,6 @@ export class ChapterComicFacade {
     );
 
     return images;
-  }
-
-  private createNewChapter(manager: EntityManager, chapter: IChapter) {
-    return manager.getRepository(Chapter).save({
-      ...chapter,
-      slug: customSlugify(chapter.name),
-    });
   }
 
   private indexingUrl(comicSlug: string, chapterSlug: string) {

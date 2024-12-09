@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateChapterRequest {
@@ -6,8 +6,9 @@ export class UpdateChapterRequest {
   @IsNotEmpty()
   chapterName: string;
 
+  @IsOptional()
   @IsArray()
   @Type(() => Number)
   @IsNumber({}, { each: true })
-  imageIdsNeedDelete: number[];
+  imageIdsNeedDelete: number[] = [];
 }

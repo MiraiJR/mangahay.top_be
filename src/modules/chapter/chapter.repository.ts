@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { customSlugify } from '@common/configs/slugify.config';
+import { IChapter } from './chapter.interface';
 
 @Injectable()
 export class ChapterRepository extends Repository<Chapter> {
@@ -22,10 +24,32 @@ export class ChapterRepository extends Repository<Chapter> {
   }
 
   getChapterById(chapterId: number) {
-    return this.findOne({
-      where: {
+    return this.createQueryBuilder('chapter')
+      .where('chapter.id = :chapterId', { chapterId })
+      .leftJoinAndSelect('chapter.images', 'images')
+      .select(['chapter', 'images.relativePath', 'images.position', 'images.id'])
+      .orderBy('images.position', 'ASC')
+      .getOne();
+  }
+
+  updateChapterName(chapterId: number, newChapterName: string, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(Chapter) : this;
+    return repository.update(
+      {
         id: chapterId,
       },
+      {
+        name: newChapterName,
+      },
+    );
+  }
+
+  createNewChapter(chapter: IChapter, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(Chapter) : this;
+
+    return repository.save({
+      ...chapter,
+      slug: customSlugify(chapter.name),
     });
   }
 
@@ -64,6 +88,7 @@ export class ChapterRepository extends Repository<Chapter> {
 
   getChapterWithImagesBySlug(slug: string) {
     return this.createQueryBuilder('chapter')
+      .where('chapter.slug = :slug', { slug })
       .leftJoinAndSelect('chapter.images', 'images')
       .select(['chapter', 'images.relativePath', 'images.position', 'images.id'])
       .orderBy('images.position', 'ASC')
