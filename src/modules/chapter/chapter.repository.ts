@@ -40,6 +40,7 @@ export class ChapterRepository extends Repository<Chapter> {
       },
       {
         name: newChapterName,
+        updatedAt: new Date(),
       },
     );
   }
@@ -53,8 +54,27 @@ export class ChapterRepository extends Repository<Chapter> {
     });
   }
 
-  getListChapterByComicId(comicId: number, paging?: { page: number; size: number }) {
-    let queryBuilder = this.createQueryBuilder('chapter')
+  async getPaginationChapterIdsOfComic(comicId: number, paging: { page: number; size: number }) {
+    const queryBuilder = this.createQueryBuilder('chapter')
+      .select(['chapter.id'])
+      .where('chapter.comic = :comicId', { comicId })
+      .orderBy('chapter.order', 'DESC');
+
+    if (paging) {
+      const { page, size } = paging;
+      queryBuilder.offset((page - 1) * size).limit(size);
+    }
+
+    return (await queryBuilder.getMany()).map((chapter) => chapter.id);
+  }
+
+  async getListChapterByComicId(
+    comicId: number,
+    paging: { page: number; size: number } = { page: 1, size: 20 },
+  ) {
+    const chapterIds = await this.getPaginationChapterIdsOfComic(comicId, paging);
+
+    return this.createQueryBuilder('chapter')
       .leftJoinAndSelect('chapter.images', 'images')
       .leftJoinAndMapOne('chapter.creator', 'User', 'creator', 'creator.id = chapter.creatorId')
       .select([
@@ -66,16 +86,10 @@ export class ChapterRepository extends Repository<Chapter> {
         'images.position',
         'images.id',
       ])
-      .where('chapter.comic = :comicId', { comicId })
+      .where('chapter.id IN (:...chapterIds)', { chapterIds })
       .orderBy('chapter.order', 'DESC')
-      .addOrderBy('images.position', 'ASC');
-
-    if (paging) {
-      const { page, size } = paging;
-      queryBuilder = queryBuilder.offset((page - 1) * size).limit(size);
-    }
-
-    return queryBuilder.getMany();
+      .addOrderBy('images.position', 'ASC')
+      .getMany();
   }
 
   countTotalChapterOfComic(comicId: number) {

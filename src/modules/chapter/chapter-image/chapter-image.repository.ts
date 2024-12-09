@@ -56,6 +56,6 @@ export class ChapterImageRepository extends Repository<ChapterImageEntity> {
       },
     });
 
-    return matchedChapterImage.position;
+    return matchedChapterImage?.position ?? 0;
   }
 }

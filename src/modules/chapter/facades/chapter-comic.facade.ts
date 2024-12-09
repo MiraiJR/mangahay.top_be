@@ -25,6 +25,7 @@ import { ChapterImageRepository } from '../chapter-image/chapter-image.repositor
 import { ComicUtilService } from '@modules/comic/shared/comic.util';
 import { UpdateChapterRequest } from '../dtos/update-chapter.request';
 import { ChapterRepository } from '../chapter.repository';
+import ChapterError from '../resources/error/error';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -187,6 +188,13 @@ export class ChapterComicFacade {
   ) {
     const { chapterName: newChapterName, imageIdsNeedDelete } = inputData;
     const matchedChapter = await this.chapterService.getChapterById(chapterId);
+
+    // validate images
+    // remove all images but not upload any new image
+    if (newImageFiles.length === 0 && imageIdsNeedDelete.length === matchedChapter.images.length) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0003);
+    }
+
     const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(
       matchedChapter.comicId,
     );
@@ -204,7 +212,7 @@ export class ChapterComicFacade {
 
     return this.datasource.transaction(async (manager) => {
       if (imageIdsNeedDelete.length > 0) {
-        await this.chapterImageRepository.deleteImageByIds(imageIdsNeedDelete);
+        await this.chapterImageRepository.deleteImageByIds(imageIdsNeedDelete, manager);
       }
 
       if (matchedChapter.name !== newChapterName) {
