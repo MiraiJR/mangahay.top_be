@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Chapter } from '../chapter.entity';
+import { buildImageUrl } from '@common/utils/helper';
 
 @Entity({ name: 'chapter_images' })
 export class ChapterImageEntity {
@@ -16,7 +17,13 @@ export class ChapterImageEntity {
   @Column({ name: 'chapter_id' })
   chapterId: number;
 
-  @Column({ name: 'relative_path' })
+  @Column({
+    name: 'relative_path',
+    transformer: {
+      to: (value: string) => value,
+      from: (value: string) => buildImageUrl(value),
+    },
+  })
   relativePath: string;
 
   @Column()

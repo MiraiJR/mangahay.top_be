@@ -26,6 +26,7 @@ import { ComicUtilService } from '@modules/comic/shared/comic.util';
 import { UpdateChapterRequest } from '../dtos/update-chapter.request';
 import { ChapterRepository } from '../chapter.repository';
 import ChapterError from '../resources/error/error';
+import { ReorderChapterBody } from '../dtos/reorder-chapter.request';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -236,6 +237,40 @@ export class ChapterComicFacade {
 
       return this.chapterService.getChapterById(chapterId);
     });
+  }
+
+  async reorderedListChapter(operatorId: number, incomingData: ReorderChapterBody) {
+    const { listReorderedChapter, comicId } = incomingData;
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
+    const canUpdate = await this.canAccessChapter(
+      operatorId,
+      matchedComic,
+      ComicPrivilegePermission.REMOVE_CHAPTER,
+    );
+
+    if (!canUpdate) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+    }
+
+    await this.checkListChapterBelongToComic(
+      comicId,
+      listReorderedChapter.map((chapter) => chapter.chapterId),
+    );
+
+    return this.datasource.transaction(async (manager) => {
+      await this.chapterRepository.reorderListChapter(listReorderedChapter, manager);
+    });
+  }
+
+  private async checkListChapterBelongToComic(comicId: number, chapterIds: number[]) {
+    const listMatchedChapter = await this.chapterRepository.getListChapterBelongToComic(
+      comicId,
+      chapterIds,
+    );
+
+    if (listMatchedChapter.length !== chapterIds.length) {
+      throw new ApplicationException(ChapterError.CHAPTER_ERROR_0004);
+    }
   }
 
   private updateComicOnElasticsearch(comicId: number) {
