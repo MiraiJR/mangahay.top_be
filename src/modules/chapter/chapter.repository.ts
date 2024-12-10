@@ -4,6 +4,7 @@ import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { customSlugify } from '@common/configs/slugify.config';
 import { IChapter } from './chapter.interface';
+import { ReorderChapterBody } from './dtos/reorder-chapter.request';
 
 @Injectable()
 export class ChapterRepository extends Repository<Chapter> {
@@ -107,5 +108,31 @@ export class ChapterRepository extends Repository<Chapter> {
       .select(['chapter', 'images.relativePath', 'images.position', 'images.id'])
       .orderBy('images.position', 'ASC')
       .getOne();
+  }
+
+  getListChapterBelongToComic(comicId: number, chapterIds: number[]) {
+    return this.createQueryBuilder('chapter')
+      .where('chapter.comicId = :comicId', { comicId })
+      .andWhere('chapter.id IN (:...chapterIds)', { chapterIds })
+      .getMany();
+  }
+
+  async reorderListChapter(
+    listReorderedChapter: { chapterId: number; newOrder: number }[],
+    manager?: EntityManager,
+  ) {
+    const repository = manager ? manager.getRepository(Chapter) : this;
+
+    for (const reorderedChapter of listReorderedChapter) {
+      await repository.update(
+        {
+          id: reorderedChapter.chapterId,
+        },
+        {
+          order: reorderedChapter.newOrder,
+          updatedAt: new Date(),
+        },
+      );
+    }
   }
 }

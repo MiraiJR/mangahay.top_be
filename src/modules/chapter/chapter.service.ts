@@ -32,23 +32,6 @@ export class ChapterService {
     return matchedChapter;
   }
 
-  async reorderChapters() {
-    const chapters = await this.chapterRepository.find();
-
-    chapters.forEach(async (chapter) => {
-      let order = 1;
-
-      if (chapter.name.match(/[+-]?\d+(\.\d+)?/g)) {
-        order = parseFloat(chapter.name.match(/[+-]?\d+(\.\d+)?/g)[0]);
-      }
-
-      await this.chapterRepository.save({
-        ...chapter,
-        order,
-      });
-    });
-  }
-
   async getSpecificChapterOfComicWithPreviousAndNextChapter(comicId: number, chapterId: number) {
     const chapters = await this.chapterRepository.getListChapterByComicId(comicId);
     const indexOfCurrentChapter = chapters.findIndex((chapter) => chapter.id === chapterId);
@@ -85,6 +68,6 @@ export class ChapterService {
       throw new ApplicationException(ChapterError.CHAPTER_ERROR_0001);
     }
 
-    return this.chapterUtil.convertImagesOfChapterWithHostS3(matchedChapter);
+    return matchedChapter;
   }
 }

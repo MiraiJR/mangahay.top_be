@@ -30,7 +30,6 @@ import { ComicPrivilegePermission } from './comic-privilege/comic-privilege.enum
 import { ComicUtilService } from './shared/comic.util';
 import { GetComicsDTO } from './dtos/get-comics';
 import { GetChaptersQuery } from './dtos/get-chapters.query';
-import { ChapterUtilService } from '@modules/chapter/util/chapter.util';
 
 @Injectable()
 export class ComicService {
@@ -52,7 +51,6 @@ export class ComicService {
     private readonly comicNotificationService: ComicNotificationService,
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
     private readonly comicUtilService: ComicUtilService,
-    private readonly chapterUtilService: ChapterUtilService,
   ) {}
 
   async getListCommentOfComic(comicId: number, inputQuery: CommentQuery) {
@@ -80,9 +78,7 @@ export class ComicService {
 
     return {
       total,
-      chapters: chapters.map((chapter) =>
-        this.chapterUtilService.convertImagesOfChapterWithHostS3(chapter),
-      ),
+      chapters,
     };
   }
 

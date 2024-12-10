@@ -23,6 +23,7 @@ import { ChapterComicFacade } from './facades/chapter-comic.facade';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
 import { CrawlChapterDTO } from './dtos/crawl-chapter';
 import { UpdateChapterRequest } from './dtos/update-chapter.request';
+import { ReorderChapterBody } from './dtos/reorder-chapter.request';
 
 @Controller('api/chapters')
 export class ChapterController {
@@ -50,8 +51,20 @@ export class ChapterController {
     return `Tạo chapter với cho truyện id [${inputData.comicId}] thành công!`;
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
+  @Patch('reorder')
+  async handleReorderListChapter(
+    @UserId() operatorId: number,
+    @Body(new ValidationPipe()) incomingData: ReorderChapterBody,
+  ) {
+    await this.chapterComicFacade.reorderedListChapter(operatorId, incomingData);
+
+    return 'Cập nhật thứ tự chương thành công!';
+  }
+
   @Get('/:slug')
-  async handleGetChapter(@Param('slug') slug: string) {
+  handleGetChapter(@Param('slug') slug: string) {
     return this.chapterService.getChapterBySlug(slug);
   }
 
@@ -83,15 +96,6 @@ export class ChapterController {
     @Body(new ValidationPipe()) inputData: UpdateChapterRequest,
   ) {
     return this.chapterComicFacade.updateChapter(operatorId, chapterId, inputData, newImages);
-  }
-
-  @UseGuards(AuthGuard)
-  @Roles(UserRole.ADMIN)
-  @Patch('/reorder')
-  async handleReorderChapters() {
-    await this.chapterService.reorderChapters();
-
-    return 'Sắp xếp lại các chapter thành công!';
   }
 
   @UseGuards(AuthGuard, RoleGuard)

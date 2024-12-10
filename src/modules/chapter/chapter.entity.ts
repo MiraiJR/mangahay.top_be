@@ -43,7 +43,16 @@ export class Chapter {
   @Column({ type: 'timestamp', default: () => 'now()', name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   order: number;
 
   @Column({ type: 'enum', enum: ChapterType, default: ChapterType.NORMAL })
