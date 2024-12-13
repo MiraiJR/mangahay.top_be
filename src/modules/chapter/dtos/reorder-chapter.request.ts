@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, ValidateNested } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsNumber, ValidateNested } from 'class-validator';
 
 class ReorderChapter {
   @IsNumber()
@@ -11,6 +11,7 @@ class ReorderChapter {
 
 export class ReorderChapterBody {
   @IsArray()
+  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => ReorderChapter)
   listReorderedChapter: ReorderChapter[];

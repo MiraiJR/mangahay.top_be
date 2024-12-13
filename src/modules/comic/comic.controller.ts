@@ -64,14 +64,6 @@ export class ComicController {
     return newComic;
   }
 
-  @UseGuards(AuthGuard)
-  @Get('/created-by-me')
-  async handleGetComicsCreatedByMe(@UserId() userId: number) {
-    const comics = await this.comicService.getComicsCreatedByCreator(userId);
-
-    return comics;
-  }
-
   @Get('/ranking')
   async handleGetRanking(@Query() query: { field: string; limit: number }) {
     return this.comicService.ranking(query);

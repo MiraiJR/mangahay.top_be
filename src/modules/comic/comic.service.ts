@@ -102,16 +102,19 @@ export class ComicService {
     comic: Comic,
     targetPrivilege: ComicPrivilegePermission,
   ) {
+    if (userId === comic.creatorId) {
+      return true;
+    }
+
     const listManagerWithPermissions =
       await this.comicPrivilegeRepository.getManagersWithTheirPermissionsOfComic(comic.id);
-
     const matchedManager = listManagerWithPermissions.find((manager) => manager.user.id === userId);
-    if (
-      (userId !== comic.creatorId && !matchedManager) ||
-      !matchedManager.permissions.includes(targetPrivilege)
-    ) {
-      throw new ApplicationException(ComicError.COMIC_ERROR_0002);
+
+    if (matchedManager && matchedManager.permissions.includes(targetPrivilege)) {
+      return true;
     }
+
+    throw new ApplicationException(ComicError.COMIC_ERROR_0002);
   }
 
   async getComics(query: GetComicsDTO) {
@@ -220,7 +223,6 @@ export class ComicService {
         updatedComic[changedField] = changedData[index];
       }
     });
-    updatedComic.generateSlug();
     updatedComic.updateTimeStamp();
 
     if (!!thumb) {
