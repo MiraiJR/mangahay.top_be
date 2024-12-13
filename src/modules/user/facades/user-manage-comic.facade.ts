@@ -9,19 +9,25 @@ export class UserManageComicFacade {
     private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
   ) {}
 
-  async comicManagedByUserId(userId: number) {
+  async comicManagedByUserId(userId: number, pagination: { page: number; size: number }) {
+    const { page, size } = pagination;
     const comicIdsCreated = await this.comicRepository.getComicIdsByCreator(userId);
     const comicIdsCanAccess = await this.comicPrivilegeRepository.getComicIdsManagedByUserId(
       userId,
     );
 
-    const comicIdsManaged = [...new Set([...comicIdsCreated, ...comicIdsCanAccess])];
+    const comicIdsManaged = [...new Set([...comicIdsCreated, ...comicIdsCanAccess])].sort(
+      (idA, idB) => idA - idB,
+    );
 
     const comicsManagedByUserId = await this.comicRepository.getComicByIdsOfUserId(
       userId,
-      comicIdsManaged,
+      comicIdsManaged.slice((page - 1) * size, page * size),
     );
 
-    return comicsManagedByUserId;
+    return {
+      total: comicIdsManaged.length,
+      comics: comicsManagedByUserId,
+    };
   }
 }
