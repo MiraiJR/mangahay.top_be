@@ -72,10 +72,9 @@ export class ChapterRepository extends Repository<Chapter> {
   async getListChapterByComicId(
     comicId: number,
     paging: { page: number; size: number } = { page: 1, size: 20 },
+    isGetAll: boolean = false,
   ) {
-    const chapterIds = await this.getPaginationChapterIdsOfComic(comicId, paging);
-
-    return this.createQueryBuilder('chapter')
+    let queryBuilder = this.createQueryBuilder('chapter')
       .leftJoinAndSelect('chapter.images', 'images')
       .leftJoinAndMapOne('chapter.creator', 'User', 'creator', 'creator.id = chapter.creatorId')
       .select([
@@ -86,8 +85,19 @@ export class ChapterRepository extends Repository<Chapter> {
         'images.relativePath',
         'images.position',
         'images.id',
-      ])
-      .where('chapter.id IN (:...chapterIds)', { chapterIds })
+      ]);
+
+    if (!isGetAll) {
+      const chapterIds = await this.getPaginationChapterIdsOfComic(comicId, paging);
+      if (chapterIds.length === 0) {
+        return [];
+      }
+
+      queryBuilder = queryBuilder.where('chapter.id IN (:...chapterIds)', { chapterIds });
+    }
+
+    return queryBuilder
+      .andWhere('chapter.comicId = :comicId', { comicId })
       .orderBy('chapter.order', 'DESC')
       .addOrderBy('images.position', 'ASC')
       .getMany();

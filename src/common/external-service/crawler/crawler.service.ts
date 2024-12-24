@@ -65,7 +65,6 @@ export class CrawlerService {
 
       return images;
     } catch (error) {
-      console.log(error.response);
       const { code, type, error_subcode } = error.response.data.error;
       if (type === 'OAuthException' && code === 190 && error_subcode === 463) {
         const newFacebookToken = await this.resetTokenWhenExpired();
