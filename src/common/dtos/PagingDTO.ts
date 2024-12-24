@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsPositive } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsPositive } from 'class-validator';
 
 export class PagingDTO {
   @Type(() => Number)
@@ -11,4 +11,8 @@ export class PagingDTO {
   @IsNotEmpty()
   @IsPositive()
   size: number = 20;
+
+  @Type(() => Boolean)
+  @IsBoolean()
+  isGetAll: boolean = false;
 }

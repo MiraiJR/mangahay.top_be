@@ -72,9 +72,13 @@ export class ComicService {
   }
 
   async getChapters(comicId: number, query: GetChaptersQuery) {
-    const { page, size } = query;
+    const { page, size, isGetAll } = query;
     const total = await this.chapterRepository.countTotalChapterOfComic(comicId);
-    const chapters = await this.chapterRepository.getListChapterByComicId(comicId, { page, size });
+    const chapters = await this.chapterRepository.getListChapterByComicId(
+      comicId,
+      { page, size },
+      isGetAll,
+    );
 
     return {
       total,

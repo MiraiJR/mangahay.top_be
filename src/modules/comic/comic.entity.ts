@@ -1,5 +1,4 @@
 import {
-  AfterLoad,
   BeforeInsert,
   BeforeUpdate,
   Column,
@@ -43,7 +42,13 @@ export class Comic {
   @Column({ default: StatusComic.PROCESSING, enum: StatusComic, type: 'enum' })
   state: StatusComic;
 
-  @Column({ nullable: true })
+  @Column({
+    nullable: true,
+    transformer: {
+      to: (value: string) => value,
+      from: (value: string) => buildImageUrl(value),
+    },
+  })
   thumb: string;
 
   @Column({ name: 'brief_description' })
@@ -52,7 +57,16 @@ export class Comic {
   @Column({ default: 0 })
   view: number;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   star: number;
 
   @Column({ name: 'creator_id', nullable: true })
@@ -93,17 +107,11 @@ export class Comic {
 
   @BeforeUpdate()
   updateTimeStamp() {
-    this.slug = customSlugify(this.name);
     this.updatedAt = new Date();
   }
 
   @BeforeInsert()
   generateSlug() {
     this.slug = customSlugify(this.name);
-  }
-
-  @AfterLoad()
-  updateImage() {
-    this.thumb = buildImageUrl(this.thumb);
   }
 }
