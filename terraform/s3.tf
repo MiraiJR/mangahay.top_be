@@ -1,5 +1,7 @@
 resource "aws_s3_bucket" "mangahay_s3_bucket" {
   bucket = var.s3_bucket_name
+
+  depends_on = [docker_container.localstack_container]
 }
 
 resource "aws_s3_bucket_cors_configuration" "mangahay_s3_bucket_cors_configuration" {
