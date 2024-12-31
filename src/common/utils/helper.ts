@@ -1,5 +1,6 @@
 import { customSlugify } from '@common/configs/slugify.config';
 import * as fs from 'fs';
+var uniqueSlug = require('unique-slug');
 
 const Helper = {
   async createNewFolder(folderPath: string) {
@@ -46,6 +47,10 @@ export const removeArrayFieldOfObject = <T>(objectRoot: T, fields: Array<keyof T
   fields.forEach((field) => {
     delete objectRoot[field];
   });
+};
+
+export const randomUniqueString = (): string => {
+  return uniqueSlug();
 };
 
 export default Helper;

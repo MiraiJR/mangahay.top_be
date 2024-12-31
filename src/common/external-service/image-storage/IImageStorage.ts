@@ -6,4 +6,5 @@ export interface IImageStorage {
     imageName?: string,
   ): Promise<UploadedFile[]>;
   uploadImageFromUrl(urlImage: string, folder: string, imageName: string): Promise<UploadedFile>;
+  removeFileByRelativePath(relativePath: string): Promise<void>;
 }

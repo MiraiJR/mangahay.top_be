@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './user.entity';
 import { IUser } from './user.interface';
 import { UserRole } from './user.role';
-import { ComicService } from '../comic/comic.service';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
@@ -15,6 +14,7 @@ import { UserSession } from './user-sessions/user-session.entity';
 import { ApplicationException } from '@common/exception/application.exception';
 import UserError from './resources/error/error';
 import { ComicUtilService } from '@modules/comic/shared/comic.util';
+import { randomUniqueString } from '@common/utils/helper';
 
 @Injectable()
 export class UserService {
@@ -57,23 +57,7 @@ export class UserService {
     });
   }
 
-  async getUserByEmail(email: string) {
-    return await this.userRepository.findOne({
-      where: {
-        email,
-      },
-    });
-  }
-
-  async getUserByPhone(phone: string) {
-    return await this.userRepository.findOne({
-      where: {
-        phone,
-      },
-    });
-  }
-
-  async getUserById(id: number) {
+  async getUserByIdAndThrowExceptionIfNotExisted(id: number) {
     const matchedUser = await this.userRepository.getUserById(id);
 
     if (!matchedUser) {
@@ -84,7 +68,7 @@ export class UserService {
   }
 
   async updateActive(id_user: number, active: boolean) {
-    const user = await this.getUserById(id_user);
+    const user = await this.getUserByIdAndThrowExceptionIfNotExisted(id_user);
     return await this.userRepository.save({
       ...user,
       active: active,
@@ -141,30 +125,20 @@ export class UserService {
   }
 
   async updateAvatar(userId: number, file: Express.Multer.File) {
-    const user = await this.getUserById(userId);
-
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-
+    const matchedUser = await this.getUserByIdAndThrowExceptionIfNotExisted(userId);
+    await this.s3Service.removeFileByRelativePath(matchedUser.avatar);
     const { relativePath } = await this.s3Service.uploadFileFromBuffer(
       file.buffer,
       `users/avatar/${userId}`,
-      `${userId}.jpeg`,
+      `${userId}_${randomUniqueString()}.webp`,
     );
 
-    return this.userRepository.save({
-      ...user,
-      avatar: relativePath,
-    });
+    await this.userRepository.updateAvatar(userId, relativePath);
+    return this.getUserByIdAndThrowExceptionIfNotExisted(userId);
   }
 
   async updateProfile(userId: number, fullname: string, phone: string) {
-    const user = await this.getUserById(userId);
-
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
+    const user = await this.getUserByIdAndThrowExceptionIfNotExisted(userId);
 
     if (fullname.length <= 2) {
       throw new HttpException('Tên quá ngắn tối thiểu 3 ký tự!', HttpStatus.BAD_REQUEST);
@@ -190,7 +164,7 @@ export class UserService {
   }
 
   async isExistedEmail(email: string) {
-    const matchedUser = await this.getUserByEmail(email);
+    const matchedUser = await this.userRepository.getUserByEmail(email);
     return !!matchedUser;
   }
 }

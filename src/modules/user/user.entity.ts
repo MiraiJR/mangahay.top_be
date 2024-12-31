@@ -1,4 +1,4 @@
-import { AfterLoad, Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRole } from './user.role';
 import { Exclude } from 'class-transformer';
 import { CommentEntity } from '../comment/comment.entity';
@@ -23,6 +23,10 @@ export class User {
 
   @Column({
     nullable: true,
+    transformer: {
+      to: (value: string) => value,
+      from: (value: string) => buildImageUrl(value),
+    },
   })
   avatar: string;
 
@@ -71,9 +75,4 @@ export class User {
 
   @OneToMany(() => UserSocialEntity, (userSocial) => userSocial.user, { eager: false })
   socials: UserSocialEntity[];
-
-  @AfterLoad()
-  updateImage() {
-    this.avatar = buildImageUrl(this.avatar);
-  }
 }

@@ -1,7 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { User } from '../user/user.entity';
 import { RegisterUserDTO } from './dto/register.dto';
-import { UserService } from '../user/user.service';
 import { LoginUserDTO } from './dto/login.dto';
 import { UserRole } from '../user/user.role';
 import { MailService } from '../../common/external-service/mail/mail.service';
@@ -18,17 +17,18 @@ import { UserSocialRepository } from '@modules/user/user-social/user-social.repo
 import { AccountRepository } from './account/account.repository';
 import { ProviderType } from '@modules/user/user-social/social.enum';
 import { CreateAccoutUserFacade } from './facade/create-account-user.facade';
+import { UserRepository } from '@modules/user/user.repository';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtAdapterService,
-    private userService: UserService,
     private mailService: MailService,
     private userSessionRepository: UserSessionRepository,
     private oauth2Service: OAuth2Service,
     private userSocialRepository: UserSocialRepository,
     private accountRepository: AccountRepository,
+    private readonly userRepository: UserRepository,
     private readonly createAccountFacade: CreateAccoutUserFacade,
   ) {}
 
@@ -43,7 +43,7 @@ export class AuthService {
   }
 
   async logout(userId: number): Promise<void> {
-    const matchedUser = await this.userService.getUserById(userId);
+    const matchedUser = await this.userRepository.getUserById(userId);
 
     if (!matchedUser) {
       throw new ApplicationException(UserError.USER_ERROR_0001);
@@ -68,7 +68,7 @@ export class AuthService {
       throw new ApplicationException(AuthError.AUTH_ERROR_0003);
     }
 
-    const matchedUser = await this.userService.getUserById(matchedAccount.id);
+    const matchedUser = await this.userRepository.getUserById(matchedAccount.id);
 
     return this.updateTokenForUser(matchedUser.id, matchedUser.role);
   }
@@ -95,7 +95,7 @@ export class AuthService {
   }
 
   async forgetPassword(email: string): Promise<void> {
-    const user = await this.userService.getUserByEmail(email);
+    const user = await this.userRepository.getUserByEmail(email);
 
     if (!user) {
       throw new ConflictException(`Email ${email} không khớp với bất kỳ tài khoản nào!`);
@@ -165,7 +165,7 @@ export class AuthService {
     );
 
     if (matchedSocialAccount) {
-      const matchedUser = await this.userService.getUserById(matchedSocialAccount.userId);
+      const matchedUser = await this.userRepository.getUserById(matchedSocialAccount.userId);
       return this.updateTokenForUser(matchedUser.id, matchedUser.role);
     }
 

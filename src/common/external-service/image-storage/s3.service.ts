@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IImageStorage } from './IImageStorage';
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   HeadBucketCommand,
+  HeadObjectCommand,
   ObjectCannedACL,
   PutObjectCommand,
   S3Client,
@@ -27,6 +29,49 @@ export class S3Service implements IImageStorage {
         secretAccessKey: process.env.ACCESSKEY_SECRET,
       },
     });
+  }
+
+  async removeFileByRelativePath(relativePath: string): Promise<void> {
+    try {
+      const isExistedFile = await this.checkFileExists(relativePath);
+
+      // don't delete if it doesn't exist
+      if (!isExistedFile) {
+        return;
+      }
+
+      const params = {
+        Bucket: process.env.S3_BUCKET,
+        Key: relativePath,
+      };
+
+      const deleteCommand = new DeleteObjectCommand(params);
+      await this.s3Client.send(deleteCommand);
+    } catch (error) {
+      this.logger.error(error);
+      throw new ApplicationException(CommonError.COMMON_ERROR_0001);
+    }
+  }
+
+  private async checkFileExists(relativePath: string): Promise<boolean> {
+    try {
+      const params = {
+        Bucket: process.env.S3_BUCKET,
+        Key: relativePath,
+      };
+
+      const headCommand = new HeadObjectCommand(params);
+      await this.s3Client.send(headCommand);
+
+      return true;
+    } catch (error) {
+      if (error.name === 'NotFound') {
+        return false;
+      } else {
+        this.logger.error(error);
+        throw new ApplicationException(CommonError.COMMON_ERROR_0001);
+      }
+    }
   }
 
   async uploadFileFromBuffer(
