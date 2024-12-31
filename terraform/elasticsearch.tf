@@ -37,7 +37,7 @@ resource "docker_container" "elasticsearch_container" {
   healthcheck {
     test = [
       "CMD-SHELL",
-      "curl -s -u elastic:haotruong123 http://elasticsearch:9200 | grep -q 'You Know, for Search'",
+      "curl -s -u elastic:haotruong123 http://elasticsearch:9200 | grep -q 'You Know, for Search' && curl -s -X POST -u elastic:haotruong123 -H 'Content-Type: application/json' http://elasticsearch:9200/_security/user/kibana_system/_password -d '{\"password\":\"haotruong123\"}' | grep -q '^{}'"
     ]
     interval     = "30s"
     timeout      = "10s"
