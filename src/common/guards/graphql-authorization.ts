@@ -17,7 +17,9 @@ export class GraphqlJwtAuthGuard implements CanActivate {
       const payload = await this.jwtService.verify(jwtToken, {
         secret: process.env.ACCESSTOKEN_KEY,
       });
-      const curUser = await this.userService.getUserById(payload.idUser);
+      const curUser = await this.userService.getUserByIdAndThrowExceptionIfNotExisted(
+        payload.idUser,
+      );
 
       if (jwtToken !== curUser) {
         return false;

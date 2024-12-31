@@ -32,8 +32,8 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('/me')
-  handleGetUserInformation(@UserId() userId: number) {
-    return this.userService.getUserById(userId);
+  handleProfileOfTheCurrentLoggedInUser(@UserId() userId: number) {
+    return this.userService.getUserByIdAndThrowExceptionIfNotExisted(userId);
   }
 
   @UseGuards(AuthGuard)
