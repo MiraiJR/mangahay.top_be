@@ -126,7 +126,9 @@ export class UserService {
 
   async updateAvatar(userId: number, file: Express.Multer.File) {
     const matchedUser = await this.getUserByIdAndThrowExceptionIfNotExisted(userId);
-    await this.s3Service.removeFileByRelativePath(matchedUser.avatar);
+    if (matchedUser.avatar) {
+      await this.s3Service.removeFileByRelativePath(matchedUser.avatar);
+    }
     const { relativePath } = await this.s3Service.uploadFileFromBuffer(
       file.buffer,
       `users/avatar/${userId}`,
