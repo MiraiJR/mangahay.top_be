@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import { ApplicationException } from '@common/exception/application.exception';
 import CommonError from '@common/resources/error/error';
+import { randomUniqueString } from '@common/utils/helper';
 
 @Injectable()
 export class S3Service implements IImageStorage {
@@ -109,7 +110,7 @@ export class S3Service implements IImageStorage {
       const uploadedFile = await this.uploadFileFromBuffer(
         files[i].buffer,
         folder,
-        `${Date.now()}.jpeg`,
+        `${randomUniqueString()}.webp`,
       );
       result.push(uploadedFile);
     }
