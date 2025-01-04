@@ -20,7 +20,7 @@ import { SearchComicService } from './search-comic/search-comic.service';
 import { ComicInteractionRepository } from './comic-interaction/comicInteraction.repository';
 import { ComicInteractionService } from './comic-interaction/comicInteraction.service';
 import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
-import { UpdateComicAfterCreatingNewChapterConsumer } from './elasticsearch/update-after-interacting-with-chapter.consumer';
+import { UpdateComicAfterCreatingNewChapterConsumer } from './elasticsearch/consumer/update-after-interacting-with-chapter.consumer';
 import { QueueName } from '@common/constant/queue-channel';
 import { ComicPrivilegeEntity } from './comic-privilege/comic-privilege.entity';
 import { ComicPrivilegeRepository } from './comic-privilege/comic-privilege.repository';
@@ -28,6 +28,7 @@ import { ComicNotificationService } from './notification/comic.notifcation';
 import { ComicPrivilegeService } from './comic-privilege/comic-privilege.service';
 import { ComicPrivilegeController } from './comic-privilege/comic-privilege.controller';
 import { ComicUtilService } from './shared/comic.util';
+import { ReindexComicService } from './elasticsearch/services/reindex-comic.service';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { ComicUtilService } from './shared/comic.util';
     ComicNotificationService,
     ComicPrivilegeService,
     ComicUtilService,
+    ReindexComicService,
   ],
   exports: [
     ComicService,
