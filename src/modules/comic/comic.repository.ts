@@ -14,6 +14,14 @@ export class ComicRepository extends Repository<Comic> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
+  getAll() {
+    return this.createQueryBuilder('comic')
+      .leftJoinAndSelect('comic.creator', 'user')
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .select(['comic', 'user.id', 'user.fullname', 'chapters'])
+      .getMany();
+  }
+
   async getComicsWithPagination(page: number, limit: number, field: string): Promise<PagingComics> {
     let query = this.createQueryBuilder('comic');
 

@@ -30,10 +30,14 @@ import { UpdateComicDTO } from './dtos/update-comic';
 import { CommentQuery } from './models/requests/comments.query';
 import { MAX_FILE_SIZE } from '@common/constant/Constant';
 import { GetChaptersQuery } from './dtos/get-chapters.query';
+import { ReindexComicService } from './elasticsearch/services/reindex-comic.service';
 
 @Controller('api/comics')
 export class ComicController {
-  constructor(private readonly comicService: ComicService) {}
+  constructor(
+    private readonly comicService: ComicService,
+    private readonly reindexComicService: ReindexComicService,
+  ) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -64,8 +68,14 @@ export class ComicController {
     return newComic;
   }
 
+  @Post('/reindex-elasticsearch')
+  async handleReindexElasticsearch() {
+    await this.reindexComicService.execute();
+    return 'Đang tiến hành reindex toàn bộ truyện lên elasticsearch';
+  }
+
   @Get('/ranking')
-  async handleGetRanking(@Query() query: { field: string; limit: number }) {
+  handleGetRanking(@Query() query: { field: string; limit: number }) {
     return this.comicService.ranking(query);
   }
 
