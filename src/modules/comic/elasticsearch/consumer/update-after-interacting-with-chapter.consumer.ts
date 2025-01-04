@@ -2,12 +2,12 @@ import { QueueName } from '@common/constant/queue-channel';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
-import { Comic } from '../comic.entity';
+import { Comic } from '../../comic.entity';
 import { Logger } from '@nestjs/common';
 import { removeArrayFieldOfObject } from '@common/utils/helper';
 import { Chapter } from '@modules/chapter/chapter.entity';
 import { IndexName } from '@common/external-service/elasticsearch/index-name.enum';
-import { ComicUtilService } from '../shared/comic.util';
+import { ComicUtilService } from '../../shared/comic.util';
 
 @Processor(QueueName.COMIC_ELASTICSEARCH_NEW_CHAPTER)
 export class UpdateComicAfterCreatingNewChapterConsumer {

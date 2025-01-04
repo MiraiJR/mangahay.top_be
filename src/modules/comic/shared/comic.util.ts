@@ -25,4 +25,8 @@ export class ComicUtilService {
       throw new ApplicationException(ComicError.COMIC_ERROR_0002);
     }
   }
+
+  getAllComic(): Promise<Comic[]> {
+    return this.comicRepository.getAll();
+  }
 }
