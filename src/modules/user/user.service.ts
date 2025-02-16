@@ -5,8 +5,8 @@ import { UserRole } from './user.role';
 import { ChapterViewType } from '../user-setting/enums/chapter-view-type';
 import { UserRepository } from './user.repository';
 import { S3Service } from '../../common/external-service/image-storage/s3.service';
-import { ComicInteractionService } from '@modules/comic/comic-interaction/comicInteraction.service';
-import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
+import { ComicInteractionService } from '@modules/comic/comic-interaction/comic-interaction.service';
+import { ComicInteraction } from '@modules/comic/comic-interaction/comic-interaction.entity';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
 import { DataSource } from 'typeorm';
 import { UserSettingEntity } from '@modules/user-setting/user-setting.entity';
@@ -117,13 +117,6 @@ export class UserService {
     return interaction;
   }
 
-  async getFollowingComicOfUser(userId: number) {
-    const followingComics = await this.comicInteractionService.getFollowingComicOfUser(userId);
-    const comics = followingComics.map((followingComic: any) => followingComic.comic);
-
-    return comics;
-  }
-
   async updateAvatar(userId: number, file: Express.Multer.File) {
     const matchedUser = await this.getUserByIdAndThrowExceptionIfNotExisted(userId);
     if (matchedUser.avatar) {
@@ -154,7 +147,9 @@ export class UserService {
     }
 
     const regex = /^0\d{9}$/;
-    if (!regex.test(phone)) {
+    const sanitizedPhone = String(phone).trim();
+
+    if (!regex.test(sanitizedPhone)) {
       throw new HttpException('Số điện thoại không hợp lệ!', HttpStatus.BAD_REQUEST);
     }
 

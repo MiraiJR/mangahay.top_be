@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApplicationExceptionModel } from 'src/common/exception/type';
+import { ApplicationExceptionModel } from '@common/exception/application-exception.interface';
 
 type UserErrorCode = 'USER_ERROR_0001';
 

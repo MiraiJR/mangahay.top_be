@@ -3,10 +3,14 @@ import { ComicRepository } from '../comic.repository';
 import { ApplicationException } from '@common/exception/application.exception';
 import ComicError from '../resources/error/error';
 import { Comic } from '../comic.entity';
+import { ComicPrivilegeRepository } from '../comic-privilege/comic-privilege.repository';
 
 @Injectable()
 export class ComicUtilService {
-  constructor(private readonly comicRepository: ComicRepository) {}
+  constructor(
+    private readonly comicRepository: ComicRepository,
+    private readonly comicPrivilegeRepository: ComicPrivilegeRepository,
+  ) {}
 
   async getComicByIdThrowExceptionIfNotExist(comicId: number): Promise<Comic> {
     const comic = await this.comicRepository.getComicById(comicId);
@@ -28,5 +32,18 @@ export class ComicUtilService {
 
   getAllComic(): Promise<Comic[]> {
     return this.comicRepository.getAll();
+  }
+
+  async getListComicIdMangedByUserId(userId: number): Promise<number[]> {
+    const comicIdsCreated = await this.comicRepository.getComicIdsByCreator(userId);
+    const comicIdsCanAccess = await this.comicPrivilegeRepository.getComicIdsManagedByUserId(
+      userId,
+    );
+
+    const comicIdsManaged = [...new Set([...comicIdsCreated, ...comicIdsCanAccess])].sort(
+      (idA, idB) => idA - idB,
+    );
+
+    return comicIdsManaged;
   }
 }

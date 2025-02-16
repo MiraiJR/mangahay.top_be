@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { UserManageComicFacade } from '../facades/user-manage-comic.facade';
-import UserId from '@common/decorators/userId';
+import UserId from '@common/decorators/user-id';
 import { AuthGuard } from '@common/guards/auth.guard';
 import { ComicsManagedByMeQuery } from '../dtos/comics-managed-by-me.request';
 

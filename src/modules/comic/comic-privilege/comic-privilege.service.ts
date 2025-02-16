@@ -5,7 +5,7 @@ import ComicError from '../resources/error/error';
 import { ComicPrivilegeEntity } from './comic-privilege.entity';
 import { removeArrayFieldOfObject } from '@common/utils/helper';
 import { ComicUtilService } from '../shared/comic.util';
-import { SinglePrivilegeRequest } from '../dtos/single-privilege.request';
+import { SinglePrivilegeRequest } from '../dtos/single-privilege';
 import { UserUtilService } from '@modules/user/shared/user.util';
 
 @Injectable()
@@ -77,5 +77,21 @@ export class ComicPrivilegeService {
     if (!managerIds.includes(userId)) {
       throw new ApplicationException(ComicError.COMIC_ERROR_0002);
     }
+  }
+
+  async deletePrivilege(operatorId: number, comicId: number, privilegeId: number) {
+    const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
+    if (!matchedComic.creatorId || matchedComic.creatorId !== operatorId) {
+      throw new ApplicationException(ComicError.COMIC_ERROR_0005);
+    }
+
+    const matchedPrivilege = await this.comicPrivilegeRepository.getById(privilegeId);
+    if (!matchedPrivilege) {
+      throw new ApplicationException(ComicError.COMIC_PRIVILEGE_ERROR_0001);
+    }
+
+    await this.comicPrivilegeRepository.deleteById(privilegeId);
+
+    return matchedPrivilege;
   }
 }

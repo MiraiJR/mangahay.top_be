@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { UserSettingEntity } from './user-setting.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
-import { ChapterSetting } from './type/type';
+import { UpdateUserSetting } from './user-setting.interface';
 
 @Injectable()
 export class UserSettingRepository extends Repository<UserSettingEntity> {
@@ -13,22 +13,38 @@ export class UserSettingRepository extends Repository<UserSettingEntity> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
-  async updateChapterSetting(userId: number, chapterSetting: ChapterSetting) {
+  async updateSetting(userId: number, setting: UpdateUserSetting) {
     await this.createQueryBuilder()
       .update(UserSettingEntity)
       .set({
-        chapterSetting,
+        chapter: {
+          ...setting.chapter,
+        },
+        notification: {
+          ...setting.notification,
+        },
       })
       .where('user = :userId', { userId })
       .execute();
 
-    return this.getChapterSettingByUserId(userId);
+    return this.getSettingByUserId(userId);
   }
 
-  async getChapterSettingByUserId(userId: number): Promise<ChapterSetting> {
+  async getSettingByUserId(userId: number) {
     const result = await this.createQueryBuilder('user_setting')
       .where('user_setting.user = :userId', { userId })
       .getOne();
-    return result.chapterSetting;
+
+    return {
+      chapter: { ...result.chapter },
+      notification: {
+        ...result.notification,
+      },
+    };
+  }
+
+  async getNotificationSetting(userId: number) {
+    const { notification } = await this.getSettingByUserId(userId);
+    return notification;
   }
 }

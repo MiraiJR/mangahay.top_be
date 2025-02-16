@@ -20,7 +20,14 @@
       "@common/*": ["src/common/*"],
       "@core/*": ["src/core/*"],
       "@modules/*": ["src/modules/*"],
-      "@app/*": ["src/app/*"]
+      "@app/*": ["src/app/*"],
+      "@module/comic": ["src/modules/comic"],
+      "@module/user-setting": ["src/modules/user-setting"],
+      "@module/user": ["src/modules/user"],
+      "@module/comment": ["src/modules/comment"],
+      "@module/auth": ["src/modules/auth"],
+      "@module/chapter": ["src/modules/chapter"],
+      "@module/notification": ["src/modules/notification"],
     }
   },
   "include": ["src/**/*"],

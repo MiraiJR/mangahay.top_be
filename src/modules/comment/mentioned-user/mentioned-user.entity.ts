@@ -10,7 +10,7 @@ export class MentionedUser {
   @Column({ name: 'comment_id' })
   commentId: number;
 
-  @OneToOne(() => CommentEntity, (comment) => comment.id, {
+  @ManyToOne(() => CommentEntity, (comment) => comment.id, {
     cascade: ['remove'],
     onDelete: 'CASCADE',
   })
@@ -28,6 +28,6 @@ export class MentionedUser {
   @JoinColumn({ name: 'mentioned_user_id' })
   mentionedUser: User;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'created_at' })
   createdAt: Date;
 }

@@ -21,3 +21,15 @@ export interface IComic {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface ICreateComic {
+  name: string;
+  anotherName: string;
+  genres: string[];
+  authors: string[];
+  briefDescription: string;
+  translators: string[];
+  state: StatusComic;
+  creatorId: number;
+  slug: string;
+}

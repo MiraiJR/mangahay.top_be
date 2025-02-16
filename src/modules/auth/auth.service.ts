@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { User } from '../user/user.entity';
-import { RegisterUserDTO } from './dto/register.dto';
-import { LoginUserDTO } from './dto/login.dto';
+import { RegisterAccountDTO } from './dtos/register';
+import { LoginAccountDTO } from './dtos/login';
 import { UserRole } from '../user/user.role';
 import { MailService } from '../../common/external-service/mail/mail.service';
 import { ApplicationException } from '@common/exception/application.exception';
@@ -32,7 +32,7 @@ export class AuthService {
     private readonly createAccountFacade: CreateAccoutUserFacade,
   ) {}
 
-  async register(inputData: RegisterUserDTO): Promise<User> {
+  async register(inputData: RegisterAccountDTO): Promise<User> {
     const isUsedEmail = await this.accountRepository.findByEmail(inputData.email);
 
     if (isUsedEmail) {
@@ -55,7 +55,7 @@ export class AuthService {
     });
   }
 
-  async login(inputData: LoginUserDTO): Promise<LoginResponse> {
+  async login(inputData: LoginAccountDTO): Promise<LoginResponse> {
     let matchedAccount = await this.accountRepository.findByEmail(inputData.email);
 
     if (!matchedAccount) {

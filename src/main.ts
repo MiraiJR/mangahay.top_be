@@ -2,12 +2,12 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { ApplicationExceptionFilter } from '@common/exception/application.exception.filter';
-import { UnknownExceptionFilter } from '@common/exception/unknown.exception.filter';
 import { ValidationErrorFilter } from '@common/exception/valiation.error.filter';
 
 async function bootstrap() {
   const logger = new Logger('MainApplication');
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

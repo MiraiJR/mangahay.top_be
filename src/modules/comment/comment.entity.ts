@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Comic } from '../comic/comic.entity';
 import { MentionedUser } from './mentioned-user/mentioned-user.entity';
@@ -41,17 +41,22 @@ export class CommentEntity {
   @Column({ nullable: false })
   content: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+    name: 'updated_at',
+  })
   updatedAt: Date;
 
   @ManyToOne(() => CommentEntity, (comment) => comment.answers)
   answers: CommentEntity[];
 
-  @OneToOne(() => MentionedUser, (mentionedUser) => mentionedUser.comment, { eager: true })
-  mentionedUser: MentionedUser;
+  @OneToMany(() => MentionedUser, (mentionedUser) => mentionedUser.comment, { eager: true })
+  mentionedUsers: MentionedUser[];
 
   theNumberOfAnswer: number;
 }

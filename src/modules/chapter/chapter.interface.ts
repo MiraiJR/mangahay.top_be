@@ -1,4 +1,4 @@
-import { ChapterType } from './types/ChapterType';
+import { ChapterType } from './types/chapter-type.enum';
 
 export interface IChapter {
   id?: number;

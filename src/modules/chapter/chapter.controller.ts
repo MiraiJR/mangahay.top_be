@@ -17,15 +17,15 @@ import { AuthGuard } from '@common/guards/auth.guard';
 import { UserRole } from '../user/user.role';
 import { RoleGuard, Roles } from '@common/guards/role.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { CreateChapterDTO } from './dtos/create-chapter';
-import UserId from '@common/decorators/userId';
+import { CreateChapterRequest } from './dtos/create-chapter';
+import UserId from '@common/decorators/user-id';
 import { ChapterComicFacade } from './facades/chapter-comic.facade';
-import { MAX_FILE_SIZE } from '@common/constant/Constant';
-import { CrawlChapterDTO } from './dtos/crawl-chapter';
+import { MAX_FILE_SIZE } from '@common/constant';
+import { CrawlChapterRequest } from './dtos/crawl-chapter';
 import { UpdateChapterRequest } from './dtos/update-chapter.request';
-import { ReorderChapterBody } from './dtos/reorder-chapter.request';
+import { ReorderChapterRequest } from './dtos/reorder-chapter.request';
 
-@Controller('api/chapters')
+@Controller('chapters')
 export class ChapterController {
   constructor(
     private readonly chapterService: ChapterService,
@@ -43,7 +43,7 @@ export class ChapterController {
   )
   @Post()
   async handleCreateChapter(
-    @Body(new ValidationPipe()) inputData: CreateChapterDTO,
+    @Body(new ValidationPipe()) inputData: CreateChapterRequest,
     @UserId() userId: number,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
@@ -56,7 +56,7 @@ export class ChapterController {
   @Patch('reorder')
   async handleReorderListChapter(
     @UserId() operatorId: number,
-    @Body(new ValidationPipe()) incomingData: ReorderChapterBody,
+    @Body(new ValidationPipe()) incomingData: ReorderChapterRequest,
   ) {
     await this.chapterComicFacade.reorderedListChapter(operatorId, incomingData);
 
@@ -102,7 +102,7 @@ export class ChapterController {
   @Roles(UserRole.ADMIN, UserRole.TRANSLATOR)
   @Post('crawl/single')
   async handleCrawlChapterForComic(
-    @Body(new ValidationPipe()) incomingData: CrawlChapterDTO,
+    @Body(new ValidationPipe()) incomingData: CrawlChapterRequest,
     @UserId() userId: number,
   ) {
     await this.chapterComicFacade.crawlSingleChapter(userId, incomingData);

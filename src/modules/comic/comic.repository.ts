@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Comic } from './comic.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chapter } from '../chapter/chapter.entity';
 import { PagingComics } from 'src/common/types/Paging';
+import { ICreateComic } from './comic.interface';
+import { IPagination } from '@common/interfaces/pagination';
 
 @Injectable()
 export class ComicRepository extends Repository<Comic> {
@@ -14,6 +16,14 @@ export class ComicRepository extends Repository<Comic> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
+  createRecord(data: ICreateComic, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(Comic) : this;
+
+    return repository.save({
+      ...data,
+    });
+  }
+
   getAll() {
     return this.createQueryBuilder('comic')
       .leftJoinAndSelect('comic.creator', 'user')
@@ -22,19 +32,26 @@ export class ComicRepository extends Repository<Comic> {
       .getMany();
   }
 
-  async getComicsWithPagination(page: number, limit: number, field: string): Promise<PagingComics> {
-    let query = this.createQueryBuilder('comic');
+  async getComicsRankingByField(
+    field: string,
+    order: 'ASC' | 'DESC' = 'DESC',
+    paging?: IPagination,
+  ): Promise<PagingComics> {
+    const { page = 1, size = 20 } = paging;
+    let queryBuilder = this.createQueryBuilder('comic');
 
-    const totalRecord = await query.getCount();
+    const totalRecord = await queryBuilder.getCount();
 
-    query = query
+    queryBuilder = queryBuilder
+      .distinctOn(['comic.id'])
       .leftJoinAndSelect('comic.chapters', 'chapters')
-      .orderBy(`comic.${field}`, 'DESC')
+      .orderBy('comic.id', order)
+      .addOrderBy(`comic.${field}`, order)
       .addOrderBy(`chapters.order`, 'DESC')
-      .offset((page - 1) * limit)
-      .limit(limit);
+      .offset((page - 1) * size)
+      .limit(size);
 
-    const comics = await query.getMany();
+    const comics = await queryBuilder.getMany();
 
     return {
       total: totalRecord,
@@ -61,8 +78,10 @@ export class ComicRepository extends Repository<Comic> {
       .execute();
   }
 
-  updateThumb(comicId: number, thumb: string) {
-    return this.update(
+  updateThumb(comicId: number, thumb: string, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(Comic) : this;
+
+    return repository.update(
       {
         id: comicId,
       },
@@ -112,17 +131,17 @@ export class ComicRepository extends Repository<Comic> {
       .getOne();
   }
 
-  getComicById(id: number) {
-    return this.findOne({
-      where: {
-        id,
-      },
-      order: {
-        chapters: {
-          order: 'DESC',
-        },
-      },
-    });
+  getComicById(id: number, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(Comic) : this;
+
+    return repository
+      .createQueryBuilder('comic')
+      .where('comic.id = :id', { id })
+      .leftJoinAndSelect('comic.creator', 'user')
+      .leftJoinAndSelect('comic.chapters', 'chapters')
+      .select(['comic', 'user.id', 'user.fullname', 'chapters'])
+      .addOrderBy('chapters.order', 'DESC')
+      .getOne();
   }
 
   increamentView(id: number) {
@@ -158,5 +177,22 @@ export class ComicRepository extends Repository<Comic> {
       ...comic,
       privileges: (comic.privileges || []).map((privilege) => privilege.permissions).flat(),
     }));
+  }
+
+  async getComicByIds(comicIds: number[], includedChapter: boolean = false) {
+    let queryBuilder = this.createQueryBuilder('comic')
+      .where('comic.id IN (:...comicIds)', {
+        comicIds,
+      })
+      .orderBy('comic.id', 'DESC');
+
+    if (includedChapter) {
+      queryBuilder = queryBuilder
+        .leftJoinAndMapMany('comic.chapters', 'comic.chapters', 'chapter')
+        .select(['comic', 'chapter.id', 'chapter'])
+        .addOrderBy('chapter.order', 'DESC');
+    }
+
+    return queryBuilder.getMany();
   }
 }

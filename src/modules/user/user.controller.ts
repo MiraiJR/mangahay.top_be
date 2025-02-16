@@ -17,17 +17,26 @@ import {
 import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ReadingHistoryService } from '../reading-history/readingHistory.service';
-import { ReadingHistoryDTO } from '../reading-history/dtos/readingHistoryDto';
+import { ReadingHistoryService } from '../reading-history/reading-history.service';
+import { ReadingHistoryDTO } from '../reading-history/dtos/create-reading-history';
 import { UpdateProfileDTO } from './dtos/updateProfile.dto';
-import UserId from '@common/decorators/userId';
-import { MAX_FILE_SIZE } from '@common/constant/Constant';
+import UserId from '@common/decorators/user-id';
+import { MAX_FILE_SIZE } from '@common/constant';
+import { ReindexUserService } from './elasticsearch/services/reindex-users.service';
+import { RoleGuard, Roles } from '@common/guards/role.guard';
+import { UserRole } from './user.role';
+import { ComicInteractionService } from '@modules/comic/comic-interaction/comic-interaction.service';
+import { NotificationService } from '@modules/notification/notification.service';
+import { GetNotificationsRequest } from '@modules/notification/dtos/get-notifications';
 
-@Controller('api/users')
+@Controller('users')
 export class UserController {
   constructor(
     private userService: UserService,
+    private notificationService: NotificationService,
     private readingHistoryService: ReadingHistoryService,
+    private readonly reindexUserService: ReindexUserService,
+    private readonly comicInteractionService: ComicInteractionService,
   ) {}
 
   @UseGuards(AuthGuard)
@@ -36,12 +45,29 @@ export class UserController {
     return this.userService.getUserByIdAndThrowExceptionIfNotExisted(userId);
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
+  @Post('/elasticsearch/reindex')
+  async handleReindexUsers() {
+    await this.reindexUserService.execute();
+    return 'Đang tiến hành reindex toàn bộ người dùng trên hệ thống lên elasticsearch';
+  }
+
   @UseGuards(AuthGuard)
   @Get('/me/reading-history')
   async handleGetHistory(@UserId() userId: number) {
     const comics = await this.readingHistoryService.getReadingHistoryOfUser(userId);
 
     return comics;
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/me/notifications')
+  handleGetNotifications(
+    @UserId() userId: number,
+    @Query(new ValidationPipe()) query: GetNotificationsRequest,
+  ) {
+    return this.notificationService.handleGetNotificationsOfUser(userId, query);
   }
 
   @UseGuards(AuthGuard)
@@ -137,9 +163,7 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('/me/comics/following')
-  async handleGetFollowingComics(@UserId() userId: number) {
-    const comics = await this.userService.getFollowingComicOfUser(userId);
-
-    return comics;
+  handleGetFollowingComics(@UserId() userId: number) {
+    return this.comicInteractionService.getListFollowingComicOfUser(userId);
   }
 }

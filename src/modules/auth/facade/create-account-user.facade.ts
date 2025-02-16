@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { RegisterUserDTO } from '../dto/register.dto';
+import { RegisterAccountDTO } from '../dtos/register';
 import { AccountEntity } from '../account/account.entity';
 import { hashPassword } from '@common/utils/password.util';
 import { ElasticsearchAdapterService } from '@common/external-service/elasticsearch/elasticsearch.adapter';
@@ -19,7 +19,7 @@ export class CreateAccoutUserFacade {
     private readonly elasticsearchAdapter: ElasticsearchAdapterService,
   ) {}
 
-  async createAccount(inputData: RegisterUserDTO) {
+  async createAccount(inputData: RegisterAccountDTO) {
     return this.datasource.transaction(async (manager) => {
       const { email, fullname, password } = inputData;
       const newUser = await manager.getRepository(User).save({
@@ -28,7 +28,16 @@ export class CreateAccoutUserFacade {
       });
 
       await Promise.all([
-        this.elasticsearchAdapter.addRecord<User>(IndexName.USERS, newUser, newUser.id),
+        this.elasticsearchAdapter.addRecord<ShortUserInfo>(
+          IndexName.USERS,
+          {
+            id: newUser.id,
+            fullname: newUser.fullname,
+            email: newUser.email,
+            avatar: newUser.avatar,
+          },
+          newUser.id,
+        ),
         manager.getRepository(UserSession).save({
           userId: newUser.id,
         }),
@@ -80,7 +89,16 @@ export class CreateAccoutUserFacade {
             amount: 1,
           },
         }),
-        this.elasticsearchAdapter.addRecord<User>(IndexName.USERS, newUser, newUser.id),
+        this.elasticsearchAdapter.addRecord<ShortUserInfo>(
+          IndexName.USERS,
+          {
+            id: newUser.id,
+            fullname: newUser.fullname,
+            email: newUser.email,
+            avatar: newUser.avatar,
+          },
+          newUser.id,
+        ),
       ]);
 
       return newUser;

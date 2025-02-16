@@ -8,11 +8,26 @@ import { CommentRepository } from './comment.repository';
 import { CommentController } from './comment.controller';
 import { MentionedUserRepository } from './mentioned-user/mentioned-user.repository';
 import { MentionedUser } from './mentioned-user/mentioned-user.entity';
+import { CommentNotificationFacade } from './facade/comment-notification.facade';
+import { BullModule } from '@nestjs/bull';
+import { QueueName } from '@common/constant/queue-channel';
 
 @Module({
-  imports: [UserModule, JwtModule, TypeOrmModule.forFeature([CommentEntity, MentionedUser])],
+  imports: [
+    UserModule,
+    JwtModule,
+    TypeOrmModule.forFeature([CommentEntity, MentionedUser]),
+    BullModule.registerQueue({
+      name: QueueName.NOTIFICAION,
+    }),
+  ],
   controllers: [CommentController],
-  providers: [CommentService, CommentRepository, MentionedUserRepository],
-  exports: [CommentService, CommentRepository, MentionedUserRepository],
+  providers: [
+    CommentService,
+    CommentRepository,
+    MentionedUserRepository,
+    CommentNotificationFacade,
+  ],
+  exports: [CommentService, CommentRepository, MentionedUserRepository, CommentNotificationFacade],
 })
 export class CommentModule {}

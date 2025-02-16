@@ -1,54 +1,59 @@
 import { Injectable } from '@nestjs/common';
 import { CommentRepository } from './comment.repository';
-import { Comic } from '../comic/comic.entity';
-import { CommandCommentRequest } from './models/requests/command-comment.request';
-import { CommentEntity } from './comment.entity';
+import { CreateCommentRequest } from './dtos/create-comment';
 import { DataSource } from 'typeorm';
-import { MentionedUser } from './mentioned-user/mentioned-user.entity';
-import { ListAnswerQuery } from './models/requests/list-answer.query';
+import { ListAnswerRequest } from './dtos/list-answer';
+import { MentionedUserRepository } from './mentioned-user/mentioned-user.repository';
+import { CommentNotificationFacade } from './facade/comment-notification.facade';
 
 @Injectable()
 export class CommentService {
   constructor(
     private readonly commentRepository: CommentRepository,
+    private readonly mentionedUserRepository: MentionedUserRepository,
     private readonly databaseConnection: DataSource,
+    private readonly commentNotificationFacade: CommentNotificationFacade,
   ) {}
 
   async getCommentById(commentId: number) {
     return this.commentRepository.findOneDetailComment(commentId);
   }
 
-  async createNewComment(userId: number, comic: Comic, content: string) {
-    const newComment = await this.commentRepository.save({ userId, comic, content });
-    const newDetailComment = await this.getCommentById(newComment.id);
-
-    return {
-      ...newDetailComment,
-      answers: [],
-    };
-  }
-
-  createComment(userId: number, inputData: CommandCommentRequest) {
+  createComment(userId: number, inputData: CreateCommentRequest) {
     return this.databaseConnection.transaction(async (manager) => {
-      const newComment = await manager.getRepository(CommentEntity).save({
-        userId,
-        comicId: inputData.comicId,
-        content: inputData.content,
-        parentCommentId: inputData.targetCommentId ?? null,
-      });
+      const newComment = await this.commentRepository.createRecord(
+        {
+          userId,
+          comicId: inputData.comicId,
+          content: inputData.content,
+          parentCommentId: inputData.targetCommentId ?? null,
+        },
+        manager,
+      );
 
-      if (inputData.mentionedUserId && inputData.mentionedUserId !== userId) {
-        await manager.getRepository(MentionedUser).save({
-          commentId: newComment.id,
-          mentionedUserId: inputData.mentionedUserId,
-        });
+      const { mentionedUserIds } = inputData;
+
+      if (mentionedUserIds && mentionedUserIds.length > 0) {
+        for (const mentionedUserId of mentionedUserIds) {
+          await this.mentionedUserRepository.createRecord(
+            {
+              commentId: newComment.id,
+              mentionedUserId: mentionedUserId,
+            },
+            manager,
+          );
+        }
       }
 
-      return newComment;
+      await this.commentNotificationFacade.notifyToListMentionedUser(userId, mentionedUserIds, {
+        content: inputData.content,
+      });
+
+      return this.getCommentById(newComment.id);
     });
   }
 
-  async getListAnswerOfComment(commentId: number, inputQuery: ListAnswerQuery) {
+  async getListAnswerOfComment(commentId: number, inputQuery: ListAnswerRequest) {
     const { lastAnswerId, limit } = inputQuery;
     const answers = await this.commentRepository.getListAnswerOfComment(
       commentId,

@@ -1,9 +1,10 @@
-import { Type } from 'class-transformer';
-import { IsInt, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsNumber, Min, Max } from 'class-validator';
 
-export class ScoreDTO {
+export class EvaludateComicRequest {
   @Type(() => Number)
-  @IsInt()
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0)
   @Max(5)
   score: number;

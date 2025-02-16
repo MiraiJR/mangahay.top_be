@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import { CreateChapterDTO } from '../dtos/create-chapter';
+import { CreateChapterRequest } from '../dtos/create-chapter';
 import { Chapter } from '../chapter.entity';
 import { S3Service } from '@common/external-service/image-storage/s3.service';
-import { ChapterType } from '../types/ChapterType';
+import { ChapterType } from '../types/chapter-type.enum';
 import { ConfigService } from '@nestjs/config';
-import { GoogleApiService } from '@modules/google-api/google-api.service';
+import { GoogleApiService } from '@common/external-service/google-api/google-api.service';
 import { Comic } from '@modules/comic/comic.entity';
 import { ApplicationException } from '@common/exception/application.exception';
 import ComicError from '@modules/comic/resources/error/error';
@@ -13,20 +13,20 @@ import { StatusComic } from '@modules/comic/enums/status-comic';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { QueueName } from '@common/constant/queue-channel';
-import { ComicInteractionRepository } from '@modules/comic/comic-interaction/comicInteraction.repository';
-import { NotificationEvent } from '@modules/notification/notification.interface';
+import { ComicInteractionRepository } from '@modules/comic/comic-interaction/comic-interaction.repository';
+import { NotificationEvent } from '@modules/notification/interface';
 import { CrawlerService } from '@common/external-service/crawler/crawler.service';
 import { ChapterService } from '../chapter.service';
-import { CrawlChapterDTO } from '../dtos/crawl-chapter';
+import { CrawlChapterRequest } from '../dtos/crawl-chapter';
 import { UserRepository } from '@modules/user/user.repository';
 import { ComicPrivilegeRepository } from '@modules/comic/comic-privilege/comic-privilege.repository';
-import { ComicPrivilegePermission } from '@modules/comic/comic-privilege/comic-privilege.enum';
 import { ChapterImageRepository } from '../chapter-image/chapter-image.repository';
 import { ComicUtilService } from '@modules/comic/shared/comic.util';
 import { UpdateChapterRequest } from '../dtos/update-chapter.request';
 import { ChapterRepository } from '../chapter.repository';
 import ChapterError from '../resources/error/error';
-import { ReorderChapterBody } from '../dtos/reorder-chapter.request';
+import { ReorderChapterRequest } from '../dtos/reorder-chapter.request';
+import { ComicPrivilegePermission } from '@modules/comic/comic-privilege/enum';
 
 @Injectable()
 export class ChapterComicFacade {
@@ -48,7 +48,7 @@ export class ChapterComicFacade {
   ) {}
 
   async createChapter(
-    inputData: CreateChapterDTO,
+    inputData: CreateChapterRequest,
     imageFiles: Express.Multer.File[],
     creatorId: number,
   ) {
@@ -103,7 +103,7 @@ export class ChapterComicFacade {
     });
   }
 
-  async crawlSingleChapter(userId: number, inputData: CrawlChapterDTO) {
+  async crawlSingleChapter(userId: number, inputData: CrawlChapterRequest) {
     const { comicId, nameChapter, urlPost, querySelector, attribute } = inputData;
     const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     const canUpdate = await this.canAccessChapter(
@@ -239,7 +239,7 @@ export class ChapterComicFacade {
     });
   }
 
-  async reorderedListChapter(operatorId: number, incomingData: ReorderChapterBody) {
+  async reorderedListChapter(operatorId: number, incomingData: ReorderChapterRequest) {
     const { listReorderedChapter, comicId } = incomingData;
     const matchedComic = await this.comicUtilService.getComicByIdThrowExceptionIfNotExist(comicId);
     const canUpdate = await this.canAccessChapter(

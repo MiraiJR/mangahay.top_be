@@ -1,12 +1,13 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApplicationExceptionModel } from 'src/common/exception/type';
+import { ApplicationExceptionModel } from '@common/exception/application-exception.interface';
 
 type CommonErrorCode =
   | 'COMMON_ERROR_0001'
   | 'COMMON_ERROR_0002'
   | 'COMMON_ERROR_0003'
   | 'COMMON_ERROR_0004'
-  | 'COMMON_ERROR_0005';
+  | 'COMMON_ERROR_0005'
+  | 'COMMON_ERROR_0006';
 
 const CommonError: Record<CommonErrorCode, ApplicationExceptionModel> = {
   COMMON_ERROR_0001: {
@@ -26,12 +27,17 @@ const CommonError: Record<CommonErrorCode, ApplicationExceptionModel> = {
   },
   COMMON_ERROR_0004: {
     errorCode: 'COMMON_ERROR_0004',
-    message: 'ValidationError',
-    statusCode: HttpStatus.UNAUTHORIZED,
+    message: 'Lỗi liên quan đến xác thực dữ liệu!',
+    statusCode: HttpStatus.BAD_REQUEST,
   },
   COMMON_ERROR_0005: {
     errorCode: 'COMMON_ERROR_0005',
     message: 'Quá trình tìm kiếm xảy ra lỗi!',
+    statusCode: HttpStatus.BAD_REQUEST,
+  },
+  COMMON_ERROR_0006: {
+    errorCode: 'COMMON_ERROR_0006',
+    message: 'Lỗi xảy ra trong quá trình cào dữ liệu!',
     statusCode: HttpStatus.BAD_REQUEST,
   },
 };

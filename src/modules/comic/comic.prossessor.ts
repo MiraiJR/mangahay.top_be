@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { ComicService } from './comic.service';
 import { NotificationService } from '../notification/notification.service';
-import { INotification } from '../notification/notification.interface';
+import { INotification } from '../notification/interface';
 import { ConfigService } from '@nestjs/config';
 
 @Processor('crawl-chapters')

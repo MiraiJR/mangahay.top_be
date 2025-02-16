@@ -1,7 +1,7 @@
 import { IsArray, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class UpdateComicDTO {
+export class UpdateComicRequest {
   @IsOptional()
   @Type(() => Array)
   @IsArray()

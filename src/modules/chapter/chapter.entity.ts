@@ -12,7 +12,7 @@ import {
 import { Comic } from '../comic/comic.entity';
 import { User } from '../user/user.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
-import { ChapterType } from './types/ChapterType';
+import { ChapterType } from './types/chapter-type.enum';
 import { ChapterImageEntity } from './chapter-image/chapter-image.entity';
 
 @Entity()

@@ -12,6 +12,14 @@ export class ComicPrivilegeRepository extends Repository<ComicPrivilegeEntity> {
     super(repository.target, repository.manager, repository.queryRunner);
   }
 
+  getById(id: number) {
+    return this.createQueryBuilder('privilege')
+      .where('privilege.id = :id', { id })
+      .leftJoinAndMapOne('privilege.user', 'User', 'user', 'privilege.userId = user.id')
+      .select(['privilege', 'user.fullname'])
+      .getOne();
+  }
+
   getPrivilegeByUserIdAndComicId(userId: number, comicId: number) {
     return this.findOne({
       where: {
@@ -20,8 +28,6 @@ export class ComicPrivilegeRepository extends Repository<ComicPrivilegeEntity> {
       },
     });
   }
-
-  updatePermissionsByUserIdAndComicId;
 
   async getPermissionOfUserByComicId(userId: number, comicId: number) {
     const previlege = await this.getPrivilegeByUserIdAndComicId(userId, comicId);
@@ -58,6 +64,13 @@ export class ComicPrivilegeRepository extends Repository<ComicPrivilegeEntity> {
       .where('privilege.comicId = :comicId', { comicId })
       .leftJoinAndMapOne('privilege.user', 'User', 'user', 'privilege.userId = user.id')
       .select(['privilege', 'user.fullname', 'user.id', 'user.avatar'])
+      .orderBy('privilege.id', 'ASC')
       .getMany();
+  }
+
+  deleteById(id: number) {
+    return this.delete({
+      id,
+    });
   }
 }

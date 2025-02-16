@@ -5,7 +5,7 @@ import { CommentEntity } from '../comment/comment.entity';
 import { Notification } from '../notification/notification.entity';
 import { UserSettingEntity } from '../user-setting/user-setting.entity';
 import { buildImageUrl } from 'src/common/utils/helper';
-import { ComicInteraction } from '@modules/comic/comic-interaction/comicInteraction.entity';
+import { ComicInteraction } from '@modules/comic/comic-interaction/comic-interaction.entity';
 import { MentionedUser } from '@modules/comment/mentioned-user/mentioned-user.entity';
 import { UserSession } from './user-sessions/user-session.entity';
 import { UserSocialEntity } from './user-social/user-social.entity';

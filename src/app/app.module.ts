@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ComicModule } from '../modules/comic/comic.module';
@@ -9,20 +7,14 @@ import { AuthModule } from '../modules/auth/auth.module';
 import { UserModule } from '../modules/user/user.module';
 import { CommentModule } from '../modules/comment/comment.module';
 import { NotificationModule } from '../modules/notification/notification.module';
-import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { MessageModule } from '../modules/message/message.module';
-import { AdminModule } from '../modules/admin/admin.module';
-import { ReportModule } from '../modules/report/report.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
-import { ReadingHistoryModule } from 'src/modules/reading-history/readingHistory.module';
+import { ReadingHistoryModule } from '@modules/reading-history/reading-history.module';
 import { GenreModule } from 'src/modules/genre/genre.module';
-import { GoogleApiModule } from 'src/modules/google-api/google-api.module';
+import { GoogleApiModule } from '@common/external-service/google-api/google-api.module';
 import { UserSettingModule } from 'src/modules/user-setting/user-setting.module';
 import { QueueHandlerModule } from '@common/external-service/queue-handler/queue-handler.module';
 import { ExternalServiceModule } from '@common/external-service/external-service.module';
 import { SystemDataModule } from '@modules/system-data/system-data.module';
+import { ScheduleJobModule } from '@common/schedule-job/schedule-job.module';
 
 @Module({
   imports: [
@@ -33,9 +25,6 @@ import { SystemDataModule } from '@modules/system-data/system-data.module';
     ComicModule,
     CommentModule,
     NotificationModule,
-    MessageModule,
-    AdminModule,
-    ReportModule,
     ChapterModule,
     ReadingHistoryModule,
     GenreModule,
@@ -61,16 +50,10 @@ import { SystemDataModule } from '@modules/system-data/system-data.module';
         autoLoadEntities: true,
       }),
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'static'),
-    }),
+    ScheduleJobModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
   exports: [],
 })
 export class AppModule {}

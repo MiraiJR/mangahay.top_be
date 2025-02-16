@@ -4,7 +4,7 @@ import { UserService } from './user.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { ReadingHistoryModule } from '../reading-history/readingHistory.module';
+import { ReadingHistoryModule } from '../reading-history/reading-history.module';
 import { ComicModule } from '../comic/comic.module';
 import { UserSettingModule } from '../user-setting/user-setting.module';
 import { UserRepository } from './user.repository';
@@ -20,6 +20,8 @@ import { SearchUserController } from './search-user/search-user.controller';
 import { SearchUserService } from './search-user/search-user.service';
 import { UserUtilService } from './shared/user.util';
 import { ComicUtilService } from '@modules/comic/shared/comic.util';
+import { ReindexUserService } from './elasticsearch/services/reindex-users.service';
+import { NotificationModule } from '@modules/notification/notification.module';
 
 @Global()
 @Module({
@@ -30,6 +32,7 @@ import { ComicUtilService } from '@modules/comic/shared/comic.util';
     forwardRef(() => ComicModule),
     TypeOrmModule.forFeature([User, UserSession, UserSocialEntity]),
     ElasticsearchAdapterModule,
+    NotificationModule,
   ],
   controllers: [UserController, UserManagementController, SearchUserController],
   providers: [
@@ -43,6 +46,7 @@ import { ComicUtilService } from '@modules/comic/shared/comic.util';
     SearchUserService,
     UserUtilService,
     ComicUtilService,
+    ReindexUserService,
   ],
   exports: [
     UserService,
@@ -50,6 +54,7 @@ import { ComicUtilService } from '@modules/comic/shared/comic.util';
     UserSessionRepository,
     UserSocialRepository,
     UserUtilService,
+    ReindexUserService,
   ],
 })
 export class UserModule {}

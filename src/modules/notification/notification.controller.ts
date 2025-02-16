@@ -1,32 +1,12 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Param, ParseIntPipe, Patch, Put, UseGuards } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import UserId from '../../common/decorators/userId';
-import { toNotificationType } from '@modules/user/types/NotificationType';
+import UserId from '../../common/decorators/user-id';
 import { User } from '@modules/user/user.entity';
 
-@Controller('api/notifies')
+@Controller('notifies')
 export class NotificationController {
   constructor(private notifyService: NotificationService) {}
-
-  @UseGuards(AuthGuard)
-  @Get('me')
-  async getNotifies(@Query('type') type: string = '2', @UserId() userId: number) {
-    const notifies = await this.notifyService.getNotifiesOfUser(userId, toNotificationType(type));
-
-    return notifies;
-  }
-
   @UseGuards(AuthGuard)
   @Patch(':notifyId/change-state')
   async handleChangeStateNotify(

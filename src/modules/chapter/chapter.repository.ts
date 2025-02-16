@@ -4,7 +4,6 @@ import { Chapter } from './chapter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { customSlugify } from '@common/configs/slugify.config';
 import { IChapter } from './chapter.interface';
-import { ReorderChapterBody } from './dtos/reorder-chapter.request';
 
 @Injectable()
 export class ChapterRepository extends Repository<Chapter> {

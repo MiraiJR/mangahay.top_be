@@ -15,6 +15,13 @@ interface UserComment {
   createdAt: Date;
   updatedAt: Date;
   user: CreatorComment;
-  mentionedUser: MentionedUserComment;
+  mentionedUsers: MentionedUserComment[];
   theNumberOfAnswer: number;
+}
+
+interface ICreateComment {
+  userId: number;
+  comicId: number;
+  content: string;
+  parentCommentId?: number;
 }

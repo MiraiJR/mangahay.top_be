@@ -1,23 +1,23 @@
 import { Body, Controller, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginUserDTO } from './dto/login.dto';
-import { RegisterUserDTO } from './dto/register.dto';
+import { LoginAccountDTO } from './dtos/login';
+import { RegisterAccountDTO } from './dtos/register';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import UserId from '../../common/decorators/userId';
+import UserId from '../../common/decorators/user-id';
 import { LoginWithGoogleBody } from './models/requests/login-with-google.body';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/register')
-  async register(@Body(new ValidationPipe()) data: RegisterUserDTO) {
+  async register(@Body(new ValidationPipe()) data: RegisterAccountDTO) {
     await this.authService.register(data);
     return `Đăng ký tài khoản thành công!`;
   }
 
   @Post('/login')
-  async handleLogin(@Body(new ValidationPipe()) data: LoginUserDTO) {
+  async handleLogin(@Body(new ValidationPipe()) data: LoginAccountDTO) {
     return this.authService.login(data);
   }
 

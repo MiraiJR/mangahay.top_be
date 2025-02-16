@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from './notification.entity';
+import { Paging } from '@common/types/Paging';
 
 @Injectable()
 export class NotificationRepository extends Repository<Notification> {
@@ -29,27 +30,23 @@ export class NotificationRepository extends Repository<Notification> {
     });
   }
 
-  getListNotificationOfUser(userId: number, isRead: boolean, isAll: boolean = false) {
-    if (isAll) {
-      return this.find({
-        where: {
-          userId,
-        },
-        order: {
-          createdAt: 'DESC',
-        },
-      });
+  async getListNotificationOfUser(userId: number, isRead: boolean, paging?: Paging) {
+    let queryBuilder = this.createQueryBuilder('notification')
+      .where('notification.userId = :userId', { userId })
+      .andWhere('notification.isRead = :isRead', { isRead })
+      .orderBy('notification.createdAt', 'DESC');
+
+    if (paging) {
+      const { page, limit } = paging;
+      queryBuilder = queryBuilder.offset((page - 1) * limit).limit(limit);
     }
 
-    return this.find({
-      where: {
-        userId,
-        isRead,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+    const [records, totalRecords] = await queryBuilder.getManyAndCount();
+
+    return {
+      total: totalRecords,
+      notifications: records,
+    };
   }
 
   changeIsReadForListNotificationOfUser(userId: number, isRead: boolean) {

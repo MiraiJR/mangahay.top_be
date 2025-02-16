@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApplicationExceptionModel } from 'src/common/exception/type';
+import { ApplicationExceptionModel } from '@common/exception/application-exception.interface';
 
 type NotificationErrorCode = 'NOTIFICATION_ERROR_0001' | 'NOTIFICATION_ERROR_0002';
 

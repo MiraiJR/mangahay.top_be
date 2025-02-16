@@ -9,7 +9,7 @@ class ReorderChapter {
   newOrder: number;
 }
 
-export class ReorderChapterBody {
+export class ReorderChapterRequest {
   @IsArray()
   @ArrayNotEmpty()
   @ValidateNested({ each: true })

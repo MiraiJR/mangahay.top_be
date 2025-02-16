@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsNotEmpty, IsNumber, IsString, Length } from 'class-validator';
 
-export class CreateChapterDTO {
+export class CreateChapterRequest {
   @IsString()
   @IsNotEmpty()
   @Length(2)

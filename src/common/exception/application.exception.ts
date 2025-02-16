@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApplicationExceptionModel } from './type';
+import { ApplicationExceptionModel } from './application-exception.interface';
 
 export class ApplicationException extends Error {
   private readonly statusCode: HttpStatus;

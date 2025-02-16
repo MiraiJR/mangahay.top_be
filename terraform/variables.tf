@@ -31,5 +31,6 @@ variable "aws_region" {
 variable "host_docker" {
   description = "Host docker depend on the environment"
   type        = string
-  default     = "npipe:////.//pipe//docker_engine"
+  # default     = "npipe:////.//pipe//docker_engine"
+  default = "unix:///Users/h003018/.colima/default/docker.sock"
 }

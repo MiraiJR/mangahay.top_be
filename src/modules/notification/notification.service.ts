@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { INotification } from './notification.interface';
-import { NotificationType } from '../user/types/NotificationType';
+import { INotification } from './interface';
+import { NotificationType } from '../../common/types/NotificationType';
 import { NotificationRepository } from './notification.repository';
 import { ApplicationException } from '@common/exception/application.exception';
 import NotificationError from './resources/error/error';
+import { GetNotificationsRequest } from './dtos/get-notifications';
 
 @Injectable()
 export class NotificationService {
@@ -41,17 +42,32 @@ export class NotificationService {
     return this.notificationRepository.countUnreadOfUser(userId);
   }
 
-  getNotifiesOfUser(userId: number, notificationType: NotificationType = NotificationType.BOTH) {
-    switch (notificationType) {
-      case NotificationType.READ:
-        return this.notificationRepository.getListNotificationOfUser(userId, true);
-      case NotificationType.UNREAD:
-        return this.notificationRepository.getListNotificationOfUser(userId, false);
-      case NotificationType.BOTH:
-        return this.notificationRepository.getListNotificationOfUser(userId, true, true);
-      default:
-        return [];
+  async handleGetNotificationsOfUser(userId: number, query: GetNotificationsRequest) {
+    const { type: notificationType, page, size } = query;
+
+    if (
+      notificationType === NotificationType.READ ||
+      notificationType === NotificationType.UNREAD
+    ) {
+      const { total, notifications } = await this.notificationRepository.getListNotificationOfUser(
+        userId,
+        notificationType === NotificationType.READ,
+        { page, limit: size },
+      );
+      const hasNext = total - page * size > 0;
+      return {
+        total,
+        data: notifications,
+        hasNext,
+      };
     }
+
+    return {
+      query,
+      total: 0,
+      data: [],
+      hasNext: false,
+    };
   }
 
   changeAllStateOfUser(userId: number, isRead: boolean) {

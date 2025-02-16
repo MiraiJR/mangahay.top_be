@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ElasticsearchModule, ElasticsearchService } from '@nestjs/elasticsearch';
+import { ElasticsearchModule } from '@nestjs/elasticsearch';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ElasticsearchAdapterService } from './elasticsearch.adapter';
 

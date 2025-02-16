@@ -10,7 +10,7 @@ export class SearchUserService {
   constructor(private readonly elasticsearchService: ElasticsearchAdapterService) {}
 
   async searchUser(inputData: SearchUserRequest) {
-    const { queryName } = inputData;
+    const { queryName, excludedIds } = inputData;
 
     try {
       const elasticsearchInstance = this.elasticsearchService.getInstance();
@@ -43,6 +43,13 @@ export class SearchUserService {
                 },
               },
             ],
+            must_not: [
+              {
+                terms: {
+                  id: excludedIds ?? [],
+                },
+              },
+            ],
           },
         },
         index: IndexName.USERS,
@@ -55,6 +62,7 @@ export class SearchUserService {
           return {
             id: record._source['id'],
             fullname: record._source['fullname'],
+            avatar: record._source['avatar'],
           };
         }),
       };

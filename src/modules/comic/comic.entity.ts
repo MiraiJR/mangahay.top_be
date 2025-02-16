@@ -15,7 +15,7 @@ import { CommentEntity } from '../comment/comment.entity';
 import { customSlugify } from 'src/common/configs/slugify.config';
 import { StatusComic } from './enums/status-comic';
 import { buildImageUrl } from 'src/common/utils/helper';
-import { ComicInteraction } from './comic-interaction/comicInteraction.entity';
+import { ComicInteraction } from './comic-interaction/comic-interaction.entity';
 import { ComicPrivilegeEntity } from './comic-privilege/comic-privilege.entity';
 
 @Entity()
@@ -78,10 +78,10 @@ export class Comic {
   @JoinColumn({ name: 'creator_id' })
   creator: User;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'created_at' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'now()' })
+  @Column({ type: 'timestamp', default: () => 'now()', name: 'updated_at' })
   updatedAt: Date;
 
   @Column('text', { array: true, default: [] })

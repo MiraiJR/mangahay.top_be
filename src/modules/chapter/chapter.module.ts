@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ChapterController } from './chapter.controller';
 import { ChapterRepository } from './chapter.repository';
 import { ChapterComicFacade } from './facades/chapter-comic.facade';
-import { GoogleApiModule } from '@modules/google-api/google-api.module';
+import { GoogleApiModule } from '@common/external-service/google-api/google-api.module';
 import { BullModule } from '@nestjs/bull';
 import { QueueName } from '@common/constant/queue-channel';
 import { ComicModule } from '@modules/comic/comic.module';

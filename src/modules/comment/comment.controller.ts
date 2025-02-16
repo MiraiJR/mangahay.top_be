@@ -9,19 +9,19 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
-import UserId from '@common/decorators/userId';
+import UserId from '@common/decorators/user-id';
 import { AuthGuard } from '@common/guards/auth.guard';
-import { CommandCommentRequest } from './models/requests/command-comment.request';
-import { ListAnswerQuery } from './models/requests/list-answer.query';
+import { CreateCommentRequest } from './dtos/create-comment';
+import { ListAnswerRequest } from './dtos/list-answer';
 
-@Controller('api/comments')
+@Controller('comments')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @UseGuards(AuthGuard)
   @Post()
   handlePostComment(
-    @Body(new ValidationPipe()) inputData: CommandCommentRequest,
+    @Body(new ValidationPipe()) inputData: CreateCommentRequest,
     @UserId()
     userId: number,
   ) {
@@ -30,7 +30,7 @@ export class CommentController {
 
   @Get(':commentId/answers')
   handleGetListAnswerOfComment(
-    @Query(new ValidationPipe()) inputQuery: ListAnswerQuery,
+    @Query(new ValidationPipe()) inputQuery: ListAnswerRequest,
     @Param('commentId') commentId: number,
   ) {
     return this.commentService.getListAnswerOfComment(commentId, inputQuery);

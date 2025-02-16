@@ -3,7 +3,7 @@ import { ComicPrivilegeRepository } from '../comic-privilege/comic-privilege.rep
 import { Comic } from '../comic.entity';
 import { UserRepository } from '@modules/user/user.repository';
 import { Job, Queue } from 'bull';
-import { NotificationEvent } from '@modules/notification/notification.interface';
+import { NotificationEvent } from '@modules/notification/interface';
 import { QueueName } from '@common/constant/queue-channel';
 import { InjectQueue } from '@nestjs/bull';
 

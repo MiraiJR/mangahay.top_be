@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../user/user.entity';
-import { ChapterSetting } from './type/type';
 import { ChapterViewType } from './enums/chapter-view-type';
+import { ChapterSetting, NotificationSetting } from './user-setting.interface';
 
 @Entity({ name: 'user_setting' })
 export class UserSettingEntity {
@@ -19,10 +19,17 @@ export class UserSettingEntity {
   user: User;
 
   @Column({
-    name: 'chapter_setting',
+    name: 'chapter',
     type: 'json',
     nullable: true,
     default: { type: ChapterViewType.DEFAULT, amount: 1 },
   })
-  chapterSetting: ChapterSetting;
+  chapter: ChapterSetting;
+
+  @Column({
+    name: 'notification',
+    type: 'json',
+    default: { mention: true },
+  })
+  notification: NotificationSetting;
 }

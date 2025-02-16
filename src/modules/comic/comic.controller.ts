@@ -21,18 +21,18 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles, RoleGuard } from '../../common/guards/role.guard';
 import { UserRole } from '../user/user.role';
-import { CreateComicDTO } from './dtos/create-comic';
-import UserId from '../../common/decorators/userId';
+import { CreateComicRequest } from './dtos/create-comic';
+import UserId from '../../common/decorators/user-id';
 import { GetComicsDTO } from './dtos/get-comics';
-import { ScoreDTO } from './dtos/evaluate-comic';
-import { CreateCommentDTO } from '../comment/dtos/create-comment';
-import { UpdateComicDTO } from './dtos/update-comic';
+import { EvaludateComicRequest } from './dtos/evaluate-comic';
+import { UpdateComicRequest } from './dtos/update-comic';
 import { CommentQuery } from './models/requests/comments.query';
-import { MAX_FILE_SIZE } from '@common/constant/Constant';
-import { GetChaptersQuery } from './dtos/get-chapters.query';
+import { GetChaptersRequest } from './dtos/get-chapters';
 import { ReindexComicService } from './elasticsearch/services/reindex-comic.service';
+import { GetRankingRequest } from './dtos/get-ranking';
+import { MAX_FILE_SIZE } from '@common/constant';
 
-@Controller('api/comics')
+@Controller('comics')
 export class ComicController {
   constructor(
     private readonly comicService: ComicService,
@@ -58,24 +58,16 @@ export class ComicController {
     }),
   )
   @Post()
-  async handleCreateComic(
-    @Body(new ValidationPipe()) inputData: CreateComicDTO,
+  handleCreateComic(
+    @Body(new ValidationPipe()) inputData: CreateComicRequest,
     @UserId() creatorId: number,
     @UploadedFile() thumb: Express.Multer.File,
   ) {
-    const newComic = await this.comicService.createComic(creatorId, inputData, thumb);
-
-    return newComic;
-  }
-
-  @Post('/reindex-elasticsearch')
-  async handleReindexElasticsearch() {
-    await this.reindexComicService.execute();
-    return 'Đang tiến hành reindex toàn bộ truyện lên elasticsearch';
+    return this.comicService.createComic(creatorId, inputData, thumb);
   }
 
   @Get('/ranking')
-  handleGetRanking(@Query() query: { field: string; limit: number }) {
+  handleGetRanking(@Query(new ValidationPipe()) query: GetRankingRequest) {
     return this.comicService.ranking(query);
   }
 
@@ -114,7 +106,7 @@ export class ComicController {
   )
   @Put('/:comicId')
   async handleUpdateComic(
-    @Body(new ValidationPipe()) inputData: UpdateComicDTO,
+    @Body(new ValidationPipe()) inputData: UpdateComicRequest,
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
     @UploadedFile() thumb: Express.Multer.File,
@@ -124,10 +116,18 @@ export class ComicController {
     return updatedComic;
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
+  @Post('/elasticsearch/reindex')
+  async handleReindexElasticsearch() {
+    await this.reindexComicService.execute();
+    return 'Đang tiến hành reindex toàn bộ truyện lên elasticsearch';
+  }
+
   @Get('/:comicId/chapters')
   async handleGetListChapter(
     @Param('comicId') comicId: number,
-    @Query(new ValidationPipe()) query: GetChaptersQuery,
+    @Query(new ValidationPipe()) query: GetChaptersRequest,
   ) {
     return this.comicService.getChapters(comicId, query);
   }
@@ -150,7 +150,7 @@ export class ComicController {
   @UseGuards(AuthGuard)
   @Patch(':comicId/evaluate')
   async handleEvaluateComic(
-    @Body(new ValidationPipe()) data: ScoreDTO,
+    @Body(new ValidationPipe()) data: EvaludateComicRequest,
     @UserId() userId: number,
     @Param('comicId', new ParseIntPipe()) comicId: number,
   ) {
@@ -158,18 +158,5 @@ export class ComicController {
     await this.comicService.evaluateComic(userId, comicId, score);
 
     return `Đánh giá truyện thành công!`;
-  }
-
-  @UseGuards(AuthGuard)
-  @Post(':comicId/comments')
-  async handleCommentComic(
-    @Param('comicId', new ParseIntPipe()) comicId: number,
-    @UserId() userId: number,
-    @Body(new ValidationPipe()) data: CreateCommentDTO,
-  ) {
-    const { content } = data;
-    const newComment = await this.comicService.commentOnComic(userId, comicId, content);
-
-    return newComment;
   }
 }
